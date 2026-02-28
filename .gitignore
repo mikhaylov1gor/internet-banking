@@ -1,0 +1,25 @@
+# COMMON
+.idea/
+.vscode/
+*.swp
+*.swo
+
+.env
+.env.local
+
+.DS_Store
+Thumbs.db
+
+
+# BACKEND
+*.exe
+*.dll
+*.so
+*.dylib
+
+backend/vendor/
+backend/postman/
+
+backend/.env
+backend/.env.local
+
