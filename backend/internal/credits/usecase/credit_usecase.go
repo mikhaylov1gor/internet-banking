@@ -22,6 +22,7 @@ type CreditRepository interface {
 	GetByID(id uuid.UUID) (*entity.Credit, error)
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error)
 	Update(c *entity.Credit) error
+	Delete(id uuid.UUID) error
 }
 
 type CreditUseCase struct {
@@ -101,6 +102,10 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, amount float64, bearerToken s
 	if c.Remaining <= 0 || c.Remaining < 0.01 {
 		c.Remaining = 0
 		c.Status = entity.CreditStatusPaid
+		if err := uc.creditRepo.Delete(creditID); err != nil {
+			return nil, err
+		}
+		return c, nil
 	}
 	if err := uc.creditRepo.Update(c); err != nil {
 		return nil, err

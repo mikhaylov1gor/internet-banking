@@ -12,6 +12,7 @@ type CreditRepository interface {
 	GetByID(id uuid.UUID) (*entity.Credit, error)
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error)
 	Update(c *entity.Credit) error
+	Delete(id uuid.UUID) error
 }
 
 type creditRepo struct {
@@ -49,4 +50,8 @@ func (r *creditRepo) ListByClientID(clientID uuid.UUID, limit, offset int) ([]*e
 
 func (r *creditRepo) Update(c *entity.Credit) error {
 	return r.db.Save(c).Error
+}
+
+func (r *creditRepo) Delete(id uuid.UUID) error {
+	return r.db.Delete(&entity.Credit{}, "id = ?", id).Error
 }
