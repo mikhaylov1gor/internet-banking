@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const defaultPassword = "changeme"
+const defaultPassword = "123"
 
 type AuthUseCase interface {
 	Login(email, password string) (accessToken, refreshToken string, user *entity.User, err error)

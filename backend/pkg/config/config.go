@@ -26,7 +26,7 @@ func LoadCore() CoreConfig {
 	}
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "change-me-in-production"
+		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
 	return CoreConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret}
 }
@@ -42,7 +42,7 @@ func LoadUsers() (Config, UsersAuth) {
 	}
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "change-me-in-production"
+		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
 	accessTTL := 15
 	if ttl := os.Getenv("JWT_ACCESS_TTL_MIN"); ttl != "" {
@@ -80,7 +80,7 @@ func LoadCredits() CreditsConfig {
 	}
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "change-me-in-production"
+		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
 	coreURL := os.Getenv("CORE_URL")
 	if coreURL == "" {
