@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	ErrInvalidCredentials  = errors.New("invalid email or password")
-	ErrUserBlocked         = errors.New("user is blocked")
-	ErrInvalidRefreshToken = errors.New("invalid or expired refresh token")
+	ErrInvalidCredentials  = errors.New("неверный email или пароль")
+	ErrUserBlocked         = errors.New("пользователь заблокирован")
+	ErrInvalidRefreshToken = errors.New("недействительный или истёкший refresh-токен")
 )
 
 type AuthConfig struct {

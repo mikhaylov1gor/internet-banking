@@ -43,18 +43,18 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" || len(authHeader) < 8 {
-			response.Err(w, http.StatusUnauthorized, "missing or invalid authorization header")
+			response.Err(w, http.StatusUnauthorized, "отсутствует или неверный заголовок авторизации")
 			return
 		}
 		tokenString := authHeader[7:]
 		claims, err := auth.ParseAccessToken(tokenString, h.jwtSecret)
 		if err != nil {
-			response.Err(w, http.StatusUnauthorized, "invalid token")
+			response.Err(w, http.StatusUnauthorized, "недействительный токен")
 			return
 		}
 		userID, err := uuid.Parse(claims.UserID)
 		if err != nil {
-			response.Err(w, http.StatusUnauthorized, "invalid token")
+			response.Err(w, http.StatusUnauthorized, "недействительный токен")
 			return
 		}
 		ctx := withUser(r.Context(), userID, claims.UserType)
@@ -66,7 +66,7 @@ func (h *Handler) employeeOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, userType := userFromContext(r.Context())
 		if userType != auth.UserTypeEmployee {
-			response.Err(w, http.StatusForbidden, "employee only")
+			response.Err(w, http.StatusForbidden, "только для сотрудника")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -92,17 +92,17 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	access, refresh, user, err := h.authUC.Login(body.Email, body.Password)
 	if err != nil {
 		if err == usecase.ErrInvalidCredentials {
-			response.Err(w, http.StatusUnauthorized, "invalid login or password")
+			response.Err(w, http.StatusUnauthorized, "неверный логин или пароль")
 			return
 		}
 		if err == usecase.ErrUserBlocked {
-			response.Err(w, http.StatusUnauthorized, "user is blocked")
+			response.Err(w, http.StatusUnauthorized, "пользователь заблокирован")
 			return
 		}
 		response.Err(w, http.StatusInternalServerError, err.Error())
@@ -121,13 +121,13 @@ func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 		RefreshToken string `json:"refresh_token"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	access, refresh, user, err := h.authUC.Refresh(body.RefreshToken)
 	if err != nil {
 		if err == usecase.ErrInvalidRefreshToken || err == usecase.ErrUserBlocked {
-			response.Err(w, http.StatusUnauthorized, "invalid or expired refresh token")
+			response.Err(w, http.StatusUnauthorized, "недействительный или истёкший refresh-токен")
 			return
 		}
 		response.Err(w, http.StatusInternalServerError, err.Error())
@@ -150,12 +150,12 @@ func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	userType := entity.UserType(body.Type)
 	if userType != entity.UserTypeClient && userType != entity.UserTypeEmployee {
-		response.Err(w, http.StatusBadRequest, "invalid type")
+		response.Err(w, http.StatusBadRequest, "неверный type")
 		return
 	}
 	password := body.Password
@@ -165,7 +165,7 @@ func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userUC.Create(userType, body.Email, body.FullName, body.Phone, password)
 	if err != nil {
 		if err == usecase.ErrEmailExists {
-			response.Err(w, http.StatusBadRequest, "email already exists")
+			response.Err(w, http.StatusBadRequest, "пользователь с таким email уже существует")
 			return
 		}
 		response.Err(w, http.StatusInternalServerError, err.Error())
@@ -179,7 +179,7 @@ func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
 	if t := r.URL.Query().Get("type"); t != "" {
 		ut := entity.UserType(t)
 		if ut != entity.UserTypeClient && ut != entity.UserTypeEmployee {
-			response.Err(w, http.StatusBadRequest, "invalid type")
+			response.Err(w, http.StatusBadRequest, "неверный type")
 			return
 		}
 		userType = &ut
@@ -188,7 +188,7 @@ func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
 	if s := r.URL.Query().Get("status"); s != "" {
 		st := entity.UserStatus(s)
 		if st != entity.UserStatusActive && st != entity.UserStatusBlocked {
-			response.Err(w, http.StatusBadRequest, "invalid status")
+			response.Err(w, http.StatusBadRequest, "неверный status")
 			return
 		}
 		status = &st
@@ -220,12 +220,12 @@ func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := uuid.Parse(chi.URLParam(r, "userId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid userId")
+		response.Err(w, http.StatusBadRequest, "неверный userId")
 		return
 	}
 	user, err := h.userUC.GetByID(userID)
 	if err != nil {
-		response.Err(w, http.StatusNotFound, "user not found")
+		response.Err(w, http.StatusNotFound, "пользователь не найден")
 		return
 	}
 	response.JSON(w, http.StatusOK, toUserResp(user))
@@ -234,7 +234,7 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) patchUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := uuid.Parse(chi.URLParam(r, "userId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid userId")
+		response.Err(w, http.StatusBadRequest, "неверный userId")
 		return
 	}
 	action := r.URL.Query().Get("action")
@@ -242,19 +242,19 @@ func (h *Handler) patchUser(w http.ResponseWriter, r *http.Request) {
 	case "block":
 		currentID, _ := userFromContext(r.Context())
 		if currentID != nil && *currentID == userID {
-			response.Err(w, http.StatusForbidden, "cannot block yourself")
+			response.Err(w, http.StatusForbidden, "нельзя заблокировать себя")
 			return
 		}
 		err = h.userUC.Block(userID)
 	case "unblock":
 		err = h.userUC.Unblock(userID)
 	default:
-		response.Err(w, http.StatusBadRequest, "action must be block or unblock")
+		response.Err(w, http.StatusBadRequest, "action должен быть block или unblock")
 		return
 	}
 	if err != nil {
 		if err == usecase.ErrUserNotFound {
-			response.Err(w, http.StatusNotFound, "user not found")
+			response.Err(w, http.StatusNotFound, "пользователь не найден")
 			return
 		}
 		response.Err(w, http.StatusInternalServerError, err.Error())

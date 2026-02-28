@@ -30,7 +30,7 @@ func ParseAccessToken(tokenString, secret string) (*Claims, error) {
 	}
 	claims, ok := tok.Claims.(*Claims)
 	if !ok || !tok.Valid {
-		return nil, errors.New("invalid token")
+		return nil, errors.New("недействительный токен")
 	}
 	return claims, nil
 }
@@ -50,7 +50,7 @@ func ParseRefreshToken(tokenString, secret string) (*RefreshClaims, error) {
 	}
 	claims, ok := tok.Claims.(*RefreshClaims)
 	if !ok || !tok.Valid {
-		return nil, errors.New("invalid refresh token")
+		return nil, errors.New("недействительный refresh-токен")
 	}
 	return claims, nil
 }

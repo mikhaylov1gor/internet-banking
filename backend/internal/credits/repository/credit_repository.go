@@ -13,6 +13,7 @@ type CreditRepository interface {
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error)
 	Update(c *entity.Credit) error
 	Delete(id uuid.UUID) error
+	AccrueInterest() error
 }
 
 type creditRepo struct {
@@ -54,4 +55,10 @@ func (r *creditRepo) Update(c *entity.Credit) error {
 
 func (r *creditRepo) Delete(id uuid.UUID) error {
 	return r.db.Delete(&entity.Credit{}, "id = ?", id).Error
+}
+
+func (r *creditRepo) AccrueInterest() error {
+	return r.db.Model(&entity.Credit{}).
+		Where("status = ?", entity.CreditStatusActive).
+		Update("remaining", gorm.Expr("remaining * (1 + rate / 525600)")).Error
 }

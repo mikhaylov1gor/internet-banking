@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	ErrAccountNotFound   = errors.New("account not found")
-	ErrAccountClosed     = errors.New("account is closed")
-	ErrInsufficientFunds = errors.New("insufficient funds")
-	ErrInvalidAmount     = errors.New("amount must be positive")
+	ErrAccountNotFound   = errors.New("счёт не найден")
+	ErrAccountClosed     = errors.New("счёт закрыт")
+	ErrInsufficientFunds = errors.New("недостаточно средств")
+	ErrInvalidAmount     = errors.New("сумма должна быть положительной")
 )
 
 type AccountRepository interface {
@@ -69,10 +69,10 @@ func (uc *AccountUseCase) CloseAccount(accountID, clientID uuid.UUID) error {
 		return ErrAccountClosed
 	}
 	if acc.ClientID != clientID {
-		return errors.New("forbidden: not account owner")
+		return errors.New("закрыть счёт может только владелец")
 	}
 	if acc.Balance != 0 {
-		return errors.New("balance must be zero to close account")
+		return errors.New("для закрытия счёта баланс должен быть равен нулю")
 	}
 	now := time.Now()
 	acc.ClosedAt = &now

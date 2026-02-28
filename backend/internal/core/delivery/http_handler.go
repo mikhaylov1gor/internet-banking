@@ -37,18 +37,18 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" || len(authHeader) < 8 {
-			response.Err(w, http.StatusUnauthorized, "missing or invalid authorization header")
+			response.Err(w, http.StatusUnauthorized, "отсутствует или неверный заголовок авторизации")
 			return
 		}
 		tokenString := authHeader[7:]
 		claims, err := auth.ParseAccessToken(tokenString, h.jwtSecret)
 		if err != nil {
-			response.Err(w, http.StatusUnauthorized, "invalid token")
+			response.Err(w, http.StatusUnauthorized, "недействительный токен")
 			return
 		}
 		userID, err := uuid.Parse(claims.UserID)
 		if err != nil {
-			response.Err(w, http.StatusUnauthorized, "invalid token")
+			response.Err(w, http.StatusUnauthorized, "недействительный токен")
 			return
 		}
 		ctx := withUser(r.Context(), userID, claims.UserType)
@@ -72,23 +72,23 @@ func (h *Handler) Mount(r chi.Router) {
 func (h *Handler) openAccount(w http.ResponseWriter, r *http.Request) {
 	userID, userType := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	var body struct {
 		ClientID string `json:"client_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	clientID, err := uuid.Parse(body.ClientID)
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid client_id")
+		response.Err(w, http.StatusBadRequest, "неверный client_id")
 		return
 	}
 	if userType == auth.UserTypeClient && *userID != clientID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	acc, err := h.uc.OpenAccount(clientID)
@@ -102,7 +102,7 @@ func (h *Handler) openAccount(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 	userID, userType := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	var clientID *uuid.UUID
@@ -112,7 +112,7 @@ func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 		if c := r.URL.Query().Get("client_id"); c != "" {
 			parsed, err := uuid.Parse(c)
 			if err != nil {
-				response.Err(w, http.StatusBadRequest, "invalid client_id")
+				response.Err(w, http.StatusBadRequest, "неверный client_id")
 				return
 			}
 			clientID = &parsed
@@ -122,7 +122,7 @@ func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 	if s := r.URL.Query().Get("status"); s != "" {
 		st := entity.AccountStatus(s)
 		if st != entity.AccountStatusActive && st != entity.AccountStatusClosed {
-			response.Err(w, http.StatusBadRequest, "invalid status")
+			response.Err(w, http.StatusBadRequest, "неверный status")
 			return
 		}
 		status = &st
@@ -154,21 +154,21 @@ func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getAccount(w http.ResponseWriter, r *http.Request) {
 	userID, userType := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	accountID, err := uuid.Parse(chi.URLParam(r, "accountId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid accountId")
+		response.Err(w, http.StatusBadRequest, "неверный accountId")
 		return
 	}
 	acc, err := h.uc.GetByID(accountID)
 	if err != nil {
-		response.Err(w, http.StatusNotFound, "account not found")
+		response.Err(w, http.StatusNotFound, "счёт не найден")
 		return
 	}
 	if userType == auth.UserTypeClient && acc.ClientID != *userID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	response.JSON(w, http.StatusOK, toAccountResp(acc))
@@ -177,32 +177,32 @@ func (h *Handler) getAccount(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) closeAccount(w http.ResponseWriter, r *http.Request) {
 	userID, _ := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	accountID, err := uuid.Parse(chi.URLParam(r, "accountId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid accountId")
+		response.Err(w, http.StatusBadRequest, "неверный accountId")
 		return
 	}
 	clientIDStr := r.URL.Query().Get("client_id")
 	if clientIDStr == "" {
-		response.Err(w, http.StatusBadRequest, "client_id required")
+		response.Err(w, http.StatusBadRequest, "обязателен параметр client_id")
 		return
 	}
 	clientID, err := uuid.Parse(clientIDStr)
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid client_id")
+		response.Err(w, http.StatusBadRequest, "неверный client_id")
 		return
 	}
 	if *userID != clientID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	err = h.uc.CloseAccount(accountID, clientID)
 	if err != nil {
 		if err == usecase.ErrAccountNotFound {
-			response.Err(w, http.StatusNotFound, "account not found")
+			response.Err(w, http.StatusNotFound, "счёт не найден")
 			return
 		}
 		response.Err(w, http.StatusForbidden, err.Error())
@@ -214,28 +214,28 @@ func (h *Handler) closeAccount(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) deposit(w http.ResponseWriter, r *http.Request) {
 	userID, userType := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	accountID, err := uuid.Parse(chi.URLParam(r, "accountId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid accountId")
+		response.Err(w, http.StatusBadRequest, "неверный accountId")
 		return
 	}
 	acc, err := h.uc.GetByID(accountID)
 	if err != nil {
-		response.Err(w, http.StatusNotFound, "account not found")
+		response.Err(w, http.StatusNotFound, "счёт не найден")
 		return
 	}
 	if userType == auth.UserTypeClient && acc.ClientID != *userID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	var body struct {
 		Amount float64 `json:"amount"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	op, err := h.uc.Deposit(accountID, body.Amount, "")
@@ -253,28 +253,28 @@ func (h *Handler) deposit(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) withdraw(w http.ResponseWriter, r *http.Request) {
 	userID, userType := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	accountID, err := uuid.Parse(chi.URLParam(r, "accountId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid accountId")
+		response.Err(w, http.StatusBadRequest, "неверный accountId")
 		return
 	}
 	acc, err := h.uc.GetByID(accountID)
 	if err != nil {
-		response.Err(w, http.StatusNotFound, "account not found")
+		response.Err(w, http.StatusNotFound, "счёт не найден")
 		return
 	}
 	if userType == auth.UserTypeClient && acc.ClientID != *userID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	var body struct {
 		Amount float64 `json:"amount"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	op, err := h.uc.Withdraw(accountID, body.Amount, "")
@@ -292,21 +292,21 @@ func (h *Handler) withdraw(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) listOperations(w http.ResponseWriter, r *http.Request) {
 	userID, userType := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	accountID, err := uuid.Parse(chi.URLParam(r, "accountId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid accountId")
+		response.Err(w, http.StatusBadRequest, "неверный accountId")
 		return
 	}
 	acc, err := h.uc.GetByID(accountID)
 	if err != nil {
-		response.Err(w, http.StatusNotFound, "account not found")
+		response.Err(w, http.StatusNotFound, "счёт не найден")
 		return
 	}
 	if userType == auth.UserTypeClient && acc.ClientID != *userID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))

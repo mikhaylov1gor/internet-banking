@@ -40,18 +40,18 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" || len(authHeader) < 8 {
-			response.Err(w, http.StatusUnauthorized, "missing or invalid authorization header")
+			response.Err(w, http.StatusUnauthorized, "отсутствует или неверный заголовок авторизации")
 			return
 		}
 		tokenString := authHeader[7:]
 		claims, err := auth.ParseAccessToken(tokenString, h.jwtSecret)
 		if err != nil {
-			response.Err(w, http.StatusUnauthorized, "invalid token")
+			response.Err(w, http.StatusUnauthorized, "недействительный токен")
 			return
 		}
 		userID, err := uuid.Parse(claims.UserID)
 		if err != nil {
-			response.Err(w, http.StatusUnauthorized, "invalid token")
+			response.Err(w, http.StatusUnauthorized, "недействительный токен")
 			return
 		}
 		ctx := withUser(r.Context(), userID, claims.UserType, authHeader)
@@ -63,7 +63,7 @@ func (h *Handler) employeeOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, userType, _ := userFromContext(r.Context())
 		if userType != auth.UserTypeEmployee {
-			response.Err(w, http.StatusForbidden, "employee only")
+			response.Err(w, http.StatusForbidden, "только для сотрудника")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -94,7 +94,7 @@ func (h *Handler) createTariff(w http.ResponseWriter, r *http.Request) {
 		MaxAmount float64 `json:"max_amount"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	tariff, err := h.tariffUC.Create(body.Name, body.Rate, body.MinAmount, body.MaxAmount)
@@ -122,7 +122,7 @@ func (h *Handler) listTariffs(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 	userID, _, bearer := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	var body struct {
@@ -132,20 +132,20 @@ func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 		Amount    float64 `json:"amount"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	clientID, _ := uuid.Parse(body.ClientID)
 	accountID, _ := uuid.Parse(body.AccountID)
 	tariffID, _ := uuid.Parse(body.TariffID)
 	if clientID == uuid.Nil || accountID == uuid.Nil || tariffID == uuid.Nil {
-		response.Err(w, http.StatusBadRequest, "invalid ids")
+		response.Err(w, http.StatusBadRequest, "неверные id")
 		return
 	}
 	credit, err := h.creditUC.Issue(clientID, accountID, tariffID, body.Amount, bearer)
 	if err != nil {
 		if err == usecase.ErrTariffNotFound {
-			response.Err(w, http.StatusBadRequest, "tariff not found")
+			response.Err(w, http.StatusBadRequest, "тариф не найден")
 			return
 		}
 		if err == usecase.ErrAmountOutOfRange {
@@ -161,21 +161,21 @@ func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) listCredits(w http.ResponseWriter, r *http.Request) {
 	userID, userType, _ := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	clientIDStr := r.URL.Query().Get("client_id")
 	if clientIDStr == "" {
-		response.Err(w, http.StatusBadRequest, "client_id required")
+		response.Err(w, http.StatusBadRequest, "обязателен параметр client_id")
 		return
 	}
 	clientID, err := uuid.Parse(clientIDStr)
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid client_id")
+		response.Err(w, http.StatusBadRequest, "неверный client_id")
 		return
 	}
 	if userType == auth.UserTypeClient && *userID != clientID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	limit, offset := parseLimitOffset(r, 50, 0)
@@ -194,21 +194,21 @@ func (h *Handler) listCredits(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) getCredit(w http.ResponseWriter, r *http.Request) {
 	userID, userType, _ := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	creditID, err := uuid.Parse(chi.URLParam(r, "creditId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid creditId")
+		response.Err(w, http.StatusBadRequest, "неверный creditId")
 		return
 	}
 	credit, err := h.creditUC.GetByID(creditID)
 	if err != nil {
-		response.Err(w, http.StatusNotFound, "credit not found")
+		response.Err(w, http.StatusNotFound, "кредит не найден")
 		return
 	}
 	if userType == auth.UserTypeClient && credit.ClientID != *userID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	response.JSON(w, http.StatusOK, toCreditResp(credit))
@@ -217,28 +217,28 @@ func (h *Handler) getCredit(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) repayCredit(w http.ResponseWriter, r *http.Request) {
 	userID, userType, bearer := userFromContext(r.Context())
 	if userID == nil {
-		response.Err(w, http.StatusUnauthorized, "unauthorized")
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	creditID, err := uuid.Parse(chi.URLParam(r, "creditId"))
 	if err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid creditId")
+		response.Err(w, http.StatusBadRequest, "неверный creditId")
 		return
 	}
 	credit, err := h.creditUC.GetByID(creditID)
 	if err != nil {
-		response.Err(w, http.StatusNotFound, "credit not found")
+		response.Err(w, http.StatusNotFound, "кредит не найден")
 		return
 	}
 	if userType == auth.UserTypeClient && credit.ClientID != *userID {
-		response.Err(w, http.StatusForbidden, "forbidden")
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	var body struct {
 		Amount float64 `json:"amount"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		response.Err(w, http.StatusBadRequest, "invalid body")
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
 	credit, err = h.creditUC.Repay(creditID, body.Amount, bearer)

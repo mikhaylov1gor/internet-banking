@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"internet-bank/internal/credits/client"
 	"internet-bank/internal/credits/delivery"
@@ -35,6 +36,16 @@ func main() {
 
 	r := chi.NewRouter()
 	handler.Mount(r)
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := creditUC.AccrueInterest(); err != nil {
+				log.Printf("accrue interest: %v", err)
+			}
+		}
+	}()
 
 	log.Printf("Credits service listening on :%s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {

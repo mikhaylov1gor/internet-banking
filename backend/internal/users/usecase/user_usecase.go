@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrUserNotFound = errors.New("user not found")
-	ErrEmailExists  = errors.New("email already exists")
+	ErrUserNotFound = errors.New("пользователь не найден")
+	ErrEmailExists  = errors.New("пользователь с таким email уже существует")
 )
 
 type UserRepository interface {

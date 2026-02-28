@@ -65,7 +65,7 @@ func (c *coreClient) changeBalance(accountID uuid.UUID, amount float64, op strin
 			}
 		}
 		if msg == "" {
-			msg = fmt.Sprintf("core returned %d", resp.StatusCode)
+			msg = fmt.Sprintf("сервис core вернул код %d", resp.StatusCode)
 		}
 		return fmt.Errorf("%s", msg)
 	}

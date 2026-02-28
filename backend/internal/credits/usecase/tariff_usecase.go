@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrTariffNotFound = errors.New("tariff not found")
+var ErrTariffNotFound = errors.New("тариф не найден")
 
 type TariffRepository interface {
 	Create(t *entity.CreditTariff) error

@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	ErrCreditNotFound   = errors.New("credit not found")
-	ErrAmountOutOfRange = errors.New("amount out of tariff range")
-	ErrCreditNotActive  = errors.New("credit is not active")
+	ErrCreditNotFound   = errors.New("кредит не найден")
+	ErrAmountOutOfRange = errors.New("сумма вне диапазона тарифа")
+	ErrCreditNotActive  = errors.New("кредит не активен")
 )
 
 type CreditRepository interface {
@@ -23,6 +23,7 @@ type CreditRepository interface {
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error)
 	Update(c *entity.Credit) error
 	Delete(id uuid.UUID) error
+	AccrueInterest() error
 }
 
 type CreditUseCase struct {
@@ -83,7 +84,7 @@ func (uc *CreditUseCase) ListByClientID(clientID uuid.UUID, limit, offset int) (
 
 func (uc *CreditUseCase) Repay(creditID uuid.UUID, amount float64, bearerToken string) (*entity.Credit, error) {
 	if amount < 0.01 {
-		return nil, errors.New("amount must be at least 0.01")
+		return nil, errors.New("сумма погашения не менее 0.01")
 	}
 	c, err := uc.creditRepo.GetByID(creditID)
 	if err != nil {
@@ -111,4 +112,8 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, amount float64, bearerToken s
 		return nil, err
 	}
 	return c, nil
+}
+
+func (uc *CreditUseCase) AccrueInterest() error {
+	return uc.creditRepo.AccrueInterest()
 }
