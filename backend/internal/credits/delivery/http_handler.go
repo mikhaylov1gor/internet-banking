@@ -23,7 +23,7 @@ type CreditUseCase interface {
 	Issue(clientID, accountID, tariffID uuid.UUID, amount float64, bearerToken string) (*entity.Credit, error)
 	GetByID(id uuid.UUID) (*entity.Credit, error)
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error)
-	Repay(creditID uuid.UUID, amount float64, bearerToken string) (*entity.Credit, error)
+	Repay(creditID uuid.UUID, accountID uuid.UUID, amount float64, userID uuid.UUID, bearerToken string) (*entity.Credit, error)
 }
 
 type Handler struct {
@@ -235,15 +235,33 @@ func (h *Handler) repayCredit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Amount float64 `json:"amount"`
+		Amount    float64 `json:"amount"`
+		AccountID string  `json:"account_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
-	credit, err = h.creditUC.Repay(creditID, body.Amount, bearer)
+	if body.AccountID == "" {
+		response.Err(w, http.StatusBadRequest, "обязателен параметр account_id")
+		return
+	}
+	accountID, err := uuid.Parse(body.AccountID)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный account_id")
+		return
+	}
+	credit, err = h.creditUC.Repay(creditID, accountID, body.Amount, *userID, bearer)
 	if err != nil {
 		if err == usecase.ErrCreditNotFound || err == usecase.ErrCreditNotActive {
+			response.Err(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err.Error() == "счёт не найден" || err.Error() == "счёт не принадлежит пользователю" || err.Error() == "счёт закрыт или заблокирован" {
+			response.Err(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if err.Error() == "недостаточно средств на счёте" {
 			response.Err(w, http.StatusBadRequest, err.Error())
 			return
 		}

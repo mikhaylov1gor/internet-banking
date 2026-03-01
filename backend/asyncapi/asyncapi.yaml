@@ -18,7 +18,22 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    Error:
+    AccountListResponse:
+      type: object
+      required: [accounts, page, total_pages]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+        page:
+          type: integer
+          description: Номер текущей страницы (начиная с 1)
+          example: 1
+        total_pages:
+          type: integer
+          description: Общее количество страниц
+          example: 5
       type: object
       required: [error]
       properties:
@@ -255,12 +270,16 @@ components:
 
     RepayCreditRequest:
       type: object
-      required: [amount]
+      required: [amount, account_id]
       properties:
         amount:
           type: number
           format: double
           minimum: 0.01
+        account_id:
+          type: string
+          format: uuid
+          description: ID счета, с которого снять деньги для погашения
 
     CreateTariffRequest:
       type: object
@@ -324,27 +343,27 @@ paths:
           schema:
             type: string
             enum: [active, closed]
-        - name: limit
+        - name: page
           in: query
-          description: Максимум записей в ответе (по умолчанию 50)
+          description: Номер страницы (по умолчанию 1)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: Количество записей на странице (по умолчанию 50)
           schema:
             type: integer
             default: 50
-        - name: offset
-          in: query
-          description: Сколько записей пропустить от начала (пагинация; 0 — с первой)
-          schema:
-            type: integer
-            default: 0
+            minimum: 1
       responses:
         '200':
-          description: Список счетов
+          description: Список счетов с пагинацией
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Account'
+                $ref: '#/components/schemas/AccountListResponse'
         '401':
           description: Не авторизован
 
@@ -831,10 +850,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Credit'
         '400':
-          description: Неверная сумма, кредит не активен или ошибка Core (недостаточно средств на счете)
+          description: Неверная сумма, кредит не активен, недостаточно средств на счете или неверные параметры
         '401':
           description: Не авторизован
         '403':
-          description: Нет прав
+          description: Нет прав, счет не принадлежит пользователю или счет закрыт/заблокирован
         '404':
           description: Кредит не найден
