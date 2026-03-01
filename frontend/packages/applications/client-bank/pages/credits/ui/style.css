@@ -1,0 +1,146 @@
+.credits-page-container {
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  min-height: calc(100vh - 80px);
+}
+
+.credits-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.credits-page-title {
+  font-size: 2rem;
+  margin: 0;
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.creditCard {
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+}
+
+.creditCard:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  transform: translateY(-4px);
+  border-color: #93c5fd;
+}
+
+.creditInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.creditId {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #1e40af;
+}
+
+.creditDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.active {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.paid {
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.issue-credit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.875rem;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  background-color: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.error-message {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.tariff-hint {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: #eff6ff;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #64748b;
+  border: 1px solid #dbeafe;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+

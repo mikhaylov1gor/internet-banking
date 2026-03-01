@@ -1,0 +1,112 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  getAccounts,
+  getAccountById,
+  createAccount,
+  closeAccount,
+  getAccountOperations,
+  depositToAccount,
+  withdrawFromAccount,
+  type GetAccountsParams,
+  type GetOperationsParams,
+  type CreateAccountRequest,
+  type ChangeBalanceRequest,
+} from '@shared/api/endpoints/accounts'
+import { getCurrentUserId } from '@shared/features/auth'
+
+export const useAccounts = (params?: Omit<GetAccountsParams, 'client_id'>) => {
+  const clientId = getCurrentUserId()
+  return useQuery({
+    queryKey: ['accounts', { ...params, client_id: clientId }],
+    queryFn: () => getAccounts({ ...params, client_id: clientId || undefined }),
+    enabled: !!clientId,
+  })
+}
+
+export const useAccount = (accountId: string | null) => {
+  return useQuery({
+    queryKey: ['account', accountId],
+    queryFn: () => {
+      if (!accountId) throw new Error('Account ID is required')
+      return getAccountById(accountId)
+    },
+    enabled: !!accountId,
+  })
+}
+
+export const useAccountOperations = (accountId: string | null, params?: GetOperationsParams) => {
+  return useQuery({
+    queryKey: ['account-operations', accountId, params],
+    queryFn: () => {
+      if (!accountId) throw new Error('Account ID is required')
+      return getAccountOperations(accountId, params)
+    },
+    enabled: !!accountId,
+  })
+}
+
+export const useCreateAccount = () => {
+  const queryClient = useQueryClient()
+  const clientId = getCurrentUserId()
+
+  return useMutation({
+    mutationFn: (data: Omit<CreateAccountRequest, 'client_id'>) => {
+      if (!clientId) {
+        throw new Error('User ID is required')
+      }
+      return createAccount({ ...data, client_id: clientId })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
+  })
+}
+
+export const useCloseAccount = () => {
+  const queryClient = useQueryClient()
+  const clientId = getCurrentUserId()
+
+  return useMutation({
+    mutationFn: (accountId: string) => {
+      if (!clientId) {
+        throw new Error('User ID is required')
+      }
+      return closeAccount(accountId, clientId)
+    },
+    onSuccess: (_, accountId) => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['account', accountId] })
+      queryClient.invalidateQueries({ queryKey: ['account-operations', accountId] })
+    },
+  })
+}
+
+export const useDepositToAccount = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ accountId, data }: { accountId: string; data: ChangeBalanceRequest }) =>
+      depositToAccount(accountId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['account', variables.accountId] })
+      queryClient.invalidateQueries({ queryKey: ['account-operations', variables.accountId] })
+    },
+  })
+}
+
+export const useWithdrawFromAccount = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ accountId, data }: { accountId: string; data: ChangeBalanceRequest }) =>
+      withdrawFromAccount(accountId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['account', variables.accountId] })
+      queryClient.invalidateQueries({ queryKey: ['account-operations', variables.accountId] })
+    },
+  })
+}
+
+

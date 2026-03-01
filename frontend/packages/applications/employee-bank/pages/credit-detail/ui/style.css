@@ -1,0 +1,77 @@
+.credit-detail-page-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.credit-detail-page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.credit-detail-page-back-button {
+  margin-bottom: 20px;
+}
+
+.credit-detail-page-credit-info {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.credit-detail-page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.credit-detail-page-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.credit-detail-page-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.credit-detail-page-detail-item:last-child {
+  border-bottom: none;
+}
+
+.credit-detail-page-label {
+  font-weight: 600;
+  color: #666;
+  min-width: 180px;
+}
+
+.credit-detail-page-amount {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.credit-detail-page-remaining {
+  font-size: 18px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.credit-detail-page-active {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.credit-detail-page-paid {
+  color: #6b7280;
+  font-weight: 600;
+}
+
