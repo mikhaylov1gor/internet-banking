@@ -11,6 +11,9 @@ servers:
   - url: http://localhost:8080
     description: API Gateway
 
+security:
+  - BearerAuth: []
+
 components:
   securitySchemes:
     BearerAuth:
@@ -298,9 +301,6 @@ components:
         max_amount:
           type: number
           format: double
-
-  security:
-    - BearerAuth: []
 
 paths:
   /accounts:
