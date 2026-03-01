@@ -41,8 +41,8 @@ export const useLogout = () => {
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user_id')
     localStorage.removeItem('user_type')
-    queryClient.clear()
     navigate('/login')
+    queryClient.clear()
   }
 }
 
