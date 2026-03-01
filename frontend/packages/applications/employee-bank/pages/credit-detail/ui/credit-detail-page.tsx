@@ -9,9 +9,9 @@ import './style.css'
 export const CreditDetailPage: React.FC = () => {
   const location = useLocation()
   const returnTo = (location.state as { returnTo?: string })?.returnTo
-  const { credit, creditLoading, creditError, navigate } = useCreditDetailPage()
+  const { credit, creditLoading, creditError, client, clientLoading, tariff, tariffLoading, navigate } = useCreditDetailPage()
 
-  if (creditLoading) {
+  if (creditLoading || clientLoading || tariffLoading) {
     return (
       <div className="credit-detail-page-loading">
         <Spinner size="large" />
@@ -24,14 +24,14 @@ export const CreditDetailPage: React.FC = () => {
       <ErrorFallback
         title="Кредит не найден"
         message="Кредит с указанным ID не существует или был удалён"
-        onGoBack={() => navigate(returnTo || '/users')}
+        onGoBack={() => navigate(returnTo || '/credits')}
       />
     )
   }
 
   return (
     <div className="credit-detail-page-container">
-      <Button variant="secondary" onClick={() => navigate(returnTo || '/users')} className="credit-detail-page-back-button">
+      <Button variant="secondary" onClick={() => navigate(returnTo || '/credits')} className="credit-detail-page-back-button">
         ← Назад
       </Button>
 
@@ -40,11 +40,16 @@ export const CreditDetailPage: React.FC = () => {
         <div className="credit-detail-page-details">
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Клиент:</span>
-            <span>{credit.client_id}</span>
+            <span
+              onClick={() => navigate(`/users/${credit.client_id}`, { state: { returnTo: `/credits/${credit.id}` } })}
+              className="credit-detail-page-clickable"
+            >
+              {client ? (client.full_name || client.email) : credit.client_id}
+            </span>
           </div>
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Тариф:</span>
-            <span>{credit.tariff_id}</span>
+            <span>{tariff ? tariff.name : credit.tariff_id}</span>
           </div>
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Сумма:</span>

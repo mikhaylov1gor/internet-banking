@@ -9,4 +9,5 @@ export * from './password-input'
 export * from './phone-input'
 export * from './select'
 export * from './spinner'
+export * from './user-select'
 

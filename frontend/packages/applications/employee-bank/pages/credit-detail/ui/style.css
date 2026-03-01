@@ -25,6 +25,7 @@
 .credit-detail-page-title {
   font-size: 24px;
   font-weight: 600;
+  margin-top: 0;
   margin-bottom: 24px;
   color: #333;
 }
@@ -73,5 +74,16 @@
 .credit-detail-page-paid {
   color: #6b7280;
   font-weight: 600;
+}
+
+.credit-detail-page-clickable {
+  cursor: pointer;
+  color: #2563eb;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.credit-detail-page-clickable:hover {
+  color: #1e40af;
 }
 

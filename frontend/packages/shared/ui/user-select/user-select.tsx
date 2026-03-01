@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useUsers } from '../../../features/users'
+import { useQuery } from '@tanstack/react-query'
+import { getUsers, type GetUsersParams } from '@shared/api/endpoints/users'
 import { Spinner } from '@shared/ui/spinner'
 import type { User } from '@shared/api/endpoints/users'
-import './user-select.css'
+import './style.css'
 
 export type UserSelectProps = {
   value: string
@@ -21,11 +22,9 @@ export const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, label, 
   const listRef = useRef<HTMLDivElement>(null)
   const limit = 20
 
-  const { data: users, isLoading, isFetching } = useUsers({
-    type: 'client',
-    status: 'active',
-    limit,
-    offset,
+  const { data: users, isLoading, isFetching } = useQuery({
+    queryKey: ['users', { type: 'client', status: 'active', limit, offset }],
+    queryFn: () => getUsers({ type: 'client', status: 'active', limit, offset } as GetUsersParams),
   })
 
   useEffect(() => {

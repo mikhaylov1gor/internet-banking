@@ -26,4 +26,5 @@ export type IssueCreditRequest = {
 
 export type RepayCreditRequest = {
   amount: number
+  account_id: string
 }

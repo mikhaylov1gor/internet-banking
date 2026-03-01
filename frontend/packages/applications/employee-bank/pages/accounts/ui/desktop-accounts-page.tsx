@@ -6,7 +6,7 @@ import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
 import { DesktopPagination } from '@shared/ui/pagination'
 import { useAccountsPage } from '../model/use-accounts-page'
-import { UserSelect } from './user-select'
+import { UserSelect } from '@shared/ui/user-select'
 import './style.css'
 
 export const DesktopAccountsPage: React.FC = () => {

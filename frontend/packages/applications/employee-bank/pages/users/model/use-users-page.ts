@@ -18,7 +18,7 @@ export const useUsersPage = () => {
     password: '',
   })
   const [emailValid, setEmailValid] = useState(false)
-  const [phoneValid, setPhoneValid] = useState(true) // Телефон не обязателен
+  const [phoneValid, setPhoneValid] = useState(true)
   const [fullNameValid, setFullNameValid] = useState(false)
   const [fullNameTouched, setFullNameTouched] = useState(false)
   const [passwordValid, setPasswordValid] = useState(false)
