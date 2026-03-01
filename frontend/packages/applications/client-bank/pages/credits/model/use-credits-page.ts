@@ -11,9 +11,14 @@ export const useCreditsPage = () => {
   const [amount, setAmount] = useState('')
   const [noAccountsError, setNoAccountsError] = useState('')
   const [amountBlurred, setAmountBlurred] = useState(false)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
-  const { data: credits, isLoading } = useCredits()
-  const { data: accounts } = useAccounts({ status: 'active' })
+  const { data: creditsResponse, isLoading } = useCredits({ page, page_size: pageSize })
+  const credits = creditsResponse?.credits || []
+  const totalPages = creditsResponse?.pageQuantity || 1
+  const { data: accountsResponse } = useAccounts({ status: 'active' })
+  const accounts = accountsResponse?.accounts
   const { data: tariffs } = useTariffs()
   const issueCreditMutation = useIssueCredit()
   const clientId = getCurrentUserId()
@@ -103,6 +108,11 @@ export const useCreditsPage = () => {
     issueCreditMutation,
     handleIssueCredit,
     noAccountsError,
+    page,
+    setPage,
+    limit: pageSize,
+    setLimit: setPageSize,
+    totalPages,
   }
 }
 

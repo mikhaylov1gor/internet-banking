@@ -19,8 +19,8 @@ export const useTariff = (tariffId: string | null) => {
     queryKey: ['tariff', tariffId],
     queryFn: async () => {
       if (!tariffId) throw new Error('Tariff ID is required')
-      const tariffs = await getTariffs()
-      const tariff = tariffs.find((t: CreditTariff) => t.id === tariffId)
+      const response = await getTariffs()
+      const tariff = response.tariffs.find((t: CreditTariff) => t.id === tariffId)
       if (!tariff) throw new Error('Tariff not found')
       return tariff
     },

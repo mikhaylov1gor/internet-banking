@@ -8,16 +8,18 @@ export const useAccountsPage = () => {
   const [currency, setCurrency] = useState<'RUB' | 'USD' | 'EUR'>('RUB')
   const [status, setStatus] = useState<'active' | 'closed' | ''>('')
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const clientId = getCurrentUserId()
 
   const params: Omit<GetAccountsParams, 'client_id'> = {
     ...(status && { status: status as 'active' | 'closed' }),
-    limit,
-    offset: (page - 1) * limit,
+    page,
+    page_size: pageSize,
   }
 
-  const { data: accounts, isLoading } = useAccounts(params)
+  const { data: accountsResponse, isLoading } = useAccounts(params)
+  const accounts = accountsResponse?.accounts
+  const totalPages = accountsResponse?.pageQuantity || 1
   const createAccountMutation = useCreateAccount()
 
   const handleOpenModal = () => {
@@ -48,10 +50,6 @@ export const useAccountsPage = () => {
     setPage(1)
   }
 
-  const totalPages = accounts 
-    ? (accounts.length < limit ? page : page + 1)
-    : 1
-
   return {
     accounts,
     isLoading,
@@ -66,8 +64,8 @@ export const useAccountsPage = () => {
     setStatus: handleStatusChange,
     page,
     setPage,
-    limit,
-    setLimit,
+    limit: pageSize,
+    setLimit: setPageSize,
     totalPages,
   }
 }

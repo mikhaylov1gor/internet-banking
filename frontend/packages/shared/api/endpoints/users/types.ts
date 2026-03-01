@@ -16,9 +16,15 @@ export type CreateUserRequest = {
   password?: string
 }
 
+export type UserListResponse = {
+  users: User[]
+  pageNumber: number
+  pageQuantity: number
+}
+
 export type GetUsersParams = {
   type?: 'client' | 'employee'
   status?: 'active' | 'blocked'
-  limit?: number
-  offset?: number
+  page?: number
+  page_size?: number
 }

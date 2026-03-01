@@ -5,7 +5,9 @@ import { Input } from '@shared/ui/input'
 import { Spinner } from '@shared/ui/spinner'
 import { Modal } from '@shared/ui/modal'
 import { Select } from '@shared/ui/select'
+import { DesktopPagination, MobilePagination } from '@shared/ui/pagination'
 import { useCreditsPage } from '../model/use-credits-page'
+import { isMobile } from '../../../main'
 import './style.css'
 
 export const CreditsPage: React.FC = () => {
@@ -29,7 +31,14 @@ export const CreditsPage: React.FC = () => {
     issueCreditMutation,
     handleIssueCredit,
     noAccountsError,
+    page,
+    setPage,
+    limit,
+    setLimit,
+    totalPages,
   } = useCreditsPage()
+
+  const Pagination = isMobile ? MobilePagination : DesktopPagination
 
   return (
     <div className="credits-page-container">
@@ -55,32 +64,44 @@ export const CreditsPage: React.FC = () => {
       )}
 
       {credits && credits.length > 0 && (
-        <div className="list">
-          {credits.map((credit) => (
-            <div
-              key={credit.id}
-              className="creditCard"
-              onClick={() => navigate(`/credits/${credit.id}`)}
-            >
-              <div className="creditInfo">
-                <div className="creditId">Кредит #{credit.id.slice(0, 8)}...</div>
-                <div className="creditDetails">
-                  <span>Сумма {credit.amount.toLocaleString()}{'\u00A0'}₽</span>
-                  {credit.status === 'active' && (
-                    <>
-                      <span>Остаток: {credit.remaining.toLocaleString()} ₽</span>
-                      <span>Ежедневный платеж: {credit.daily_payment.toLocaleString()} ₽</span>
-                    </>
-                  )}
-                  <span>Ставка: {(credit.rate * 100).toFixed(2)}%</span>
-                  <span className={credit.status === 'active' ? 'active' : 'paid'}>
-                    Статус: {credit.status === 'active' ? 'Активен' : 'Погашен'}
-                  </span>
+        <>
+          <div className="list">
+            {credits.map((credit) => (
+              <div
+                key={credit.id}
+                className="creditCard"
+                onClick={() => navigate(`/credits/${credit.id}`)}
+              >
+                <div className="creditInfo">
+                  <div className="creditId">Кредит #{credit.id.slice(0, 8)}...</div>
+                  <div className="creditDetails">
+                    <span>Сумма {credit.amount.toLocaleString()}{'\u00A0'}₽</span>
+                    {credit.status === 'active' && (
+                      <>
+                        <span>Остаток: {credit.remaining.toLocaleString()} ₽</span>
+                        <span>Ежедневный платеж: {credit.daily_payment.toLocaleString()} ₽</span>
+                      </>
+                    )}
+                    <span>Ставка: {(credit.rate * 100).toFixed(2)}%</span>
+                    <span className={credit.status === 'active' ? 'active' : 'paid'}>
+                      Статус: {credit.status === 'active' ? 'Активен' : 'Погашен'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            itemsPerPage={limit}
+            onItemsPerPageChange={(newLimit) => {
+              setLimit(newLimit)
+              setPage(1)
+            }}
+          />
+        </>
       )}
 
       <Modal isOpen={showModal} onClose={handleCloseModal} title="Взять кредит">

@@ -19,6 +19,7 @@ export const AccountDetailPage: React.FC = () => {
     setLimit,
     page,
     setPage,
+    totalPages,
     navigate,
   } = useAccountDetailPage()
 
@@ -41,8 +42,6 @@ export const AccountDetailPage: React.FC = () => {
   }
 
   const Pagination = isMobile ? MobilePagination : DesktopPagination
-
-  const totalPages = Math.ceil((operations?.length || 0) / limit) || 1
 
   return (
     <div className="account-detail-page-container">

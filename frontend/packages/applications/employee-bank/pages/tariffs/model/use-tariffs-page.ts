@@ -7,7 +7,7 @@ export const useTariffsPage = () => {
   const [minAmount, setMinAmount] = useState('')
   const [maxAmount, setMaxAmount] = useState('')
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(10)
+  const [pageSize, setPageSize] = useState(10)
   const [showModal, setShowModal] = useState(false)
   const [errors, setErrors] = useState<{
     name?: string
@@ -22,10 +22,12 @@ export const useTariffsPage = () => {
     maxAmount?: boolean
   }>({})
 
-  const { data: tariffs, isLoading } = useTariffs({
-    limit,
-    offset: (page - 1) * limit,
+  const { data: tariffsResponse, isLoading } = useTariffs({
+    page,
+    page_size: pageSize,
   })
+  const tariffs = tariffsResponse?.tariffs
+  const totalPages = tariffsResponse?.pageQuantity || 1
   const createTariffMutation = useCreateTariff()
 
   const validateField = (field: 'name' | 'rate' | 'minAmount' | 'maxAmount', value: string): string | undefined => {
@@ -146,9 +148,6 @@ export const useTariffsPage = () => {
     setTouched({})
   }
 
-  const hasMore = tariffs && tariffs.length === limit
-  const totalPages = hasMore ? page + 1 : page
-
   return {
     name,
     setName,
@@ -164,8 +163,8 @@ export const useTariffsPage = () => {
     handleSubmit,
     page,
     setPage,
-    limit,
-    setLimit,
+    limit: pageSize,
+    setLimit: setPageSize,
     totalPages,
     showModal,
     setShowModal,

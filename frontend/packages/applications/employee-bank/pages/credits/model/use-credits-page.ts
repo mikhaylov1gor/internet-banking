@@ -9,30 +9,47 @@ export const useCreditsPage = () => {
   const [error, setError] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const navigate = useNavigate()
 
   const params: GetCreditsParams = {
     ...(selectedUserId && { client_id: selectedUserId }),
-    limit,
-    offset: (page - 1) * limit,
+    page,
+    page_size: pageSize,
   }
 
-  const { data: credits, isLoading } = useCredits(params)
+  const { data: creditsResponse, isLoading } = useCredits(params)
+  const credits = creditsResponse?.credits
+  const totalPages = creditsResponse?.pageQuantity || 1
 
   const handleSearch = async () => {
-    if (!creditId.trim()) {
+    const trimmedCreditId = creditId.trim()
+    
+    if (!trimmedCreditId) {
       setError('Введите ID кредита')
       return
     }
+
+    // Валидация формата UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(trimmedCreditId)) {
+      setError('ID кредита должен быть в формате UUID')
+      return
+    }
+
     try {
-      await getCreditById(creditId.trim())
-      navigate(`/credits/${creditId.trim()}`)
+      await getCreditById(trimmedCreditId)
+      navigate(`/credits/${trimmedCreditId}`)
+      setError('')
     } catch (err: any) {
       if (err?.response?.status === 404) {
-        setError('Кредит не существует')
+        setError('Кредит не найден')
+      } else if (err?.response?.status === 403) {
+        setError('Нет доступа к этому кредиту')
+      } else if (err?.response?.status === 401) {
+        setError('Необходима авторизация')
       } else {
-        setError('Ошибка при поиске кредита')
+        setError('Ошибка при поиске кредита. Попробуйте еще раз')
       }
     }
   }
@@ -41,10 +58,6 @@ export const useCreditsPage = () => {
     setSelectedUserId(userId)
     setPage(1)
   }
-
-  const totalPages = credits
-      ? (credits.length < limit ? page : page + 1)
-      : 1
 
   return {
     creditId,
@@ -58,8 +71,8 @@ export const useCreditsPage = () => {
     setSelectedUserId: handleUserIdChange,
     page,
     setPage,
-    limit,
-    setLimit,
+    limit: pageSize,
+    setLimit: setPageSize,
     totalPages,
   }
 }

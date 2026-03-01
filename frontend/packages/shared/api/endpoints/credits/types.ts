@@ -12,10 +12,16 @@ export type Credit = {
   paid_at?: string
 }
 
+export type CreditListResponse = {
+  credits: Credit[]
+  pageNumber: number
+  pageQuantity: number
+}
+
 export type GetCreditsParams = {
   client_id?: string
-  limit?: number
-  offset?: number
+  page?: number
+  page_size?: number
 }
 
 export type IssueCreditRequest = {

@@ -15,21 +15,23 @@ export type UserSelectProps = {
 export const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, label, className }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const [offset, setOffset] = useState(0)
+  const [page, setPage] = useState(1)
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [selectedUserData, setSelectedUserData] = useState<User | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
-  const limit = 20
+  const pageSize = 20
 
-  const { data: users, isLoading, isFetching } = useQuery({
-    queryKey: ['users', { type: 'client', status: 'active', limit, offset }],
-    queryFn: () => getUsers({ type: 'client', status: 'active', limit, offset } as GetUsersParams),
+  const { data: usersResponse, isLoading, isFetching } = useQuery({
+    queryKey: ['users', { type: 'client', status: 'active', page, page_size: pageSize }],
+    queryFn: () => getUsers({ type: 'client', status: 'active', page, page_size: pageSize }),
   })
 
+  const users = usersResponse?.users || []
+
   useEffect(() => {
-    if (users) {
-      if (offset === 0) {
+    if (users && users.length > 0) {
+      if (page === 1) {
         const selected = value && selectedUserData ? selectedUserData : null
         const newList = [...users]
         if (selected && !newList.find((u) => u.id === selected.id)) {
@@ -51,7 +53,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, label, 
         }
       }
     }
-  }, [users, offset, value, selectedUserData])
+  }, [users, page, value, selectedUserData])
 
   const filteredUsers = allUsers.filter((user) => {
     const query = searchQuery.toLowerCase()
@@ -67,10 +69,10 @@ export const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, label, 
     const { scrollTop, scrollHeight, clientHeight } = listRef.current
     const scrollPercentage = (scrollTop + clientHeight) / scrollHeight
 
-    if (scrollPercentage > 0.8 && users && users.length === limit) {
-      setOffset((prev) => prev + limit)
+    if (scrollPercentage > 0.8 && users && users.length === pageSize) {
+      setPage((prev) => prev + 1)
     }
-  }, [isOpen, isFetching, users, limit])
+  }, [isOpen, isFetching, users, pageSize])
 
   useEffect(() => {
     const listElement = listRef.current
@@ -117,27 +119,27 @@ export const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, label, 
   }
 
   useEffect(() => {
-    if (isOpen && offset === 0) {
+    if (isOpen && page === 1) {
       const hasOnlySelected = allUsers.length === 1 && value && allUsers[0]?.id === value
       if (allUsers.length === 0 || hasOnlySelected) {
         const selected = value && selectedUserData ? selectedUserData : null
         setAllUsers(selected ? [selected] : [])
       }
     }
-  }, [isOpen, offset, allUsers, value, selectedUserData])
+  }, [isOpen, page, allUsers, value, selectedUserData])
 
   const handleToggle = () => {
     const newIsOpen = !isOpen
     setIsOpen(newIsOpen)
     
     if (newIsOpen) {
-      if (offset !== 0) {
-        setOffset(0)
+      if (page !== 1) {
+        setPage(1)
       }
     } else {
       setSearchQuery('')
-      if (offset !== 0) {
-        setOffset(0)
+      if (page !== 1) {
+        setPage(1)
       }
     }
   }
@@ -196,7 +198,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, label, 
               />
             </div>
             <div className="user-select-list" ref={listRef}>
-              {isLoading && offset === 0 ? (
+              {isLoading && page === 1 ? (
                 <div className="user-select-loading">
                   <Spinner />
                 </div>
@@ -218,7 +220,7 @@ export const UserSelect: React.FC<UserSelectProps> = ({ value, onChange, label, 
                       )}
                     </div>
                   ))}
-                  {isFetching && offset > 0 && (
+                  {isFetching && page > 1 && (
                     <div className="user-select-loading-more">
                       <Spinner />
                     </div>

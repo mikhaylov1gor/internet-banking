@@ -71,8 +71,11 @@ export const MobileCreditsPage: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && selectedUserId && credits && credits.length === 0 && (
-        <div className="empty">Кредиты не найдены</div>
+      {!isLoading && selectedUserId && credits !== undefined && credits.length === 0 && (
+        <div className="empty credits-page-empty">
+          <div className="empty-icon">💳</div>
+          <div className="empty-text">У клиента нет кредитов</div>
+        </div>
       )}
 
       {!isLoading && selectedUserId && credits && credits.length > 0 && (

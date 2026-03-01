@@ -11,7 +11,8 @@ export const useCreditDetailPage = () => {
   const [selectedAccount, setSelectedAccount] = useState('')
 
   const { data: credit, isLoading: creditLoading, error: creditError } = useCredit(creditId || null)
-  const { data: accounts } = useAccounts({ status: 'active' })
+  const { data: accountsResponse } = useAccounts({ status: 'active' })
+  const accounts = accountsResponse?.accounts
   const repayCreditMutation = useRepayCredit()
 
   const handleRepay = () => {

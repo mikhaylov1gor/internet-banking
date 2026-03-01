@@ -39,6 +39,7 @@ export const AccountDetailPage: React.FC = () => {
     handleWithdraw,
     handleBack,
     navigate,
+    totalPages,
   } = useAccountDetailPage()
 
   if (accountLoading) {
@@ -60,8 +61,6 @@ export const AccountDetailPage: React.FC = () => {
   }
 
   const Pagination = isMobile ? MobilePagination : DesktopPagination
-
-  const totalPages = Math.ceil((operations?.length || 0) / limit) || 1
 
   return (
     <div className="account-detail-page-container">

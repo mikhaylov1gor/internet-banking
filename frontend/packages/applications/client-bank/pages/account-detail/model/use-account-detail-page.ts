@@ -19,14 +19,16 @@ export const useAccountDetailPage = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [limit, setLimit] = useState(10)
+  const [pageSize, setPageSize] = useState(10)
   const [page, setPage] = useState(1)
 
   const { data: account, isLoading: accountLoading, error: accountError } = useAccount(accountId || null)
-  const { data: operations, isLoading: operationsLoading } = useAccountOperations(accountId || null, {
-    limit,
-    offset: (page - 1) * limit,
+  const { data: operationsResponse, isLoading: operationsLoading } = useAccountOperations(accountId || null, {
+    page,
+    page_size: pageSize,
   })
+  const operations = operationsResponse?.operations
+  const totalPages = operationsResponse?.pageQuantity || 1
   const closeAccountMutation = useCloseAccount()
   const depositMutation = useDepositToAccount()
   const withdrawMutation = useWithdrawFromAccount()
@@ -99,10 +101,11 @@ export const useAccountDetailPage = () => {
     setDepositAmount,
     withdrawAmount,
     setWithdrawAmount,
-    limit,
-    setLimit,
+    limit: pageSize,
+    setLimit: setPageSize,
     page,
     setPage,
+    totalPages,
     handleCloseAccount,
     closeAccountMutation,
     depositMutation,
