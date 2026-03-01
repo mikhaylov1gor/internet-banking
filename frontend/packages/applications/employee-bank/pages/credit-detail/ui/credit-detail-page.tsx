@@ -55,17 +55,21 @@ export const CreditDetailPage: React.FC = () => {
             <span className="credit-detail-page-label">Сумма:</span>
             <span className="credit-detail-page-amount">{credit.amount.toLocaleString()} ₽</span>
           </div>
-          <div className="credit-detail-page-detail-item">
-            <span className="credit-detail-page-label">Остаток:</span>
-            <span className="credit-detail-page-remaining">{credit.remaining.toLocaleString()} ₽</span>
-          </div>
+          {credit.status === 'active' && (
+            <>
+              <div className="credit-detail-page-detail-item">
+                <span className="credit-detail-page-label">Остаток:</span>
+                <span className="credit-detail-page-remaining">{credit.remaining.toLocaleString()} ₽</span>
+              </div>
+              <div className="credit-detail-page-detail-item">
+                <span className="credit-detail-page-label">Ежедневный платеж:</span>
+                <span>{credit.daily_payment.toLocaleString()} ₽</span>
+              </div>
+            </>
+          )}
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Процентная ставка:</span>
             <span>{(credit.rate * 100).toFixed(2)}%</span>
-          </div>
-          <div className="credit-detail-page-detail-item">
-            <span className="credit-detail-page-label">Ежедневный платеж:</span>
-            <span>{credit.daily_payment.toLocaleString()} ₽</span>
           </div>
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Статус:</span>

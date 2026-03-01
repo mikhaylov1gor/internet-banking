@@ -66,9 +66,13 @@ export const CreditsPage: React.FC = () => {
                 <div className="creditId">Кредит #{credit.id.slice(0, 8)}...</div>
                 <div className="creditDetails">
                   <span>Сумма {credit.amount.toLocaleString()}{'\u00A0'}₽</span>
-                  <span>Остаток: {credit.remaining.toLocaleString()} ₽</span>
+                  {credit.status === 'active' && (
+                    <>
+                      <span>Остаток: {credit.remaining.toLocaleString()} ₽</span>
+                      <span>Ежедневный платеж: {credit.daily_payment.toLocaleString()} ₽</span>
+                    </>
+                  )}
                   <span>Ставка: {(credit.rate * 100).toFixed(2)}%</span>
-                  <span>Ежедневный платеж: {credit.daily_payment.toLocaleString()} ₽</span>
                   <span className={credit.status === 'active' ? 'active' : 'paid'}>
                     Статус: {credit.status === 'active' ? 'Активен' : 'Погашен'}
                   </span>
