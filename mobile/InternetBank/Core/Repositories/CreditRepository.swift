@@ -8,9 +8,9 @@ final class CreditRepository: CreditRepositoryProtocol {
     }
 
     func getCredits(clientId: String) async throws -> [Credit] {
-        let response: [CreditResponse] = try await apiClient.request(
+        let response: CreditListResponse = try await apiClient.request(
             path: CreditEndpoints.credits(clientId: clientId))
-        return response.map { mapToCredit($0) }
+        return response.credits.map { mapToCredit($0) }
     }
 
     func getCredit(id: String) async throws -> Credit? {
@@ -20,9 +20,9 @@ final class CreditRepository: CreditRepositoryProtocol {
     }
 
     func getTariffs() async throws -> [CreditTariff] {
-        let response: [TariffResponse] = try await apiClient.request(
-            path: CreditEndpoints.tariffs)
-        return response.map { mapToTariff($0) }
+        let response: TariffListResponse = try await apiClient.request(
+            path: CreditEndpoints.tariffs())
+        return response.tariffs.map { mapToTariff($0) }
     }
 
     func takeCredit(clientId: String, accountId: String, tariffId: String, amount: Decimal) async throws -> Credit {
@@ -39,8 +39,10 @@ final class CreditRepository: CreditRepositoryProtocol {
         return mapToCredit(response)
     }
 
-    func repayCredit(creditId: String, amount: Decimal) async throws {
-        let request = RepayCreditRequest(amount: NSDecimalNumber(decimal: amount).doubleValue)
+    func repayCredit(creditId: String, accountId: String, amount: Decimal) async throws {
+        let request = RepayCreditRequest(
+            amount: NSDecimalNumber(decimal: amount).doubleValue,
+            accountId: accountId)
         let _: CreditResponse = try await apiClient.request(
             path: CreditEndpoints.repayCredit(creditId: creditId),
             method: "POST",

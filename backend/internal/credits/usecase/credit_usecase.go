@@ -20,7 +20,7 @@ var (
 type CreditRepository interface {
 	Create(c *entity.Credit) error
 	GetByID(id uuid.UUID) (*entity.Credit, error)
-	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error)
+	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
 	Update(c *entity.Credit) error
 	Delete(id uuid.UUID) error
 	AccrueInterest() error
@@ -78,11 +78,11 @@ func (uc *CreditUseCase) GetByID(id uuid.UUID) (*entity.Credit, error) {
 	return uc.creditRepo.GetByID(id)
 }
 
-func (uc *CreditUseCase) ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error) {
+func (uc *CreditUseCase) ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error) {
 	return uc.creditRepo.ListByClientID(clientID, limit, offset)
 }
 
-func (uc *CreditUseCase) Repay(creditID uuid.UUID, amount float64, bearerToken string) (*entity.Credit, error) {
+func (uc *CreditUseCase) Repay(creditID uuid.UUID, accountID uuid.UUID, amount float64, userID uuid.UUID, bearerToken string) (*entity.Credit, error) {
 	if amount < 0.01 {
 		return nil, errors.New("сумма погашения не менее 0.01")
 	}
@@ -93,9 +93,26 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, amount float64, bearerToken s
 	if c.Status != entity.CreditStatusActive {
 		return nil, ErrCreditNotActive
 	}
+	// Получить информацию о счете
+	accInfo, err := uc.coreClient.GetAccount(accountID, bearerToken)
+	if err != nil {
+		return nil, errors.New("счёт не найден")
+	}
+	// Проверить принадлежность счета пользователю
+	if accInfo.ClientID != userID {
+		return nil, errors.New("счёт не принадлежит пользователю")
+	}
+	// Проверить статус счета (не закрыт)
+	if accInfo.Status != "active" {
+		return nil, errors.New("счёт закрыт или заблокирован")
+	}
+	// Проверить наличие денег
+	if accInfo.Balance < amount {
+		return nil, errors.New("недостаточно средств на счёте")
+	}
 	toRepay := math.Min(amount, c.Remaining)
 	if uc.coreClient != nil {
-		if err := uc.coreClient.Withdraw(c.AccountID, toRepay, bearerToken); err != nil {
+		if err := uc.coreClient.Withdraw(accountID, toRepay, bearerToken); err != nil {
 			return nil, err
 		}
 	}

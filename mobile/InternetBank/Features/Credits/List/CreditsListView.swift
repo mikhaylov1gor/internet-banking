@@ -14,7 +14,7 @@ struct CreditsListView: View {
                 } label: {
                     VStack(alignment: .leading) {
                         Text(credit.tariffName ?? "Кредит")
-                        Text("Остаток: \(credit.remainingAmount) ₽")
+                        Text("Остаток: \(credit.remainingAmount.formattedAmount) ₽")
                             .font(.caption)
                     }
                 }

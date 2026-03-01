@@ -19,13 +19,13 @@ var (
 type AccountRepository interface {
 	Create(acc *entity.Account) error
 	GetByID(id uuid.UUID) (*entity.Account, error)
-	List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, error)
+	List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error)
 	Update(acc *entity.Account) error
 }
 
 type OperationRepository interface {
 	Create(op *entity.Operation) error
-	ListByAccountID(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, error)
+	ListByAccountID(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error)
 }
 
 type AccountUseCase struct {
@@ -56,7 +56,7 @@ func (uc *AccountUseCase) GetByID(id uuid.UUID) (*entity.Account, error) {
 	return uc.accRepo.GetByID(id)
 }
 
-func (uc *AccountUseCase) List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, error) {
+func (uc *AccountUseCase) List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error) {
 	return uc.accRepo.List(clientID, status, limit, offset)
 }
 
@@ -143,7 +143,7 @@ func (uc *AccountUseCase) Withdraw(accountID uuid.UUID, amount float64, descript
 	return op, nil
 }
 
-func (uc *AccountUseCase) ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, error) {
+func (uc *AccountUseCase) ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error) {
 	if limit <= 0 {
 		limit = 50
 	}

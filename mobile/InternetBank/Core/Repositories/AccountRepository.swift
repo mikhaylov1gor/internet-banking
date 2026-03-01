@@ -8,9 +8,9 @@ final class AccountRepository: AccountRepositoryProtocol {
     }
 
     func getAccounts(clientId: String) async throws -> [Account] {
-        let response: [AccountResponse] = try await apiClient.request(
+        let response: AccountListResponse = try await apiClient.request(
             path: AccountEndpoints.accounts(clientId: clientId))
-        return response.map { mapToAccount($0) }
+        return response.accounts.map { mapToAccount($0) }
     }
 
     func getAccount(id: String) async throws -> Account? {
@@ -51,9 +51,9 @@ final class AccountRepository: AccountRepositoryProtocol {
     }
 
     func getOperations(accountId: String) async throws -> [AccountOperation] {
-        let response: [OperationResponse] = try await apiClient.request(
+        let response: OperationListResponse = try await apiClient.request(
             path: AccountEndpoints.operations(accountId: accountId))
-        return response.compactMap { mapToOperation($0) }
+        return response.operations.compactMap { mapToOperation($0) }
     }
 
     private func mapToAccount(_ dto: AccountResponse) -> Account {

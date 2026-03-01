@@ -11,6 +11,9 @@ servers:
   - url: http://localhost:8080
     description: API Gateway
 
+security:
+  - BearerAuth: []
+
 components:
   securitySchemes:
     BearerAuth:
@@ -18,6 +21,91 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    AccountListResponse:
+      type: object
+      required: [accounts, pageNumber, pageQuantity]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+        pageNumber:
+          type: integer
+          description: Номер текущей страницы (начиная с 1)
+          example: 1
+        pageQuantity:
+          type: integer
+          description: Общее количество страниц
+          example: 5
+
+    OperationListResponse:
+      type: object
+      required: [operations, pageNumber, pageQuantity]
+      properties:
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Operation'
+        pageNumber:
+          type: integer
+          description: Номер текущей страницы (начиная с 1)
+          example: 1
+        pageQuantity:
+          type: integer
+          description: Общее количество страниц
+          example: 5
+
+    UserListResponse:
+      type: object
+      required: [users, pageNumber, pageQuantity]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        pageNumber:
+          type: integer
+          description: Номер текущей страницы (начиная с 1)
+          example: 1
+        pageQuantity:
+          type: integer
+          description: Общее количество страниц
+          example: 5
+
+    TariffListResponse:
+      type: object
+      required: [tariffs, pageNumber, pageQuantity]
+      properties:
+        tariffs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditTariff'
+        pageNumber:
+          type: integer
+          description: Номер текущей страницы (начиная с 1)
+          example: 1
+        pageQuantity:
+          type: integer
+          description: Общее количество страниц
+          example: 5
+
+    CreditListResponse:
+      type: object
+      required: [credits, pageNumber, pageQuantity]
+      properties:
+        credits:
+          type: array
+          items:
+            $ref: '#/components/schemas/Credit'
+        pageNumber:
+          type: integer
+          description: Номер текущей страницы (начиная с 1)
+          example: 1
+        pageQuantity:
+          type: integer
+          description: Общее количество страниц
+          example: 5
+
     Error:
       type: object
       required: [error]
@@ -255,12 +343,16 @@ components:
 
     RepayCreditRequest:
       type: object
-      required: [amount]
+      required: [amount, account_id]
       properties:
         amount:
           type: number
           format: double
           minimum: 0.01
+        account_id:
+          type: string
+          format: uuid
+          description: ID счета, с которого снять деньги для погашения
 
     CreateTariffRequest:
       type: object
@@ -277,9 +369,6 @@ components:
         max_amount:
           type: number
           format: double
-
-  security:
-    - BearerAuth: []
 
 paths:
   /accounts:
@@ -324,27 +413,27 @@ paths:
           schema:
             type: string
             enum: [active, closed]
-        - name: limit
+        - name: page
           in: query
-          description: Максимум записей в ответе (по умолчанию 50)
+          description: Номер страницы (по умолчанию 1)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: Количество записей на странице (по умолчанию 50)
           schema:
             type: integer
             default: 50
-        - name: offset
-          in: query
-          description: Сколько записей пропустить от начала (пагинация; 0 — с первой)
-          schema:
-            type: integer
-            default: 0
+            minimum: 1
       responses:
         '200':
-          description: Список счетов
+          description: Список счетов с пагинацией
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Account'
+                $ref: '#/components/schemas/AccountListResponse'
         '401':
           description: Не авторизован
 
@@ -478,27 +567,27 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: limit
+        - name: page
           in: query
-          description: Максимум операций в ответе (по умолчанию 50)
+          description: Номер страницы (по умолчанию 1)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: Количество записей на странице (по умолчанию 50)
           schema:
             type: integer
             default: 50
-        - name: offset
-          in: query
-          description: Сколько операций пропустить от начала (пагинация; 0 — с первой)
-          schema:
-            type: integer
-            default: 0
+            minimum: 1
       responses:
         '200':
-          description: История операций
+          description: История операций с пагинацией
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Operation'
+                $ref: '#/components/schemas/OperationListResponse'
         '401':
           description: Не авторизован
         '403':
@@ -590,27 +679,27 @@ paths:
           schema:
             type: string
             enum: [active, blocked]
-        - name: limit
+        - name: page
           in: query
-          description: Максимум записей в ответе (по умолчанию 100)
+          description: Номер страницы (по умолчанию 1)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: Количество записей на странице (по умолчанию 100)
           schema:
             type: integer
             default: 100
-        - name: offset
-          in: query
-          description: Сколько записей пропустить от начала (пагинация; 0 — с первой)
-          schema:
-            type: integer
-            default: 0
+            minimum: 1
       responses:
         '200':
-          description: Список пользователей
+          description: Список пользователей с пагинацией
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UserListResponse'
         '401':
           description: Не авторизован
         '403':
@@ -697,27 +786,27 @@ paths:
       summary: Список тарифов
       tags: [Tariffs]
       parameters:
-        - name: limit
+        - name: page
           in: query
-          description: Максимум записей в ответе (по умолчанию 50)
+          description: Номер страницы (по умолчанию 1)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: Количество записей на странице (по умолчанию 50)
           schema:
             type: integer
             default: 50
-        - name: offset
-          in: query
-          description: Сколько записей пропустить от начала (пагинация; 0 — с первой)
-          schema:
-            type: integer
-            default: 0
+            minimum: 1
       responses:
         '200':
-          description: Список тарифов
+          description: Список тарифов с пагинацией
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CreditTariff'
+                $ref: '#/components/schemas/TariffListResponse'
 
   /credits:
     post:
@@ -753,27 +842,27 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: limit
+        - name: page
           in: query
-          description: Максимум записей в ответе (по умолчанию 50)
+          description: Номер страницы (по умолчанию 1)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: Количество записей на странице (по умолчанию 50)
           schema:
             type: integer
             default: 50
-        - name: offset
-          in: query
-          description: Сколько записей пропустить от начала (пагинация; 0 — с первой)
-          schema:
-            type: integer
-            default: 0
+            minimum: 1
       responses:
         '200':
-          description: Список кредитов
+          description: Список кредитов с пагинацией
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Credit'
+                $ref: '#/components/schemas/CreditListResponse'
         '400':
           description: Неверный или отсутствующий client_id
         '401':
@@ -831,10 +920,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Credit'
         '400':
-          description: Неверная сумма, кредит не активен или ошибка Core (недостаточно средств на счете)
+          description: Неверная сумма, кредит не активен, недостаточно средств на счете или неверные параметры
         '401':
           description: Не авторизован
         '403':
-          description: Нет прав
+          description: Нет прав, счет не принадлежит пользователю или счет закрыт/заблокирован
         '404':
           description: Кредит не найден

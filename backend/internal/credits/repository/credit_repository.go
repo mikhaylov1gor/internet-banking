@@ -10,7 +10,7 @@ import (
 type CreditRepository interface {
 	Create(c *entity.Credit) error
 	GetByID(id uuid.UUID) (*entity.Credit, error)
-	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error)
+	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
 	Update(c *entity.Credit) error
 	Delete(id uuid.UUID) error
 	AccrueInterest() error
@@ -37,7 +37,7 @@ func (r *creditRepo) GetByID(id uuid.UUID) (*entity.Credit, error) {
 	return &c, nil
 }
 
-func (r *creditRepo) ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error) {
+func (r *creditRepo) ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -45,8 +45,13 @@ func (r *creditRepo) ListByClientID(clientID uuid.UUID, limit, offset int) ([]*e
 		offset = 0
 	}
 	var list []*entity.Credit
-	err := r.db.Where("client_id = ?", clientID).Order("issued_at DESC").Offset(offset).Limit(limit).Find(&list).Error
-	return list, err
+	var total int64
+	q := r.db.Where("client_id = ?", clientID)
+	if err := q.Model(&entity.Credit{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := q.Order("issued_at DESC").Offset(offset).Limit(limit).Find(&list).Error
+	return list, total, err
 }
 
 func (r *creditRepo) Update(c *entity.Credit) error {

@@ -7,6 +7,11 @@ struct RepayCreditView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Picker("Счёт для списания", selection: $viewModel.selectedAccountId) {
+                    ForEach(viewModel.accounts) { account in
+                        Text("\(account.id.prefix(8))... \(account.balance.formattedAmount) ₽").tag(account.id)
+                    }
+                }
                 TextField("Сумма", text: $viewModel.amount)
                     .keyboardType(.decimalPad)
                 if let error = viewModel.errorMessage {
@@ -23,6 +28,9 @@ struct RepayCreditView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { onDismiss() }
                 }
+            }
+            .task {
+                await viewModel.loadData()
             }
         }
     }

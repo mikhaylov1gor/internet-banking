@@ -1,10 +1,22 @@
 import SwiftUI
 
 struct AccountsListView: View {
-    @Bindable var viewModel: AccountsListViewModel
+    @State private var viewModel: AccountsListViewModel
     var refreshTrigger: Int
     var onAccountTap: (Account) -> Void
     var onOpenAccount: () -> Void
+
+    init(
+        viewModel: AccountsListViewModel,
+        refreshTrigger: Int,
+        onAccountTap: @escaping (Account) -> Void,
+        onOpenAccount: @escaping () -> Void)
+    {
+        _viewModel = State(initialValue: viewModel)
+        self.refreshTrigger = refreshTrigger
+        self.onAccountTap = onAccountTap
+        self.onOpenAccount = onOpenAccount
+    }
 
     var body: some View {
         List {
@@ -15,7 +27,7 @@ struct AccountsListView: View {
                     HStack {
                         Text("Счёт \(account.id.prefix(8))...")
                         Spacer()
-                        Text("\(account.balance) ₽")
+                        Text("\(account.balance.formattedAmount) ₽")
                     }
                 }
             }

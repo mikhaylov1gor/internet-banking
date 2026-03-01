@@ -12,8 +12,16 @@ import (
 )
 
 type CoreClient interface {
+	GetAccount(accountID uuid.UUID, bearerToken string) (*AccountInfo, error)
 	Deposit(accountID uuid.UUID, amount float64, bearerToken string) error
 	Withdraw(accountID uuid.UUID, amount float64, bearerToken string) error
+}
+
+type AccountInfo struct {
+	ID       uuid.UUID `json:"id"`
+	ClientID uuid.UUID `json:"client_id"`
+	Balance  float64   `json:"balance"`
+	Status   string    `json:"status"`
 }
 
 type coreClient struct {
@@ -23,6 +31,48 @@ type coreClient struct {
 
 func NewCoreClient(baseURL string) CoreClient {
 	return &coreClient{baseURL: baseURL, client: &http.Client{}}
+}
+
+func (c *coreClient) GetAccount(accountID uuid.UUID, bearerToken string) (*AccountInfo, error) {
+	url := fmt.Sprintf("%s/accounts/%s", c.baseURL, accountID.String())
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if bearerToken != "" {
+		authVal := bearerToken
+		if !strings.HasPrefix(bearerToken, "Bearer ") {
+			authVal = "Bearer " + bearerToken
+		}
+		req.Header.Set("Authorization", authVal)
+	}
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		msg := string(body)
+		if len(body) > 0 {
+			var errBody struct {
+				Error string `json:"error"`
+			}
+			if json.Unmarshal(body, &errBody) == nil && errBody.Error != "" {
+				msg = errBody.Error
+			}
+		}
+		if msg == "" {
+			msg = fmt.Sprintf("сервис core вернул код %d", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("%s", msg)
+	}
+	var acc AccountInfo
+	if err := json.NewDecoder(resp.Body).Decode(&acc); err != nil {
+		return nil, err
+	}
+	return &acc, nil
 }
 
 func (c *coreClient) Deposit(accountID uuid.UUID, amount float64, bearerToken string) error {
