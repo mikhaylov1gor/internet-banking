@@ -5,6 +5,7 @@ import { Input } from '@shared/ui/input'
 import { Spinner } from '@shared/ui/spinner'
 import { MobilePagination } from '@shared/ui/pagination'
 import { UserSelect } from '@shared/ui/user-select'
+import { CreditCard } from '@shared/ui/credit-card'
 import { useCreditsPage } from '../model/use-credits-page'
 import './style.css'
 
@@ -82,28 +83,12 @@ export const MobileCreditsPage: React.FC = () => {
         <>
           <div className="list mobile-list">
             {credits.map((credit) => (
-              <div
+              <CreditCard
                 key={credit.id}
-                className="creditCard mobile-creditCard"
+                credit={credit}
                 onClick={() => navigate(`/credits/${credit.id}`)}
-              >
-                <div className="creditInfo">
-                  <div className="creditId">Кредит #{credit.id}</div>
-                  <div className="creditDetails">
-                    <span>Сумма: {credit.amount} RUB</span>
-                    {credit.status === 'active' && (
-                      <>
-                        <span>Остаток: {credit.remaining} RUB</span>
-                        <span>Ежедневный платёж: {Math.round(credit.daily_payment)} RUB</span>
-                      </>
-                    )}
-                    <span>Ставка: {(credit.rate * 100).toFixed(2)}%</span>
-                    <span className={credit.status === 'active' ? 'active' : 'paid'}>
-                      Статус: {credit.status === 'active' ? 'Активен' : 'Погашен'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                shortenId={false}
+              />
             ))}
           </div>
           <MobilePagination

@@ -5,6 +5,7 @@ import { Input } from '@shared/ui/input'
 import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
 import { DesktopPagination } from '@shared/ui/pagination'
+import { AccountCard } from '@shared/ui/account-card'
 import { useAccountsPage } from '../model/use-accounts-page'
 import { UserSelect } from '@shared/ui/user-select'
 import './style.css'
@@ -83,21 +84,12 @@ export const DesktopAccountsPage: React.FC = () => {
         <>
           <div className="list desktop-list">
             {accounts.map((account) => (
-              <div
+              <AccountCard
                 key={account.id}
-                className="accountCard desktop-accountCard"
+                account={account}
                 onClick={() => navigate(`/accounts/${account.id}`)}
-              >
-                <div className="accountInfo">
-                  <div className="accountId">Счёт #{account.id}</div>
-                  <div className="accountDetails">
-                    <span>Баланс: {account.balance} {account.currency || 'RUB'}</span>
-                    <span className={account.status === 'active' ? 'active' : 'closed'}>
-                      Статус: {account.status === 'active' ? 'Активен' : 'Закрыт'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                shortenId={false}
+              />
             ))}
           </div>
           <DesktopPagination

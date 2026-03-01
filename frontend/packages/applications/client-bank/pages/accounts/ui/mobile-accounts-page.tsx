@@ -6,6 +6,7 @@ import { ErrorFallback } from '@shared/ui/error-fallback'
 import { Modal } from '@shared/ui/modal'
 import { Select } from '@shared/ui/select'
 import { MobilePagination } from '@shared/ui/pagination'
+import { AccountCard } from '@shared/ui/account-card'
 import { useAccountsPage } from '../model/use-accounts-page'
 import './style.css'
 
@@ -68,21 +69,12 @@ export const MobileAccountsPage: React.FC = () => {
         <>
           <div className="list mobile-list">
             {accounts.map((account) => (
-              <div
+              <AccountCard
                 key={account.id}
-                className="accountCard mobile-accountCard"
+                account={account}
                 onClick={() => navigate(`/accounts/${account.id}`)}
-              >
-                <div className="accountInfo">
-                  <div className="accountId">Счёт #{account.id.slice(0, 8)}...</div>
-                  <div className="accountDetails">
-                    <span>Баланс: {account.balance.toLocaleString()} {account.currency || 'RUB'}</span>
-                    <span className={account.status === 'active' ? 'active' : 'closed'}>
-                      Статус: {account.status === 'active' ? 'Активен' : 'Закрыт'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                shortenId={true}
+              />
             ))}
           </div>
           <MobilePagination

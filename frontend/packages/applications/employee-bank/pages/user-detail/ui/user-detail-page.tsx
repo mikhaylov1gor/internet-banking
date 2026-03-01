@@ -4,6 +4,7 @@ import { Button } from '@shared/ui/button'
 import { Spinner } from '@shared/ui/spinner'
 import { ErrorFallback } from '@shared/ui/error-fallback'
 import { MobilePagination, DesktopPagination } from '@shared/ui/pagination'
+import { CreditCard } from '@shared/ui/credit-card'
 import { getCurrentUserId } from '@shared/features/auth'
 import { useUserDetailPage } from '../model/use-user-detail-page'
 import './style.css'
@@ -115,25 +116,12 @@ export const UserDetailPage: React.FC = () => {
             <>
               <div className="user-detail-page-credits-list">
                 {credits.map((credit) => (
-                  <div
+                  <CreditCard
                     key={credit.id}
-                    className="user-detail-page-credit-card"
+                    credit={credit}
                     onClick={() => navigate(`/credits/${credit.id}`, { state: { returnTo: `/users/${user.id}` } })}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="user-detail-page-credit-header">
-                      <span className="user-detail-page-credit-id">Кредит #{credit.id}</span>
-                      <span className={credit.status === 'active' ? 'user-detail-page-active' : 'user-detail-page-paid'}>
-                        {credit.status === 'active' ? 'Активен' : 'Погашен'}
-                      </span>
-                    </div>
-                    <div className="user-detail-page-credit-details">
-                      <div>Сумма: {credit.amount.toLocaleString()}</div>
-                      <div>Остаток: {credit.remaining.toLocaleString()}</div>
-                      <div>Ставка: {(credit.rate * 100).toFixed(2)}%</div>
-                      <div>Ежедневный платёж: {credit.daily_payment.toLocaleString()}</div>
-                    </div>
-                  </div>
+                    shortenId={false}
+                  />
                 ))}
               </div>
               <Pagination
