@@ -115,7 +115,7 @@ export const CreditDetailPage: React.FC = () => {
           <Select
             label="Счет для погашения"
             value={selectedAccount}
-            onChange={(e) => setSelectedAccount(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedAccount(e.target.value)}
             options={
               accounts
                 ? [
@@ -131,20 +131,27 @@ export const CreditDetailPage: React.FC = () => {
           <Input
             label="Сумма погашения"
             type="number"
-            min="0.01"
+            min="0"
             step="0.01"
-            max={credit.remaining}
+            max={credit.remaining > 1 ? credit.remaining : 1}
             value={repayAmount}
-            onChange={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               const value = e.target.value
               const numValue = parseFloat(value)
-              if (value === '' || (numValue > 0 && numValue <= credit.remaining)) {
+              console.log(12312)
+              if (value === '' || (numValue >= 0 && numValue <= credit.remaining > 1 ? credit.remaining : 1)) {
                 setRepayAmount(value)
               }
             }}
-            placeholder={`Максимум: ${Number(credit.remaining).toFixed(2)} ₽`}
-          />
-          {repayAmount && parseFloat(repayAmount) > credit.remaining && (
+            placeholder={credit.remaining > 0 ? `Максимум: ${Number(credit.remaining).toFixed(2)} ₽` : 'Кредит уже погашен'}
+            disabled={credit.remaining <= 0}
+        />
+        {credit.remaining <= 0 && (
+            <div className="error" style={{ marginTop: '10px' }}>
+              Невозможно погасить кредит: остаток долга меньше или равен нулю
+            </div>
+        )}
+        {repayAmount && parseFloat(repayAmount) > credit.remaining && credit.remaining > 0 && (
             <div className="error" style={{ marginTop: '10px' }}>
               Сумма погашения не может превышать остаток долга ({Number(credit.remaining).toFixed(2)} ₽)
             </div>
