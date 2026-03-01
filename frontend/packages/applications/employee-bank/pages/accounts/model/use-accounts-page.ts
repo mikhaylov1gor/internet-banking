@@ -8,17 +8,21 @@ export const useAccountsPage = () => {
   const [accountId, setAccountId] = useState('')
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'active' | 'closed' | ''>('')
+  const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const navigate = useNavigate()
 
   const params: GetAccountsParams = {
     ...(status && { status: status as 'active' | 'closed' }),
-    limit,
-    offset: (page - 1) * limit,
+    ...(selectedUserId && { client_id: selectedUserId }),
+    page,
+    page_size: pageSize,
   }
 
-  const { data: accounts, isLoading } = useAccounts(params)
+  const { data: accountsResponse, isLoading } = useAccounts(params)
+  const accounts = accountsResponse?.accounts || []
+  const totalPages = accountsResponse?.pageQuantity || 1
 
   const handleSearch = async () => {
     if (!accountId.trim()) {
@@ -42,9 +46,10 @@ export const useAccountsPage = () => {
     setPage(1)
   }
 
-  const totalPages = accounts 
-    ? (accounts.length < limit ? page : page + 1)
-    : 1
+  const handleUserIdChange = (userId: string) => {
+    setSelectedUserId(userId)
+    setPage(1)
+  }
 
   return {
     accountId,
@@ -56,10 +61,12 @@ export const useAccountsPage = () => {
     handleSearch,
     status,
     setStatus: handleStatusChange,
+    selectedUserId,
+    setSelectedUserId: handleUserIdChange,
     page,
     setPage,
-    limit,
-    setLimit,
+    limit: pageSize,
+    setLimit: setPageSize,
     totalPages,
   }
 }

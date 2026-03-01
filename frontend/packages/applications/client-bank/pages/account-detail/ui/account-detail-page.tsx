@@ -6,6 +6,7 @@ import { ErrorFallback } from '@shared/ui/error-fallback'
 import {DesktopPagination, MobilePagination} from '@shared/ui/pagination'
 import { Modal } from '@shared/ui/modal'
 import { Select } from '@shared/ui/select'
+import { OperationCard } from '@shared/ui/operation-card'
 import { useAccountDetailPage } from '../model/use-account-detail-page'
 import './style.css'
 import {isMobile} from "../../../main";
@@ -39,6 +40,7 @@ export const AccountDetailPage: React.FC = () => {
     handleWithdraw,
     handleBack,
     navigate,
+    totalPages,
   } = useAccountDetailPage()
 
   if (accountLoading) {
@@ -60,8 +62,6 @@ export const AccountDetailPage: React.FC = () => {
   }
 
   const Pagination = isMobile ? MobilePagination : DesktopPagination
-
-  const totalPages = Math.ceil((operations?.length || 0) / limit) || 1
 
   return (
     <div className="account-detail-page-container">
@@ -252,31 +252,11 @@ export const AccountDetailPage: React.FC = () => {
           <>
             <div className="operationsList">
               {operations.map((operation) => (
-                <div key={operation.id} className="operationCard">
-                  <div className="operationHeader">
-                    <span className="operationType">
-                      {operation.type === 'deposit'
-                        ? 'Пополнение'
-                        : operation.type === 'withdraw'
-                        ? 'Снятие'
-                        : operation.type === 'credit_issue'
-                        ? 'Выдача кредита'
-                        : operation.type === 'credit_repay'
-                        ? 'Погашение кредита'
-                        : operation.type}
-                    </span>
-                    <span className="operationDate">
-                      {new Date(operation.created_at).toLocaleString('ru-RU')}
-                    </span>
-                  </div>
-                  <div className="operationDetails">
-                    <span>
-                      Сумма: {operation.amount.toLocaleString()} {account.currency || 'RUB'}
-                    </span>
-                    <span>Баланс после: {operation.balance_after.toLocaleString()} {account.currency || 'RUB'}</span>
-                    {operation.description && <span>Описание: {operation.description}</span>}
-                  </div>
-                </div>
+                <OperationCard
+                  key={operation.id}
+                  operation={operation}
+                  currency={account.currency || 'RUB'}
+                />
               ))}
             </div>
             <Pagination

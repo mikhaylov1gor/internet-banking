@@ -21,6 +21,7 @@
 
 .user-detail-page-title {
   font-size: 2rem;
+  margin-top: 0;
   margin-bottom: 1.5rem;
   background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   -webkit-background-clip: text;
@@ -83,6 +84,7 @@
 
 .user-detail-page-subtitle {
   font-size: 1.5rem;
+  margin-top: 0;
   margin-bottom: 1.5rem;
   background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   -webkit-background-clip: text;

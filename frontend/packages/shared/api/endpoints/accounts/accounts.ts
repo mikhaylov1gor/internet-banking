@@ -1,8 +1,8 @@
 import { apiClient } from '../../client'
-import type { Account, Operation, GetAccountsParams, GetOperationsParams, CreateAccountRequest, ChangeBalanceRequest } from './types'
+import type { Account, Operation, GetAccountsParams, GetOperationsParams, CreateAccountRequest, ChangeBalanceRequest, AccountListResponse, OperationListResponse } from './types'
 
-export const getAccounts = async (params?: GetAccountsParams): Promise<Account[]> => {
-  const response = await apiClient.get<Account[]>('/accounts', { params })
+export const getAccounts = async (params?: GetAccountsParams): Promise<AccountListResponse> => {
+  const response = await apiClient.get<AccountListResponse>('/accounts', { params })
   return response.data
 }
 
@@ -22,8 +22,8 @@ export const closeAccount = async (accountId: string, clientId: string): Promise
   })
 }
 
-export const getAccountOperations = async (accountId: string, params?: GetOperationsParams): Promise<Operation[]> => {
-  const response = await apiClient.get<Operation[]>(`/accounts/${accountId}/operations`, { params })
+export const getAccountOperations = async (accountId: string, params?: GetOperationsParams): Promise<OperationListResponse> => {
+  const response = await apiClient.get<OperationListResponse>(`/accounts/${accountId}/operations`, { params })
   return response.data
 }
 

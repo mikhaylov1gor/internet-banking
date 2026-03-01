@@ -19,16 +19,28 @@ export type Operation = {
   credit_id?: string
 }
 
+export type AccountListResponse = {
+  accounts: Account[]
+  pageNumber: number
+  pageQuantity: number
+}
+
+export type OperationListResponse = {
+  operations: Operation[]
+  pageNumber: number
+  pageQuantity: number
+}
+
 export type GetAccountsParams = {
   client_id?: string
   status?: 'active' | 'closed'
-  limit?: number
-  offset?: number
+  page?: number
+  page_size?: number
 }
 
 export type GetOperationsParams = {
-  limit?: number
-  offset?: number
+  page?: number
+  page_size?: number
 }
 
 export type CreateAccountRequest = {

@@ -1,0 +1,59 @@
+.credit-card {
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+}
+
+.credit-card:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  transform: translateY(-4px);
+  border-color: #93c5fd;
+}
+
+.credit-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.credit-card-id {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #1e40af;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.credit-card-info > .credit-card-id:first-child {
+  margin-top: 0;
+}
+
+.credit-card-status {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.credit-card-status.active {
+  color: #10b981;
+}
+
+.credit-card-status.paid {
+  color: #64748b;
+}
+
+.credit-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.credit-card-details span {
+  display: block;
+}
+

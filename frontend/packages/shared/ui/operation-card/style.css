@@ -1,0 +1,41 @@
+.operation-card {
+  padding: 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  transition: all 0.2s ease;
+}
+
+.operation-card:hover {
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  border-color: #93c5fd;
+}
+
+.operation-card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.operation-card-type {
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.operation-card-date {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.operation-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.operation-card-details span {
+  display: block;
+}
+

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUsers, useCreateUser, useToggleUserStatus } from '../../../features/users'
 
@@ -8,7 +8,7 @@ export const useUsersPage = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'client' | 'employee'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all')
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createForm, setCreateForm] = useState({
     type: 'client' as 'client' | 'employee',
@@ -18,7 +18,7 @@ export const useUsersPage = () => {
     password: '',
   })
   const [emailValid, setEmailValid] = useState(false)
-  const [phoneValid, setPhoneValid] = useState(true) // Телефон не обязателен
+  const [phoneValid, setPhoneValid] = useState(true)
   const [fullNameValid, setFullNameValid] = useState(false)
   const [fullNameTouched, setFullNameTouched] = useState(false)
   const [passwordValid, setPasswordValid] = useState(false)
@@ -26,31 +26,72 @@ export const useUsersPage = () => {
 
   const navigate = useNavigate()
 
-  const params = {
-    type: typeFilter !== 'all' ? typeFilter : undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    limit,
-    offset: (page - 1) * limit,
-  }
+  const params = useMemo(() => {
+    const result: {
+      type?: 'client' | 'employee'
+      status?: 'active' | 'blocked'
+      page: number
+      page_size: number
+    } = {
+      page,
+      page_size: pageSize,
+    }
+    
+    if (typeFilter !== 'all') {
+      result.type = typeFilter
+    }
+    
+    if (statusFilter !== 'all') {
+      result.status = statusFilter
+    }
+    
+    return result
+  }, [typeFilter, statusFilter, page, pageSize])
 
-  const { data: users, isLoading, error: usersError } = useUsers(params)
+  const { data: usersResponse, isLoading, error: usersError } = useUsers(params)
+  
+  // Извлекаем данные напрямую, чтобы они обновлялись при изменении ответа
+  const users = usersResponse?.users || []
+  const totalPages = usersResponse?.pageQuantity || 1
   const createUserMutation = useCreateUser()
   const toggleStatusMutation = useToggleUserStatus()
 
+  // Сбрасываем страницу, если текущая страница больше общего количества страниц
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages)
+    }
+  }, [totalPages, page, setPage])
+
   const handleSearch = async () => {
-    if (!userId.trim()) {
+    const trimmedUserId = userId.trim()
+    
+    if (!trimmedUserId) {
       setError('Введите ID пользователя')
       return
     }
+
+    // Валидация формата UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(trimmedUserId)) {
+      setError('ID пользователя должен быть в формате UUID')
+      return
+    }
+
     try {
-      const { getUserById } = await import('../../../api/endpoints/users')
-      await getUserById(userId.trim())
-      navigate(`/users/${userId.trim()}`)
+      const { getUserById } = await import('@shared/api/endpoints/users')
+      await getUserById(trimmedUserId)
+      navigate(`/users/${trimmedUserId}`)
+      setError('')
     } catch (err: any) {
       if (err?.response?.status === 404) {
-        setError('Пользователь не существует')
+        setError('Пользователь не найден')
+      } else if (err?.response?.status === 403) {
+        setError('Нет доступа к этому пользователю')
+      } else if (err?.response?.status === 401) {
+        setError('Необходима авторизация')
       } else {
-        setError('Ошибка при поиске пользователя')
+        setError('Ошибка при поиске пользователя. Попробуйте еще раз')
       }
     }
   }
@@ -79,7 +120,20 @@ export const useUsersPage = () => {
     })
   }
 
-  const totalPages = Math.ceil((users?.length || 0) / limit) || 1
+  const handleTypeFilterChange = (newType: 'all' | 'client' | 'employee') => {
+    setTypeFilter(newType)
+    setPage(1)
+  }
+
+  const handleStatusFilterChange = (newStatus: 'all' | 'active' | 'blocked') => {
+    setStatusFilter(newStatus)
+    setPage(1)
+  }
+
+  const handleLimitChange = (newLimit: number) => {
+    setPageSize(newLimit)
+    setPage(1)
+  }
 
   return {
     userId,
@@ -87,13 +141,13 @@ export const useUsersPage = () => {
     error,
     setError,
     typeFilter,
-    setTypeFilter,
+    setTypeFilter: handleTypeFilterChange,
     statusFilter,
-    setStatusFilter,
+    setStatusFilter: handleStatusFilterChange,
     page,
     setPage,
-    limit,
-    setLimit,
+    limit: pageSize,
+    setLimit: handleLimitChange,
     showCreateModal,
     setShowCreateModal,
     createForm,

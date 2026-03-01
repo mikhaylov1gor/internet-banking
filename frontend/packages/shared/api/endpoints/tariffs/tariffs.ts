@@ -1,8 +1,8 @@
 import { apiClient } from '../../client'
-import type { CreditTariff, CreateTariffRequest, GetTariffsParams } from './types'
+import type { CreditTariff, CreateTariffRequest, GetTariffsParams, TariffListResponse } from './types'
 
-export const getTariffs = async (params?: GetTariffsParams): Promise<CreditTariff[]> => {
-  const response = await apiClient.get<CreditTariff[]>('/tariffs', { params })
+export const getTariffs = async (params?: GetTariffsParams): Promise<TariffListResponse> => {
+  const response = await apiClient.get<TariffListResponse>('/tariffs', { params })
   return response.data
 }
 

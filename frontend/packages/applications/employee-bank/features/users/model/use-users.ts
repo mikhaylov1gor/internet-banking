@@ -13,6 +13,8 @@ export const useUsers = (params?: GetUsersParams) => {
   return useQuery({
     queryKey: ['users', params],
     queryFn: () => getUsers(params),
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   })
 }
 

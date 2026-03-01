@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { getCredits, getCreditById, type GetCreditsParams } from '@shared/api/endpoints/credits'
 
-export const useCredits = (params?: GetCreditsParams) => {
+export const useCredits = (params?: GetCreditsParams, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['credits', params],
     queryFn: () => getCredits(params),
+    enabled: options?.enabled !== false,
   })
 }
 

@@ -46,6 +46,10 @@
   min-width: 200px;
 }
 
+.accounts-page-user-select {
+  min-width: 250px;
+}
+
 .accounts-page-error {
   color: #ef4444;
   font-size: 0.875rem;
@@ -102,6 +106,12 @@
   font-weight: 600;
   font-size: 1.125rem;
   color: #1e40af;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.accountInfo > .accountId:first-child {
+  margin-top: 0;
 }
 
 .accountDetails {
@@ -190,6 +200,11 @@
   min-width: auto;
 }
 
+.mobile-filters .accounts-page-user-select {
+  width: 100%;
+  min-width: auto;
+}
+
 .mobile-list {
   display: flex;
   flex-direction: column;
@@ -211,4 +226,3 @@
   transform: scale(0.98);
   border-color: #93c5fd;
 }
-

@@ -10,11 +10,16 @@ export const useUserDetailPage = () => {
   const [limit, setLimit] = useState(10)
 
   const { data: user, isLoading: userLoading, error: userError } = useUser(userId || null)
-  const { data: credits, isLoading: creditsLoading } = useCredits({
-    client_id: user?.id || '',
-    limit,
-    offset: (page - 1) * limit,
-  })
+  const { data: creditsResponse, isLoading: creditsLoading } = useCredits(
+    {
+      client_id: user?.id || '',
+      page,
+      page_size: limit,
+    },
+    {
+      enabled: !!user?.id,
+    }
+  )
   const toggleStatusMutation = useToggleUserStatus()
 
   const handleToggleStatus = () => {
@@ -26,7 +31,8 @@ export const useUserDetailPage = () => {
     }
   }
 
-  const totalPages = Math.ceil((credits?.length || 0) / limit) || 1
+  const credits = creditsResponse?.credits || []
+  const totalPages = creditsResponse?.pageQuantity || 1
 
   return {
     user,

@@ -1,8 +1,8 @@
 import { apiClient } from '../../client'
-import type { User, CreateUserRequest, GetUsersParams } from './types'
+import type { User, CreateUserRequest, GetUsersParams, UserListResponse } from './types'
 
-export const getUsers = async (params?: GetUsersParams): Promise<User[]> => {
-  const response = await apiClient.get<User[]>('/users', { params })
+export const getUsers = async (params?: GetUsersParams): Promise<UserListResponse> => {
+  const response = await apiClient.get<UserListResponse>('/users', { params })
   return response.data
 }
 

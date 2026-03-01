@@ -6,6 +6,7 @@ import { AccountDetailPage } from '../pages/account-detail'
 import { MobileTariffsPage, DesktopTariffsPage } from '../pages/tariffs'
 import { MobileUsersPage, DesktopUsersPage } from '../pages/users'
 import { UserDetailPage } from '../pages/user-detail'
+import { MobileCreditsPage, DesktopCreditsPage } from '../pages/credits'
 import { CreditDetailPage } from '../pages/credit-detail'
 import { 
   AppRouter, 
@@ -20,6 +21,7 @@ const queryClient = createQueryClient()
 
 const navigationButtons = [
   { name: 'Счета', path: '/accounts' },
+  { name: 'Кредиты', path: '/credits' },
   { name: 'Тарифы', path: '/tariffs' },
   { name: 'Пользователи', path: '/users' },
 ]
@@ -60,6 +62,12 @@ const createRoutes = (isMobile: boolean): AppRoute[] => [
   {
     path: '/users/:userId',
     element: <UserDetailPage />,
+    protected: true,
+    allowedUserType: 'employee',
+  },
+  {
+    path: '/credits',
+    element: isMobile ? <MobileCreditsPage /> : <DesktopCreditsPage />,
     protected: true,
     allowedUserType: 'employee',
   },

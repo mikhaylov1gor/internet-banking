@@ -5,7 +5,9 @@ import { Input } from '@shared/ui/input'
 import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
 import { MobilePagination } from '@shared/ui/pagination'
+import { AccountCard } from '@shared/ui/account-card'
 import { useAccountsPage } from '../model/use-accounts-page'
+import { UserSelect } from '@shared/ui/user-select'
 import './style.css'
 
 export const MobileAccountsPage: React.FC = () => {
@@ -20,6 +22,8 @@ export const MobileAccountsPage: React.FC = () => {
     isLoading,
     status,
     setStatus,
+    selectedUserId,
+    setSelectedUserId,
     page,
     setPage,
     limit,
@@ -49,6 +53,12 @@ export const MobileAccountsPage: React.FC = () => {
         </div>
 
         <div className="accounts-page-filters mobile-filters">
+          <UserSelect
+            label="Пользователь"
+            value={selectedUserId}
+            onChange={setSelectedUserId}
+            className="accounts-page-user-select"
+          />
           <Select
             label="Статус"
             value={status}
@@ -74,21 +84,12 @@ export const MobileAccountsPage: React.FC = () => {
         <>
           <div className="list mobile-list">
             {accounts.map((account) => (
-              <div
+              <AccountCard
                 key={account.id}
-                className="accountCard mobile-accountCard"
+                account={account}
                 onClick={() => navigate(`/accounts/${account.id}`)}
-              >
-                <div className="accountInfo">
-                  <div className="accountId">Счёт #{account.id}</div>
-                  <div className="accountDetails">
-                    <span>Баланс: {account.balance} {account.currency || 'RUB'}</span>
-                    <span className={account.status === 'active' ? 'active' : 'closed'}>
-                      Статус: {account.status === 'active' ? 'Активен' : 'Закрыт'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                shortenId={false}
+              />
             ))}
           </div>
           <MobilePagination

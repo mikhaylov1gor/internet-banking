@@ -1,8 +1,8 @@
 import { apiClient } from '../../client'
-import type { Credit, GetCreditsParams, IssueCreditRequest, RepayCreditRequest } from './types'
+import type { Credit, GetCreditsParams, IssueCreditRequest, RepayCreditRequest, CreditListResponse } from './types'
 
-export const getCredits = async (params?: GetCreditsParams): Promise<Credit[]> => {
-  const response = await apiClient.get<Credit[]>('/credits', { params })
+export const getCredits = async (params?: GetCreditsParams): Promise<CreditListResponse> => {
+  const response = await apiClient.get<CreditListResponse>('/credits', { params })
   return response.data
 }
 

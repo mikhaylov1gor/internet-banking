@@ -130,9 +130,11 @@ export const MobileUsersPage: React.FC = () => {
         />
       )}
 
-      {users && users.length === 0 && <div className="users-page-empty">Пользователи не найдены</div>}
+      {!isLoading && users.length === 0 && (
+        <div className="users-page-empty">Пользователи не найдены</div>
+      )}
 
-      {users && users.length > 0 && (
+      {users.length > 0 && (
         <>
           <div className="users-page-list mobile-users-list">
             {users.map((user) => (
@@ -172,10 +174,7 @@ export const MobileUsersPage: React.FC = () => {
             totalPages={totalPages}
             onPageChange={setPage}
             itemsPerPage={limit}
-            onItemsPerPageChange={(newLimit) => {
-              setLimit(newLimit)
-              setPage(1)
-            }}
+            onItemsPerPageChange={setLimit}
           />
         </>
       )}

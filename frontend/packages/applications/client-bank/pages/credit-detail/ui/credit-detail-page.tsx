@@ -1,6 +1,7 @@
 import React from 'react'
 import { Button } from '@shared/ui/button'
 import { Input } from '@shared/ui/input'
+import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
 import { ErrorFallback } from '@shared/ui/error-fallback'
 import { Modal } from '@shared/ui/modal'
@@ -12,10 +13,13 @@ export const CreditDetailPage: React.FC = () => {
     credit,
     creditLoading,
     creditError,
+    accounts,
     showRepayModal,
     setShowRepayModal,
     repayAmount,
     setRepayAmount,
+    selectedAccount,
+    setSelectedAccount,
     repayCreditMutation,
     handleRepay,
     navigate,
@@ -52,17 +56,21 @@ export const CreditDetailPage: React.FC = () => {
             <span className="credit-detail-page-label">Сумма:</span>
             <span className="credit-detail-page-amount">{credit.amount.toLocaleString()} ₽</span>
           </div>
-          <div className="credit-detail-page-detail-item">
-            <span className="credit-detail-page-label">Остаток:</span>
-            <span className="credit-detail-page-remaining">{credit.remaining.toLocaleString()} ₽</span>
-          </div>
+          {credit.status === 'active' && (
+            <>
+              <div className="credit-detail-page-detail-item">
+                <span className="credit-detail-page-label">Остаток:</span>
+                <span className="credit-detail-page-remaining">{Number(credit.remaining).toFixed(2)} ₽</span>
+              </div>
+              <div className="credit-detail-page-detail-item">
+                <span className="credit-detail-page-label">Ежедневный платеж:</span>
+                <span>{credit.daily_payment.toLocaleString()} ₽</span>
+              </div>
+            </>
+          )}
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Процентная ставка:</span>
             <span>{(credit.rate * 100).toFixed(2)}%</span>
-          </div>
-          <div className="credit-detail-page-detail-item">
-            <span className="credit-detail-page-label">Ежедневный платеж:</span>
-            <span>{credit.daily_payment.toLocaleString()} ₽</span>
           </div>
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Статус:</span>
@@ -98,8 +106,28 @@ export const CreditDetailPage: React.FC = () => {
         )}
       </div>
 
-      <Modal isOpen={showRepayModal} onClose={() => setShowRepayModal(false)} title="Погасить кредит">
+      <Modal isOpen={showRepayModal} onClose={() => {
+        setShowRepayModal(false)
+        setRepayAmount('')
+        setSelectedAccount('')
+      }} title="Погасить кредит">
         <div className="repay-form">
+          <Select
+            label="Счет для погашения"
+            value={selectedAccount}
+            onChange={(e) => setSelectedAccount(e.target.value)}
+            options={
+              accounts
+                ? [
+                    { value: '', label: 'Выберите счет' },
+                    ...accounts.map((account) => ({
+                      value: account.id,
+                      label: `Счёт #${account.id.slice(0, 8)}... (Баланс: ${account.balance.toLocaleString()} ${account.currency || 'RUB'})`,
+                    })),
+                  ]
+                : [{ value: '', label: 'Загрузка счетов...' }]
+            }
+          />
           <Input
             label="Сумма погашения"
             type="number"
@@ -114,13 +142,25 @@ export const CreditDetailPage: React.FC = () => {
                 setRepayAmount(value)
               }
             }}
-            placeholder={`Максимум: ${credit.remaining.toLocaleString()} ₽`}
+            placeholder={`Максимум: ${Number(credit.remaining).toFixed(2)} ₽`}
           />
           {repayAmount && parseFloat(repayAmount) > credit.remaining && (
             <div className="error" style={{ marginTop: '10px' }}>
-              Сумма погашения не может превышать остаток долга ({credit.remaining.toLocaleString()} ₽)
+              Сумма погашения не может превышать остаток долга ({Number(credit.remaining).toFixed(2)} ₽)
             </div>
           )}
+          {selectedAccount && repayAmount && (() => {
+            const selectedAccountData = accounts?.find((acc) => acc.id === selectedAccount)
+            const amount = parseFloat(repayAmount)
+            if (selectedAccountData && amount > selectedAccountData.balance) {
+              return (
+                <div className="error" style={{ marginTop: '10px' }}>
+                  Недостаточно средств на счете. Доступно: {selectedAccountData.balance.toLocaleString()} {selectedAccountData.currency || 'RUB'}
+                </div>
+              )
+            }
+            return null
+          })()}
           {repayCreditMutation.isError && (
             <div className="error">
               {repayCreditMutation.error instanceof Error
@@ -129,7 +169,11 @@ export const CreditDetailPage: React.FC = () => {
             </div>
           )}
           <div className="modalActions">
-            <Button variant="secondary" onClick={() => setShowRepayModal(false)}>
+            <Button variant="secondary" onClick={() => {
+              setShowRepayModal(false)
+              setRepayAmount('')
+              setSelectedAccount('')
+            }}>
               Отмена
             </Button>
             <Button 
@@ -137,8 +181,13 @@ export const CreditDetailPage: React.FC = () => {
               disabled={
                 repayCreditMutation.isPending || 
                 !repayAmount || 
+                !selectedAccount ||
                 parseFloat(repayAmount) <= 0 || 
-                parseFloat(repayAmount) > credit.remaining
+                parseFloat(repayAmount) > credit.remaining ||
+                (() => {
+                  const selectedAccountData = accounts?.find((acc) => acc.id === selectedAccount)
+                  return selectedAccountData ? parseFloat(repayAmount) > selectedAccountData.balance : true
+                })()
               }
             >
               {repayCreditMutation.isPending ? 'Погашение...' : 'Погасить'}

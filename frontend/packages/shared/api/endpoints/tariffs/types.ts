@@ -13,7 +13,13 @@ export type CreateTariffRequest = {
   max_amount?: number
 }
 
+export type TariffListResponse = {
+  tariffs: CreditTariff[]
+  pageNumber: number
+  pageQuantity: number
+}
+
 export type GetTariffsParams = {
-  limit?: number
-  offset?: number
+  page?: number
+  page_size?: number
 }

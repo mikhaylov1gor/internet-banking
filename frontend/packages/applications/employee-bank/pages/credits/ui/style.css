@@ -1,0 +1,242 @@
+.credits-page-container {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  min-height: calc(100vh - 80px);
+}
+
+.credits-page-title {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.credits-page-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.credits-page-search-section {
+  flex: 1;
+  min-width: 300px;
+}
+
+.credits-page-search-box {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.credits-page-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.credits-page-filters .select-container {
+  width: auto;
+  min-width: 200px;
+}
+
+.credits-page-user-select {
+  min-width: 250px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.credits-page-select-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border: 2px dashed #cbd5e1;
+}
+
+.select-user-icon {
+  font-size: 3rem;
+  opacity: 0.6;
+}
+
+.select-user-text {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.creditCard {
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+}
+
+.creditCard:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  transform: translateY(-4px);
+  border-color: #93c5fd;
+}
+
+.creditInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.creditId {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #1e40af;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.creditInfo > .creditId:first-child {
+  margin-top: 0;
+}
+
+.creditDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.active {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.paid {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.desktop-credits-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.desktop-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.desktop-creditCard {
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+}
+
+.desktop-creditCard:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  transform: translateY(-4px);
+  border-color: #93c5fd;
+}
+
+.mobile-credits-page {
+  padding: 1rem;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.mobile-credits-title {
+  font-size: 1.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.mobile-credits-controls {
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mobile-search-section {
+  width: 100%;
+  min-width: auto;
+}
+
+.mobile-search-box {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobile-search-button {
+  width: 100%;
+}
+
+.mobile-filters {
+  width: 100%;
+}
+
+.mobile-filters .select-container {
+  width: 100%;
+  min-width: auto;
+}
+
+.mobile-filters .credits-page-user-select {
+  width: 100%;
+  min-width: auto;
+}
+
+.mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-creditCard {
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.05);
+}
+
+.mobile-creditCard:active {
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.1);
+  transform: scale(0.98);
+  border-color: #93c5fd;
+}
+

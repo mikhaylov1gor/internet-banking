@@ -11,18 +11,22 @@ export const useCreditDetailPage = () => {
   const [selectedAccount, setSelectedAccount] = useState('')
 
   const { data: credit, isLoading: creditLoading, error: creditError } = useCredit(creditId || null)
-  const { data: accounts } = useAccounts({ status: 'active' })
+  const { data: accountsResponse } = useAccounts({ status: 'active' })
+  const accounts = accountsResponse?.accounts
   const repayCreditMutation = useRepayCredit()
 
   const handleRepay = () => {
-    if (creditId && repayAmount && credit) {
+    if (creditId && repayAmount && credit && selectedAccount) {
       const amount = parseFloat(repayAmount)
-      if (amount > 0 && amount <= credit.remaining) {
+      const selectedAccountData = accounts?.find((acc) => acc.id === selectedAccount)
+      
+      if (amount > 0 && amount <= credit.remaining && selectedAccountData && amount <= selectedAccountData.balance) {
         repayCreditMutation.mutate(
-          { creditId, data: { amount } },
+          { creditId, data: { amount, account_id: selectedAccount } },
           {
             onSuccess: () => {
               setRepayAmount('')
+              setSelectedAccount('')
               setShowRepayModal(false)
             },
           }
