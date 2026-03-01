@@ -9,16 +9,15 @@ struct BankApp: App {
 
     init() {
         let repo = RepositoryAssembly()
-        self.repositoryAssembly = repo
-        self.factoryAssembly = FactoryAssembly(repositoryAssembly: repo)
+        repositoryAssembly = repo
+        factoryAssembly = FactoryAssembly(repositoryAssembly: repo)
     }
 
     var body: some Scene {
         WindowGroup {
             AppCoordinator(
                 coordinatorFactory: factoryAssembly.coordinatorFactory,
-                authRepository: repositoryAssembly.authRepository
-            ).start()
+                authRepository: repositoryAssembly.authRepository).start()
         }
     }
 }

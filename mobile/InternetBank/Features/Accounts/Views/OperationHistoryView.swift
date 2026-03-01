@@ -6,7 +6,7 @@ struct OperationHistoryView: View {
     var body: some View {
         List(viewModel.operations) { op in
             HStack {
-                Text(op.type.rawValue)
+                Text(op.type.displayName)
                 Spacer()
                 Text("\(op.amount) ₽")
                 Text(op.date, style: .date)

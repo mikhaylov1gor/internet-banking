@@ -8,8 +8,8 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
     init(
         accountRepository: AccountRepositoryProtocol,
         creditRepository: CreditRepositoryProtocol,
-        authRepository: AuthRepositoryProtocol
-    ) {
+        authRepository: AuthRepositoryProtocol)
+    {
         self.accountRepository = accountRepository
         self.creditRepository = creditRepository
         self.authRepository = authRepository
@@ -55,8 +55,7 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
         TakeCreditViewModel(
             creditRepository: creditRepository,
             accountRepository: accountRepository,
-            clientId: clientId
-        )
+            clientId: clientId)
     }
 
     func makeRepayCreditViewModel(credit: Credit) -> RepayCreditViewModel {

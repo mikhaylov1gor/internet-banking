@@ -6,8 +6,8 @@ final class FactoryAssembly {
 
     init(
         repositoryAssembly: RepositoryAssembly = RepositoryAssembly(),
-        serviceAssembly: ServiceAssembly = ServiceAssembly()
-    ) {
+        serviceAssembly: ServiceAssembly = ServiceAssembly())
+    {
         self.repositoryAssembly = repositoryAssembly
         self.serviceAssembly = serviceAssembly
     }
@@ -16,8 +16,7 @@ final class FactoryAssembly {
         ViewModelFactory(
             accountRepository: repositoryAssembly.accountRepository,
             creditRepository: repositoryAssembly.creditRepository,
-            authRepository: repositoryAssembly.authRepository
-        )
+            authRepository: repositoryAssembly.authRepository)
     }
 
     var viewFactory: ViewFactoryProtocol {

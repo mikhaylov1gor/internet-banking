@@ -5,6 +5,7 @@ final class AuthService: AuthServiceProtocol {
 
     private enum Keys {
         static let token = "auth_token"
+        static let refreshToken = "auth_refresh_token"
         static let userId = "auth_user_id"
     }
 
@@ -22,6 +23,18 @@ final class AuthService: AuthServiceProtocol {
 
     func clearToken() {
         keychain.delete(key: Keys.token)
+    }
+
+    func saveRefreshToken(_ token: String) {
+        keychain.save(key: Keys.refreshToken, value: token)
+    }
+
+    func getRefreshToken() -> String? {
+        keychain.get(key: Keys.refreshToken)
+    }
+
+    func clearRefreshToken() {
+        keychain.delete(key: Keys.refreshToken)
     }
 
     func saveUserId(_ userId: String) {

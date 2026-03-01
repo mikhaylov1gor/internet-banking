@@ -13,22 +13,30 @@ final class ViewFactory: ViewFactoryProtocol {
         return LoginView(viewModel: viewModel)
     }
 
-    func makeAccountsListView(clientId: String, onAccountTap: @escaping (Account) -> Void, onOpenAccount: @escaping () -> Void) -> AccountsListView {
+    func makeAccountsListView(
+        clientId: String,
+        onAccountTap: @escaping (Account) -> Void,
+        onOpenAccount: @escaping () -> Void) -> AccountsListView
+    {
         AccountsListView(
             viewModel: viewModelFactory.makeAccountsListViewModel(clientId: clientId),
             onAccountTap: onAccountTap,
-            onOpenAccount: onOpenAccount
-        )
+            onOpenAccount: onOpenAccount)
     }
 
-    func makeAccountDetailView(account: Account, onDeposit: @escaping () -> Void, onWithdraw: @escaping () -> Void, onHistory: @escaping () -> Void, onCloseAccount: @escaping () -> Void) -> AccountDetailView {
+    func makeAccountDetailView(
+        account: Account,
+        onDeposit: @escaping () -> Void,
+        onWithdraw: @escaping () -> Void,
+        onHistory: @escaping () -> Void,
+        onCloseAccount: @escaping () -> Void) -> AccountDetailView
+    {
         AccountDetailView(
             viewModel: viewModelFactory.makeAccountDetailViewModel(account: account),
             onDeposit: onDeposit,
             onWithdraw: onWithdraw,
             onHistory: onHistory,
-            onCloseAccount: onCloseAccount
-        )
+            onCloseAccount: onCloseAccount)
     }
 
     func makeDepositView(account: Account, onDismiss: @escaping () -> Void) -> DepositView {
@@ -59,12 +67,15 @@ final class ViewFactory: ViewFactoryProtocol {
         return CloseAccountView(viewModel: viewModel, onDismiss: onDismiss)
     }
 
-    func makeCreditsListView(clientId: String, onCreditTap: @escaping (Credit) -> Void, onTakeCredit: @escaping () -> Void) -> CreditsListView {
+    func makeCreditsListView(
+        clientId: String,
+        onCreditTap: @escaping (Credit) -> Void,
+        onTakeCredit: @escaping () -> Void) -> CreditsListView
+    {
         CreditsListView(
             viewModel: viewModelFactory.makeCreditsListViewModel(clientId: clientId),
             onCreditTap: onCreditTap,
-            onTakeCredit: onTakeCredit
-        )
+            onTakeCredit: onTakeCredit)
     }
 
     func makeTakeCreditView(clientId: String, onDismiss: @escaping () -> Void) -> TakeCreditView {

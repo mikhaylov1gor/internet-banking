@@ -3,7 +3,7 @@ import Foundation
 @Observable
 final class AccountsListViewModel {
     var accounts: [Account] = []
-    var isLoading: Bool = false
+    var isLoading = false
     var errorMessage: String?
 
     private let accountRepository: AccountRepositoryProtocol
@@ -20,7 +20,7 @@ final class AccountsListViewModel {
         do {
             accounts = try await accountRepository.getAccounts(clientId: clientId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

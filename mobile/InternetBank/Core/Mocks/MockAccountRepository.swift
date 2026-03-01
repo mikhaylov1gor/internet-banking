@@ -29,14 +29,14 @@ final class MockAccountRepository: AccountRepositoryProtocol {
                 id: id,
                 clientId: clientId,
                 balance: 0,
-                createdAt: Date()
-            )
+                openedAt: Date(),
+                status: "active")
             storage.accounts.append(account)
             return account
         }
     }
 
-    func closeAccount(id: String) async throws {
+    func closeAccount(id: String, clientId: String) async throws {
         try await Task.sleep(nanoseconds: 200_000_000)
         storage.withLock {
             storage.accounts.removeAll { $0.id == id }
@@ -53,8 +53,7 @@ final class MockAccountRepository: AccountRepositoryProtocol {
                     accountId: accountId,
                     type: .deposit,
                     amount: amount,
-                    date: Date()
-                )
+                    date: Date())
                 storage.operations.append(op)
             }
         }
@@ -75,12 +74,11 @@ final class MockAccountRepository: AccountRepositoryProtocol {
                 accountId: accountId,
                 type: .withdraw,
                 amount: amount,
-                date: Date()
-            )
+                date: Date())
             storage.operations.append(op)
             return .success(())
         }
-        if case .failure(let error) = result {
+        if case let .failure(error) = result {
             throw error
         }
     }
@@ -95,8 +93,16 @@ final class MockAccountRepository: AccountRepositoryProtocol {
     }
 }
 
-enum MockError: Error {
+enum MockError: LocalizedError {
     case accountNotFound
     case insufficientFunds
     case invalidTariffOrAccount
+
+    var errorDescription: String? {
+        switch self {
+            case .accountNotFound: return "Счёт не найден"
+            case .insufficientFunds: return "Недостаточно средств на счёте"
+            case .invalidTariffOrAccount: return "Неверный тариф или счёт"
+        }
+    }
 }

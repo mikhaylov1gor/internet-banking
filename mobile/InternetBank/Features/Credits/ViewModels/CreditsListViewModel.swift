@@ -3,7 +3,7 @@ import Foundation
 @Observable
 final class CreditsListViewModel {
     var credits: [Credit] = []
-    var isLoading: Bool = false
+    var isLoading = false
     var errorMessage: String?
 
     private let creditRepository: CreditRepositoryProtocol
@@ -19,7 +19,7 @@ final class CreditsListViewModel {
         do {
             credits = try await creditRepository.getCredits(clientId: clientId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

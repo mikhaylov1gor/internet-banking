@@ -2,8 +2,8 @@ import Foundation
 
 @Observable
 final class RepayCreditViewModel {
-    var amount: String = ""
-    var isLoading: Bool = false
+    var amount = ""
+    var isLoading = false
     var errorMessage: String?
 
     var onSuccess: (() -> Void)?
@@ -27,7 +27,7 @@ final class RepayCreditViewModel {
             try await creditRepository.repayCredit(creditId: credit.id, amount: value)
             onSuccess?()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

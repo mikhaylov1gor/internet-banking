@@ -5,34 +5,29 @@ struct CreditResponse: Decodable {
     let clientId: String
     let accountId: String
     let tariffId: String
-    let amount: String
-    let remainingAmount: String
-    let startDate: String
-    let tariffName: String
-    let tariffRate: String
+    let amount: Double
+    let remaining: Double?
+    let rate: Double?
+    let dailyPayment: Double?
+    let issuedAt: String?
+    let status: String?
 }
 
 struct TariffResponse: Decodable {
     let id: String
     let name: String
-    let rate: String
+    let rate: Double
+    let minAmount: Double?
+    let maxAmount: Double?
 }
 
-struct TakeCreditRequest: Encodable {
+struct IssueCreditRequest: Encodable {
     let clientId: String
     let accountId: String
     let tariffId: String
-    let amount: Decimal
+    let amount: Double
 }
 
-struct RepayRequest: Encodable {
-    let amount: Decimal
-}
-
-struct CreditsListResponse: Decodable {
-    let credits: [CreditResponse]
-}
-
-struct TariffsListResponse: Decodable {
-    let tariffs: [TariffResponse]
+struct RepayCreditRequest: Encodable {
+    let amount: Double
 }

@@ -3,7 +3,7 @@ import Foundation
 @Observable
 final class OperationHistoryViewModel {
     var operations: [AccountOperation] = []
-    var isLoading: Bool = false
+    var isLoading = false
     var errorMessage: String?
 
     private let accountRepository: AccountRepositoryProtocol
@@ -19,7 +19,7 @@ final class OperationHistoryViewModel {
         do {
             operations = try await accountRepository.getOperations(accountId: account.id)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

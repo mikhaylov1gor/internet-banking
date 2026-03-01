@@ -5,8 +5,9 @@ struct LoginView: View {
 
     var body: some View {
         Form {
-            TextField("Логин", text: $viewModel.login)
-                .textContentType(.username)
+            TextField("Email", text: $viewModel.email)
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
                 .autocapitalization(.none)
             SecureField("Пароль", text: $viewModel.password)
                 .textContentType(.password)

@@ -2,7 +2,7 @@ import Foundation
 
 @Observable
 final class ProfileViewModel {
-    var isLoading: Bool = false
+    var isLoading = false
 
     private let authRepository: AuthRepositoryProtocol
     private let clientId: String

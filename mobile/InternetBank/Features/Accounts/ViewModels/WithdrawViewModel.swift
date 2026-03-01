@@ -2,8 +2,8 @@ import Foundation
 
 @Observable
 final class WithdrawViewModel {
-    var amount: String = ""
-    var isLoading: Bool = false
+    var amount = ""
+    var isLoading = false
     var errorMessage: String?
 
     var onSuccess: (() -> Void)?
@@ -27,7 +27,7 @@ final class WithdrawViewModel {
             try await accountRepository.withdraw(accountId: account.id, amount: value)
             onSuccess?()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

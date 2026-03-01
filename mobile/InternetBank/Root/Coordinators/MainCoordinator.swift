@@ -13,8 +13,7 @@ final class MainCoordinator {
         MainCoordinatorView(
             viewFactory: viewFactory,
             clientId: clientId,
-            onLogout: onLogout
-        )
+            onLogout: onLogout)
     }
 }
 
@@ -34,8 +33,7 @@ struct MainCoordinatorView: View {
                     viewFactory: viewFactory,
                     clientId: clientId,
                     path: $accountsPath,
-                    sheetItem: $sheetItem
-                )
+                    sheetItem: $sheetItem)
             }
             .tabItem {
                 Label("Счета", systemImage: "creditcard")
@@ -44,8 +42,7 @@ struct MainCoordinatorView: View {
                 CreditsCoordinatorView(
                     viewFactory: viewFactory,
                     clientId: clientId,
-                    sheetItem: $sheetItem
-                )
+                    sheetItem: $sheetItem)
             }
             .tabItem {
                 Label("Кредиты", systemImage: "banknote")
@@ -63,31 +60,31 @@ struct MainCoordinatorView: View {
     @ViewBuilder
     private func sheetContent(for item: SheetItem) -> some View {
         switch item {
-        case .deposit(let account):
-            viewFactory.makeDepositView(account: account) {
-                sheetItem = nil
-            }
-        case .withdraw(let account):
-            viewFactory.makeWithdrawView(account: account) {
-                sheetItem = nil
-            }
-        case .openAccount:
-            viewFactory.makeOpenAccountView(clientId: clientId) {
-                sheetItem = nil
-            }
-        case .closeAccount(let account):
-            viewFactory.makeCloseAccountView(account: account) {
-                sheetItem = nil
-                accountsPath = NavigationPath()
-            }
-        case .takeCredit:
-            viewFactory.makeTakeCreditView(clientId: clientId) {
-                sheetItem = nil
-            }
-        case .repayCredit(let credit):
-            viewFactory.makeRepayCreditView(credit: credit) {
-                sheetItem = nil
-            }
+            case let .deposit(account):
+                viewFactory.makeDepositView(account: account) {
+                    sheetItem = nil
+                }
+            case let .withdraw(account):
+                viewFactory.makeWithdrawView(account: account) {
+                    sheetItem = nil
+                }
+            case .openAccount:
+                viewFactory.makeOpenAccountView(clientId: clientId) {
+                    sheetItem = nil
+                }
+            case let .closeAccount(account):
+                viewFactory.makeCloseAccountView(account: account) {
+                    sheetItem = nil
+                    accountsPath = NavigationPath()
+                }
+            case .takeCredit:
+                viewFactory.makeTakeCreditView(clientId: clientId) {
+                    sheetItem = nil
+                }
+            case let .repayCredit(credit):
+                viewFactory.makeRepayCreditView(credit: credit) {
+                    sheetItem = nil
+                }
         }
     }
 }

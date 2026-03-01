@@ -7,9 +7,9 @@ final class MockAuthRepository: AuthRepositoryProtocol {
         self.authService = authService
     }
 
-    func login(login: String, password: String) async throws -> AuthResult {
+    func login(email: String, password: String) async throws -> AuthResult {
         try await Task.sleep(nanoseconds: 400_000_000)
-        let userId = login.isEmpty ? "mock-user" : login
+        let userId = email.isEmpty ? "mock-user" : email
         authService.saveToken("mock-token-\(userId)")
         authService.saveUserId(userId)
         return AuthResult(userId: userId, token: "mock-token-\(userId)")
@@ -17,6 +17,7 @@ final class MockAuthRepository: AuthRepositoryProtocol {
 
     func logout() {
         authService.clearToken()
+        authService.clearRefreshToken()
         authService.clearUserId()
     }
 

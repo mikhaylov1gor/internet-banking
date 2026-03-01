@@ -13,7 +13,6 @@ struct CreditsCoordinatorView: View {
             },
             onTakeCredit: {
                 sheetItem = .takeCredit(clientId)
-            }
-        )
+            })
     }
 }

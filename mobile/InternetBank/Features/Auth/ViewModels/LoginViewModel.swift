@@ -2,9 +2,9 @@ import Foundation
 
 @Observable
 final class LoginViewModel {
-    var login: String = ""
-    var password: String = ""
-    var isLoading: Bool = false
+    var email = ""
+    var password = ""
+    var isLoading = false
     var errorMessage: String?
 
     var onLoginSuccess: (() -> Void)?
@@ -16,17 +16,17 @@ final class LoginViewModel {
     }
 
     func signIn() async {
-        guard !login.isEmpty, !password.isEmpty else {
+        guard !email.isEmpty, !password.isEmpty else {
             errorMessage = "Заполните все поля"
             return
         }
         isLoading = true
         errorMessage = nil
         do {
-            _ = try await authRepository.login(login: login, password: password)
+            _ = try await authRepository.login(email: email, password: password)
             onLoginSuccess?()
         } catch {
-            errorMessage = "Ошибка входа: \(error.localizedDescription)"
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

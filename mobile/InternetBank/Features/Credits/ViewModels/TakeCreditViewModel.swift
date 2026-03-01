@@ -3,11 +3,11 @@ import Foundation
 @Observable
 final class TakeCreditViewModel {
     var tariffs: [CreditTariff] = []
-    var selectedTariffId: String = ""
-    var selectedAccountId: String = ""
-    var amount: String = ""
+    var selectedTariffId = ""
+    var selectedAccountId = ""
+    var amount = ""
     var accounts: [Account] = []
-    var isLoading: Bool = false
+    var isLoading = false
     var errorMessage: String?
 
     var onSuccess: ((Credit) -> Void)?
@@ -19,8 +19,8 @@ final class TakeCreditViewModel {
     init(
         creditRepository: CreditRepositoryProtocol,
         accountRepository: AccountRepositoryProtocol,
-        clientId: String
-    ) {
+        clientId: String)
+    {
         self.creditRepository = creditRepository
         self.accountRepository = accountRepository
         self.clientId = clientId
@@ -36,7 +36,7 @@ final class TakeCreditViewModel {
             selectedTariffId = tariffs.first?.id ?? ""
             selectedAccountId = accounts.first?.id ?? ""
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }
@@ -57,11 +57,10 @@ final class TakeCreditViewModel {
                 clientId: clientId,
                 accountId: selectedAccountId,
                 tariffId: selectedTariffId,
-                amount: value
-            )
+                amount: value)
             onSuccess?(credit)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

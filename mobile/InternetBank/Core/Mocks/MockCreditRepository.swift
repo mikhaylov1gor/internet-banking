@@ -30,7 +30,8 @@ final class MockCreditRepository: CreditRepositoryProtocol {
         try await Task.sleep(nanoseconds: 300_000_000)
         guard let result = storage.withLock({
             guard let tariff = storage.tariffs.first(where: { $0.id == tariffId }),
-                  let accIdx = storage.accounts.firstIndex(where: { $0.id == accountId }) else {
+                  let accIdx = storage.accounts.firstIndex(where: { $0.id == accountId })
+            else {
                 return nil as Credit?
             }
             let id = "credit-\(UUID().uuidString.prefix(8))"
@@ -41,19 +42,18 @@ final class MockCreditRepository: CreditRepositoryProtocol {
                 tariffId: tariffId,
                 amount: amount,
                 remainingAmount: amount,
-                startDate: Date(),
+                issuedAt: Date(),
                 tariffName: tariff.name,
-                tariffRate: tariff.rate
-            )
+                rate: tariff.rate,
+                status: "active")
             storage.credits.append(credit)
             storage.accounts[accIdx].balance += amount
             let op = AccountOperation(
                 id: "op-\(UUID().uuidString.prefix(8))",
                 accountId: accountId,
-                type: .creditReceipt,
+                type: .creditIssue,
                 amount: amount,
-                date: Date()
-            )
+                date: Date())
             storage.operations.append(op)
             return credit
         }) else {
@@ -66,7 +66,8 @@ final class MockCreditRepository: CreditRepositoryProtocol {
         try await Task.sleep(nanoseconds: 200_000_000)
         storage.withLock {
             guard let i = storage.credits.firstIndex(where: { $0.id == creditId }),
-                  let accIdx = storage.accounts.firstIndex(where: { $0.id == storage.credits[i].accountId }) else {
+                  let accIdx = storage.accounts.firstIndex(where: { $0.id == storage.credits[i].accountId })
+            else {
                 return
             }
             let repayAmount = min(amount, storage.credits[i].remainingAmount)
@@ -75,10 +76,9 @@ final class MockCreditRepository: CreditRepositoryProtocol {
             let op = AccountOperation(
                 id: "op-\(UUID().uuidString.prefix(8))",
                 accountId: storage.credits[i].accountId,
-                type: .creditPayment,
+                type: .creditRepay,
                 amount: repayAmount,
-                date: Date()
-            )
+                date: Date())
             storage.operations.append(op)
             if storage.credits[i].remainingAmount <= 0 {
                 storage.credits.remove(at: i)

@@ -15,13 +15,12 @@ enum SheetItem: Identifiable {
 
     var id: String {
         switch self {
-        case .deposit(let account): "deposit-\(account.id)"
-        case .withdraw(let account): "withdraw-\(account.id)"
-        case .openAccount(let clientId): "openAccount-\(clientId)"
-        case .closeAccount(let account): "closeAccount-\(account.id)"
-        case .takeCredit(let clientId): "takeCredit-\(clientId)"
-        case .repayCredit(let credit): "repayCredit-\(credit.id)"
+            case let .deposit(account): "deposit-\(account.id)"
+            case let .withdraw(account): "withdraw-\(account.id)"
+            case let .openAccount(clientId): "openAccount-\(clientId)"
+            case let .closeAccount(account): "closeAccount-\(account.id)"
+            case let .takeCredit(clientId): "takeCredit-\(clientId)"
+            case let .repayCredit(credit): "repayCredit-\(credit.id)"
         }
     }
 }
-

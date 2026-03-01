@@ -7,13 +7,16 @@ struct Credit: Identifiable, Hashable {
     let tariffId: String
     let amount: Decimal
     var remainingAmount: Decimal
-    let startDate: Date
-    let tariffName: String
-    let tariffRate: Decimal
+    let issuedAt: Date
+    let tariffName: String?
+    let rate: Decimal?
+    let status: String?
 }
 
 struct CreditTariff: Identifiable, Hashable {
     let id: String
     let name: String
     let rate: Decimal
+    let minAmount: Decimal?
+    let maxAmount: Decimal?
 }

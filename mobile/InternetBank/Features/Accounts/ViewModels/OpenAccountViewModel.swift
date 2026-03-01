@@ -2,7 +2,7 @@ import Foundation
 
 @Observable
 final class OpenAccountViewModel {
-    var isLoading: Bool = false
+    var isLoading = false
     var errorMessage: String?
 
     var onSuccess: ((Account) -> Void)?
@@ -22,7 +22,7 @@ final class OpenAccountViewModel {
             let account = try await accountRepository.openAccount(clientId: clientId)
             onSuccess?(account)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

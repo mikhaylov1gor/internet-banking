@@ -14,21 +14,19 @@ struct AccountsCoordinatorView: View {
             },
             onOpenAccount: {
                 sheetItem = .openAccount(clientId)
+            })
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                    case let .accountDetail(account):
+                        viewFactory.makeAccountDetailView(
+                            account: account,
+                            onDeposit: { sheetItem = .deposit(account) },
+                            onWithdraw: { sheetItem = .withdraw(account) },
+                            onHistory: { path.append(Route.operationHistory(account)) },
+                            onCloseAccount: { sheetItem = .closeAccount(account) })
+                    case let .operationHistory(account):
+                        viewFactory.makeOperationHistoryView(account: account)
+                }
             }
-        )
-        .navigationDestination(for: Route.self) { route in
-            switch route {
-            case .accountDetail(let account):
-                viewFactory.makeAccountDetailView(
-                    account: account,
-                    onDeposit: { sheetItem = .deposit(account) },
-                    onWithdraw: { sheetItem = .withdraw(account) },
-                    onHistory: { path.append(Route.operationHistory(account)) },
-                    onCloseAccount: { sheetItem = .closeAccount(account) }
-                )
-            case .operationHistory(let account):
-                viewFactory.makeOperationHistoryView(account: account)
-            }
-        }
     }
 }

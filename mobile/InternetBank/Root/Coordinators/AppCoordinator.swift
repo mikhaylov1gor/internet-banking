@@ -6,8 +6,8 @@ final class AppCoordinator {
 
     init(
         coordinatorFactory: CoordinatorFactoryProtocol,
-        authRepository: AuthRepositoryProtocol
-    ) {
+        authRepository: AuthRepositoryProtocol)
+    {
         self.coordinatorFactory = coordinatorFactory
         self.authRepository = authRepository
     }
@@ -15,8 +15,7 @@ final class AppCoordinator {
     func start() -> some View {
         AppCoordinatorView(
             coordinatorFactory: coordinatorFactory,
-            authRepository: authRepository
-        )
+            authRepository: authRepository)
     }
 }
 
@@ -24,8 +23,8 @@ struct AppCoordinatorView: View {
     let coordinatorFactory: CoordinatorFactoryProtocol
     let authRepository: AuthRepositoryProtocol
 
-    @State private var isAuthenticated: Bool = false
-    @State private var clientId: String = ""
+    @State private var isAuthenticated = false
+    @State private var clientId = ""
 
     var body: some View {
         Group {

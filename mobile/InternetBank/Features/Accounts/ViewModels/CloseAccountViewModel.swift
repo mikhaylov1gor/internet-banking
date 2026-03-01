@@ -2,7 +2,7 @@ import Foundation
 
 @Observable
 final class CloseAccountViewModel {
-    var isLoading: Bool = false
+    var isLoading = false
     var errorMessage: String?
 
     var onSuccess: (() -> Void)?
@@ -19,10 +19,10 @@ final class CloseAccountViewModel {
         isLoading = true
         errorMessage = nil
         do {
-            try await accountRepository.closeAccount(id: account.id)
+            try await accountRepository.closeAccount(id: account.id, clientId: account.clientId)
             onSuccess?()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }

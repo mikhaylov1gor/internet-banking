@@ -17,9 +17,9 @@ final class MockStorage {
         let storage = MockStorage()
         storage.withLock {
             storage.tariffs = [
-                CreditTariff(id: "tariff-1", name: "Стандарт", rate: 12),
-                CreditTariff(id: "tariff-2", name: "Выгодный", rate: 9.5),
-                CreditTariff(id: "tariff-3", name: "Премиум", rate: 7)
+                CreditTariff(id: "tariff-1", name: "Стандарт", rate: 12, minAmount: nil, maxAmount: nil),
+                CreditTariff(id: "tariff-2", name: "Выгодный", rate: 9.5, minAmount: nil, maxAmount: nil),
+                CreditTariff(id: "tariff-3", name: "Премиум", rate: 7, minAmount: nil, maxAmount: nil),
             ]
         }
         return storage

@@ -3,7 +3,7 @@ import Foundation
 @Observable
 final class AccountDetailViewModel {
     var account: Account
-    var isLoading: Bool = false
+    var isLoading = false
     var errorMessage: String?
 
     private let accountRepository: AccountRepositoryProtocol
@@ -20,7 +20,7 @@ final class AccountDetailViewModel {
                 account = updated
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.displayMessage
         }
         isLoading = false
     }
