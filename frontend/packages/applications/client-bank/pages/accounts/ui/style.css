@@ -1,0 +1,164 @@
+.accounts-page-container {
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  min-height: calc(100vh - 80px);
+}
+
+.accounts-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.accounts-page-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-end;
+}
+
+.accounts-page-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.accounts-page-filters .select-container {
+  width: auto;
+  min-width: 200px;
+}
+
+.accounts-page-title {
+  font-size: 2rem;
+  margin: 0;
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.accounts-page-search-section {
+  margin-bottom: 2rem;
+}
+
+.accounts-page-search-box {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+
+.accounts-page-error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  background-color: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.accountCard {
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+}
+
+.accountCard:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  transform: translateY(-4px);
+  border-color: #93c5fd;
+}
+
+.accountInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.accountId {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #1e40af;
+}
+
+.accountDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.active {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.closed {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.create-account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.875rem;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  background-color: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
