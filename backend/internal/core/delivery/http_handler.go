@@ -21,7 +21,7 @@ type AccountUseCase interface {
 	CloseAccount(accountID, clientID uuid.UUID) error
 	Deposit(accountID uuid.UUID, amount float64, description string) (*entity.Operation, error)
 	Withdraw(accountID uuid.UUID, amount float64, description string) (*entity.Operation, error)
-	ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, error)
+	ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error)
 }
 
 type Handler struct {
@@ -154,9 +154,9 @@ func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 		res[i] = toAccountResp(a)
 	}
 	response.JSON(w, http.StatusOK, accountListResp{
-		Accounts:   res,
-		Page:       page,
-		TotalPages: int(totalPages),
+		Accounts:     res,
+		PageNumber:   page,
+		PageQuantity: int(totalPages),
 	})
 }
 
@@ -318,21 +318,37 @@ func (h *Handler) listOperations(w http.ResponseWriter, r *http.Request) {
 		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	if limit <= 0 {
-		limit = 50
+	pageSize := 50
+	if p := r.URL.Query().Get("page_size"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			pageSize = v
+		}
 	}
-	list, err := h.uc.ListOperations(accountID, limit, offset)
+	page := 1
+	if pg := r.URL.Query().Get("page"); pg != "" {
+		if v, err := strconv.Atoi(pg); err == nil && v > 0 {
+			page = v
+		}
+	}
+	offset := (page - 1) * pageSize
+	list, total, err := h.uc.ListOperations(accountID, pageSize, offset)
 	if err != nil {
 		response.Err(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	if totalPages == 0 {
+		totalPages = 1
 	}
 	res := make([]operationResp, len(list))
 	for i, o := range list {
 		res[i] = toOperationResp(o)
 	}
-	response.JSON(w, http.StatusOK, res)
+	response.JSON(w, http.StatusOK, operationListResp{
+		Operations:   res,
+		PageNumber:   page,
+		PageQuantity: int(totalPages),
+	})
 }
 
 type accountResp struct {
@@ -346,9 +362,15 @@ type accountResp struct {
 }
 
 type accountListResp struct {
-	Accounts   []accountResp `json:"accounts"`
-	Page       int           `json:"page"`
-	TotalPages int           `json:"total_pages"`
+	Accounts     []accountResp `json:"accounts"`
+	PageNumber   int           `json:"pageNumber"`
+	PageQuantity int           `json:"pageQuantity"`
+}
+
+type operationListResp struct {
+	Operations   []operationResp `json:"operations"`
+	PageNumber   int             `json:"pageNumber"`
+	PageQuantity int             `json:"pageQuantity"`
 }
 
 type operationResp struct {

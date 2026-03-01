@@ -11,7 +11,7 @@ type UserRepository interface {
 	Create(u *entity.User) error
 	GetByID(id uuid.UUID) (*entity.User, error)
 	GetByEmail(email string) (*entity.User, error)
-	List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, error)
+	List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, int64, error)
 	Update(u *entity.User) error
 }
 
@@ -45,7 +45,7 @@ func (r *userRepo) GetByEmail(email string) (*entity.User, error) {
 	return &u, nil
 }
 
-func (r *userRepo) List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, error) {
+func (r *userRepo) List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, int64, error) {
 	if limit <= 0 {
 		limit = 100
 	}
@@ -53,6 +53,7 @@ func (r *userRepo) List(userType *entity.UserType, status *entity.UserStatus, li
 		offset = 0
 	}
 	var list []*entity.User
+	var total int64
 	q := r.db.Model(&entity.User{})
 	if userType != nil {
 		q = q.Where("type = ?", *userType)
@@ -60,8 +61,11 @@ func (r *userRepo) List(userType *entity.UserType, status *entity.UserStatus, li
 	if status != nil {
 		q = q.Where("status = ?", *status)
 	}
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := q.Order("created_at DESC").Offset(offset).Limit(limit).Find(&list).Error
-	return list, err
+	return list, total, err
 }
 
 func (r *userRepo) Update(u *entity.User) error {

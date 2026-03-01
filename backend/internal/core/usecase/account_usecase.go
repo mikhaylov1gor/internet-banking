@@ -25,7 +25,7 @@ type AccountRepository interface {
 
 type OperationRepository interface {
 	Create(op *entity.Operation) error
-	ListByAccountID(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, error)
+	ListByAccountID(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error)
 }
 
 type AccountUseCase struct {
@@ -143,7 +143,7 @@ func (uc *AccountUseCase) Withdraw(accountID uuid.UUID, amount float64, descript
 	return op, nil
 }
 
-func (uc *AccountUseCase) ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, error) {
+func (uc *AccountUseCase) ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error) {
 	if limit <= 0 {
 		limit = 50
 	}

@@ -18,7 +18,7 @@ type UserRepository interface {
 	Create(u *entity.User) error
 	GetByID(id uuid.UUID) (*entity.User, error)
 	GetByEmail(email string) (*entity.User, error)
-	List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, error)
+	List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, int64, error)
 	Update(u *entity.User) error
 }
 
@@ -58,7 +58,7 @@ func (uc *UserUseCase) GetByID(id uuid.UUID) (*entity.User, error) {
 	return uc.repo.GetByID(id)
 }
 
-func (uc *UserUseCase) List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, error) {
+func (uc *UserUseCase) List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, int64, error) {
 	return uc.repo.List(userType, status, limit, offset)
 }
 
