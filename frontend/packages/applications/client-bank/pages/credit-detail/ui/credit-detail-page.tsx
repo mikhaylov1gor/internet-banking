@@ -60,7 +60,7 @@ export const CreditDetailPage: React.FC = () => {
             <>
               <div className="credit-detail-page-detail-item">
                 <span className="credit-detail-page-label">Остаток:</span>
-                <span className="credit-detail-page-remaining">{credit.remaining.toLocaleString()} ₽</span>
+                <span className="credit-detail-page-remaining">{Number(credit.remaining).toFixed(2)} ₽</span>
               </div>
               <div className="credit-detail-page-detail-item">
                 <span className="credit-detail-page-label">Ежедневный платеж:</span>
@@ -142,11 +142,11 @@ export const CreditDetailPage: React.FC = () => {
                 setRepayAmount(value)
               }
             }}
-            placeholder={`Максимум: ${credit.remaining.toLocaleString()} ₽`}
+            placeholder={`Максимум: ${Number(credit.remaining).toFixed(2)} ₽`}
           />
           {repayAmount && parseFloat(repayAmount) > credit.remaining && (
             <div className="error" style={{ marginTop: '10px' }}>
-              Сумма погашения не может превышать остаток долга ({credit.remaining.toLocaleString()} ₽)
+              Сумма погашения не может превышать остаток долга ({Number(credit.remaining).toFixed(2)} ₽)
             </div>
           )}
           {selectedAccount && repayAmount && (() => {
