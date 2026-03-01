@@ -8,7 +8,7 @@ struct OperationHistoryView: View {
             HStack {
                 Text(op.type.displayName)
                 Spacer()
-                Text("\(op.amount) ₽")
+                Text("\(op.amount.formattedAmount) ₽")
                 Text(op.date, style: .date)
             }
         }

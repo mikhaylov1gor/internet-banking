@@ -1,5 +1,11 @@
 import Foundation
 
+struct CreditListResponse: Decodable {
+    let credits: [CreditResponse]
+    let pageNumber: Int
+    let pageQuantity: Int
+}
+
 struct CreditResponse: Decodable {
     let id: String
     let clientId: String
@@ -11,6 +17,12 @@ struct CreditResponse: Decodable {
     let dailyPayment: Double?
     let issuedAt: String?
     let status: String?
+}
+
+struct TariffListResponse: Decodable {
+    let tariffs: [TariffResponse]
+    let pageNumber: Int
+    let pageQuantity: Int
 }
 
 struct TariffResponse: Decodable {
@@ -30,4 +42,5 @@ struct IssueCreditRequest: Encodable {
 
 struct RepayCreditRequest: Encodable {
     let amount: Double
+    let accountId: String
 }

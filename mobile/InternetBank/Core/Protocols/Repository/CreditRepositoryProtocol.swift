@@ -5,5 +5,5 @@ protocol CreditRepositoryProtocol: AnyObject {
     func getCredit(id: String) async throws -> Credit?
     func getTariffs() async throws -> [CreditTariff]
     func takeCredit(clientId: String, accountId: String, tariffId: String, amount: Decimal) async throws -> Credit
-    func repayCredit(creditId: String, amount: Decimal) async throws
+    func repayCredit(creditId: String, accountId: String, amount: Decimal) async throws
 }

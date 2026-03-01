@@ -11,7 +11,7 @@ struct AccountDetailView: View {
     var body: some View {
         List {
             Section {
-                Text("Баланс: \(viewModel.account.balance) ₽")
+                Text("Баланс: \(viewModel.account.balance.formattedAmount) ₽")
             }
             Section {
                 Button("Внести деньги") { onDeposit() }

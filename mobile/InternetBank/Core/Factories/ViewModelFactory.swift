@@ -59,7 +59,10 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
     }
 
     func makeRepayCreditViewModel(credit: Credit) -> RepayCreditViewModel {
-        RepayCreditViewModel(creditRepository: creditRepository, credit: credit)
+        RepayCreditViewModel(
+            creditRepository: creditRepository,
+            accountRepository: accountRepository,
+            credit: credit)
     }
 
     func makeProfileViewModel(clientId: String) -> ProfileViewModel {

@@ -15,7 +15,7 @@ struct AccountsListView: View {
                     HStack {
                         Text("Счёт \(account.id.prefix(8))...")
                         Spacer()
-                        Text("\(account.balance) ₽")
+                        Text("\(account.balance.formattedAmount) ₽")
                     }
                 }
             }

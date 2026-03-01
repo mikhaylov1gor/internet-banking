@@ -62,11 +62,11 @@ final class MockCreditRepository: CreditRepositoryProtocol {
         return result
     }
 
-    func repayCredit(creditId: String, amount: Decimal) async throws {
+    func repayCredit(creditId: String, accountId: String, amount: Decimal) async throws {
         try await Task.sleep(nanoseconds: 200_000_000)
         storage.withLock {
             guard let i = storage.credits.firstIndex(where: { $0.id == creditId }),
-                  let accIdx = storage.accounts.firstIndex(where: { $0.id == storage.credits[i].accountId })
+                  let accIdx = storage.accounts.firstIndex(where: { $0.id == accountId })
             else {
                 return
             }
@@ -75,7 +75,7 @@ final class MockCreditRepository: CreditRepositoryProtocol {
             storage.accounts[accIdx].balance -= repayAmount
             let op = AccountOperation(
                 id: "op-\(UUID().uuidString.prefix(8))",
-                accountId: storage.credits[i].accountId,
+                accountId: accountId,
                 type: .creditRepay,
                 amount: repayAmount,
                 date: Date())
