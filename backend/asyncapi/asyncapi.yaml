@@ -34,6 +34,8 @@ components:
           type: integer
           description: Общее количество страниц
           example: 5
+
+    Error:
       type: object
       required: [error]
       properties:
