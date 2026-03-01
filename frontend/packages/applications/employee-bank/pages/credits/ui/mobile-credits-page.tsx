@@ -64,11 +64,18 @@ export const MobileCreditsPage: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && credits && credits.length === 0 && (
+      {!isLoading && !selectedUserId && (
+        <div className="empty credits-page-select-user">
+          <div className="select-user-icon">👤</div>
+          <div className="select-user-text">Выберите пользователя для просмотра кредитов</div>
+        </div>
+      )}
+
+      {!isLoading && selectedUserId && credits && credits.length === 0 && (
         <div className="empty">Кредиты не найдены</div>
       )}
 
-      {!isLoading && credits && credits.length > 0 && (
+      {!isLoading && selectedUserId && credits && credits.length > 0 && (
         <>
           <div className="list mobile-list">
             {credits.map((credit) => (
