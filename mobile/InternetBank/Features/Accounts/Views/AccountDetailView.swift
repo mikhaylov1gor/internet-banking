@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AccountDetailView: View {
     @Bindable var viewModel: AccountDetailViewModel
+    var refreshTrigger: Int
     var onDeposit: () -> Void
     var onWithdraw: () -> Void
     var onHistory: () -> Void
@@ -20,7 +21,10 @@ struct AccountDetailView: View {
             }
         }
         .navigationTitle("Счёт")
-        .task {
+        .refreshable {
+            await viewModel.refresh()
+        }
+        .task(id: refreshTrigger) {
             await viewModel.refresh()
         }
     }

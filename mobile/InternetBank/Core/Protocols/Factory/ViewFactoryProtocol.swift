@@ -4,10 +4,12 @@ protocol ViewFactoryProtocol: AnyObject {
     func makeLoginView(onSuccess: @escaping () -> Void) -> LoginView
     func makeAccountsListView(
         clientId: String,
+        refreshTrigger: Int,
         onAccountTap: @escaping (Account) -> Void,
         onOpenAccount: @escaping () -> Void) -> AccountsListView
     func makeAccountDetailView(
         account: Account,
+        refreshTrigger: Int,
         onDeposit: @escaping () -> Void,
         onWithdraw: @escaping () -> Void,
         onHistory: @escaping () -> Void,
@@ -19,6 +21,7 @@ protocol ViewFactoryProtocol: AnyObject {
     func makeCloseAccountView(account: Account, onDismiss: @escaping () -> Void) -> CloseAccountView
     func makeCreditsListView(
         clientId: String,
+        refreshTrigger: Int,
         onCreditTap: @escaping (Credit) -> Void,
         onTakeCredit: @escaping () -> Void) -> CreditsListView
     func makeTakeCreditView(clientId: String, onDismiss: @escaping () -> Void) -> TakeCreditView

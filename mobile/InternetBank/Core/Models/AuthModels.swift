@@ -11,3 +11,7 @@ struct LoginResponse: Decodable {
     let userId: String
     let type: String
 }
+
+struct RefreshTokenRequest: Encodable {
+    let refreshToken: String
+}

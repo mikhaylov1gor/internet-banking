@@ -5,10 +5,12 @@ struct AccountsCoordinatorView: View {
     let clientId: String
     @Binding var path: NavigationPath
     @Binding var sheetItem: SheetItem?
+    let accountsRefreshTrigger: Int
 
     var body: some View {
         viewFactory.makeAccountsListView(
             clientId: clientId,
+            refreshTrigger: accountsRefreshTrigger,
             onAccountTap: { account in
                 path.append(Route.accountDetail(account))
             },
@@ -20,6 +22,7 @@ struct AccountsCoordinatorView: View {
                     case let .accountDetail(account):
                         viewFactory.makeAccountDetailView(
                             account: account,
+                            refreshTrigger: accountsRefreshTrigger,
                             onDeposit: { sheetItem = .deposit(account) },
                             onWithdraw: { sheetItem = .withdraw(account) },
                             onHistory: { path.append(Route.operationHistory(account)) },

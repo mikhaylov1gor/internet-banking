@@ -17,7 +17,8 @@ struct BankApp: App {
         WindowGroup {
             AppCoordinator(
                 coordinatorFactory: factoryAssembly.coordinatorFactory,
-                authRepository: repositoryAssembly.authRepository).start()
+                authRepository: repositoryAssembly.authRepository,
+                sessionState: DependenciesAssembly.shared.sessionState).start()
         }
     }
 }

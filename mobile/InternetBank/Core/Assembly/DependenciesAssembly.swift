@@ -14,13 +14,16 @@ final class DependenciesAssembly {
         return url
     }()
 
-    private(set) lazy var apiClient: APIClient = {
-        let client = APIClient(baseURL: gatewayURL)
-        if let token = authService.getToken() {
-            client.setAuthToken(token)
-        }
-        return client
-    }()
+    private(set) lazy var sessionState = SessionState()
+
+    private(set) lazy var tokenHandler: JWTTokenHandlerProtocol = JWTTokenHandler(
+        authService: authService,
+        sessionState: sessionState,
+        baseURL: gatewayURL)
+
+    private(set) lazy var apiClient = APIClient(
+        baseURL: gatewayURL,
+        tokenHandler: tokenHandler)
 
     private init() {}
 }

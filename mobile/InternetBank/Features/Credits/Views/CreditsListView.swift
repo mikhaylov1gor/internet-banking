@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CreditsListView: View {
     @Bindable var viewModel: CreditsListViewModel
+    var refreshTrigger: Int
     var onCreditTap: (Credit) -> Void
     var onTakeCredit: () -> Void
 
@@ -28,7 +29,7 @@ struct CreditsListView: View {
         .refreshable {
             await viewModel.loadCredits()
         }
-        .task {
+        .task(id: refreshTrigger) {
             await viewModel.loadCredits()
         }
     }

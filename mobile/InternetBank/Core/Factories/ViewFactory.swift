@@ -15,17 +15,20 @@ final class ViewFactory: ViewFactoryProtocol {
 
     func makeAccountsListView(
         clientId: String,
+        refreshTrigger: Int,
         onAccountTap: @escaping (Account) -> Void,
         onOpenAccount: @escaping () -> Void) -> AccountsListView
     {
         AccountsListView(
             viewModel: viewModelFactory.makeAccountsListViewModel(clientId: clientId),
+            refreshTrigger: refreshTrigger,
             onAccountTap: onAccountTap,
             onOpenAccount: onOpenAccount)
     }
 
     func makeAccountDetailView(
         account: Account,
+        refreshTrigger: Int,
         onDeposit: @escaping () -> Void,
         onWithdraw: @escaping () -> Void,
         onHistory: @escaping () -> Void,
@@ -33,6 +36,7 @@ final class ViewFactory: ViewFactoryProtocol {
     {
         AccountDetailView(
             viewModel: viewModelFactory.makeAccountDetailViewModel(account: account),
+            refreshTrigger: refreshTrigger,
             onDeposit: onDeposit,
             onWithdraw: onWithdraw,
             onHistory: onHistory,
@@ -69,11 +73,13 @@ final class ViewFactory: ViewFactoryProtocol {
 
     func makeCreditsListView(
         clientId: String,
+        refreshTrigger: Int,
         onCreditTap: @escaping (Credit) -> Void,
         onTakeCredit: @escaping () -> Void) -> CreditsListView
     {
         CreditsListView(
             viewModel: viewModelFactory.makeCreditsListViewModel(clientId: clientId),
+            refreshTrigger: refreshTrigger,
             onCreditTap: onCreditTap,
             onTakeCredit: onTakeCredit)
     }

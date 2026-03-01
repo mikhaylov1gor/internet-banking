@@ -27,6 +27,9 @@ final class RepositoryAssembly {
         if Config.useMocks {
             return MockAuthRepository(authService: dependencies.authService)
         }
-        return AuthRepository(apiClient: dependencies.apiClient, authService: dependencies.authService)
+        return AuthRepository(
+            apiClient: dependencies.apiClient,
+            authService: dependencies.authService,
+            tokenHandler: dependencies.tokenHandler)
     }
 }

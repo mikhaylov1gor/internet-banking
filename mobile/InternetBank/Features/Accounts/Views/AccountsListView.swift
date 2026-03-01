@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AccountsListView: View {
     @Bindable var viewModel: AccountsListViewModel
+    var refreshTrigger: Int
     var onAccountTap: (Account) -> Void
     var onOpenAccount: () -> Void
 
@@ -33,7 +34,7 @@ struct AccountsListView: View {
         .refreshable {
             await viewModel.loadAccounts()
         }
-        .task {
+        .task(id: refreshTrigger) {
             await viewModel.loadAccounts()
         }
     }

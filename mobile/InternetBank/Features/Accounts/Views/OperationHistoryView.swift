@@ -13,6 +13,9 @@ struct OperationHistoryView: View {
             }
         }
         .navigationTitle("История операций")
+        .refreshable {
+            await viewModel.load()
+        }
         .task {
             await viewModel.load()
         }

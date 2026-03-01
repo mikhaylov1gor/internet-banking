@@ -3,10 +3,12 @@ import Foundation
 final class AuthRepository: AuthRepositoryProtocol {
     private let apiClient: APIClient
     private let authService: AuthServiceProtocol
+    private let tokenHandler: JWTTokenHandlerProtocol?
 
-    init(apiClient: APIClient, authService: AuthServiceProtocol) {
+    init(apiClient: APIClient, authService: AuthServiceProtocol, tokenHandler: JWTTokenHandlerProtocol? = nil) {
         self.apiClient = apiClient
         self.authService = authService
+        self.tokenHandler = tokenHandler
     }
 
     func login(email: String, password: String) async throws -> AuthResult {
@@ -14,7 +16,8 @@ final class AuthRepository: AuthRepositoryProtocol {
         let response: LoginResponse = try await apiClient.request(
             path: AuthEndpoints.login,
             method: "POST",
-            body: request)
+            body: request,
+            requiresAuth: false)
         authService.saveToken(response.token)
         if let refresh = response.refreshToken {
             authService.saveRefreshToken(refresh)
@@ -24,9 +27,12 @@ final class AuthRepository: AuthRepositoryProtocol {
     }
 
     func logout() {
-        authService.clearToken()
-        authService.clearRefreshToken()
-        authService.clearUserId()
+        tokenHandler?.invalidateSession()
+        if tokenHandler == nil {
+            authService.clearToken()
+            authService.clearRefreshToken()
+            authService.clearUserId()
+        }
     }
 
     var currentUserId: String? {

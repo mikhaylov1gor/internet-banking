@@ -25,6 +25,8 @@ struct MainCoordinatorView: View {
     @State private var accountsPath = NavigationPath()
     @State private var creditsPath = NavigationPath()
     @State private var sheetItem: SheetItem?
+    @State private var accountsRefreshTrigger = 0
+    @State private var creditsRefreshTrigger = 0
 
     var body: some View {
         TabView {
@@ -33,7 +35,8 @@ struct MainCoordinatorView: View {
                     viewFactory: viewFactory,
                     clientId: clientId,
                     path: $accountsPath,
-                    sheetItem: $sheetItem)
+                    sheetItem: $sheetItem,
+                    accountsRefreshTrigger: accountsRefreshTrigger)
             }
             .tabItem {
                 Label("Счета", systemImage: "creditcard")
@@ -42,7 +45,8 @@ struct MainCoordinatorView: View {
                 CreditsCoordinatorView(
                     viewFactory: viewFactory,
                     clientId: clientId,
-                    sheetItem: $sheetItem)
+                    sheetItem: $sheetItem,
+                    creditsRefreshTrigger: creditsRefreshTrigger)
             }
             .tabItem {
                 Label("Кредиты", systemImage: "banknote")
@@ -62,27 +66,33 @@ struct MainCoordinatorView: View {
         switch item {
             case let .deposit(account):
                 viewFactory.makeDepositView(account: account) {
+                    accountsRefreshTrigger += 1
                     sheetItem = nil
                 }
             case let .withdraw(account):
                 viewFactory.makeWithdrawView(account: account) {
+                    accountsRefreshTrigger += 1
                     sheetItem = nil
                 }
             case .openAccount:
                 viewFactory.makeOpenAccountView(clientId: clientId) {
+                    accountsRefreshTrigger += 1
                     sheetItem = nil
                 }
             case let .closeAccount(account):
                 viewFactory.makeCloseAccountView(account: account) {
+                    accountsRefreshTrigger += 1
                     sheetItem = nil
                     accountsPath = NavigationPath()
                 }
             case .takeCredit:
                 viewFactory.makeTakeCreditView(clientId: clientId) {
+                    creditsRefreshTrigger += 1
                     sheetItem = nil
                 }
             case let .repayCredit(credit):
                 viewFactory.makeRepayCreditView(credit: credit) {
+                    creditsRefreshTrigger += 1
                     sheetItem = nil
                 }
         }
