@@ -12,5 +12,6 @@ export * from './password-input'
 export * from './phone-input'
 export * from './select'
 export * from './spinner'
+export * from './theme-toggle'
 export * from './user-select'
 

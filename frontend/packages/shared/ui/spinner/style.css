@@ -4,8 +4,8 @@
 }
 
 .circle {
-  border: 3px solid #dbeafe;
-  border-top: 3px solid #2563eb;
+  border: 3px solid var(--spinner-track);
+  border-top: 3px solid var(--spinner-indicator);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -19,8 +19,8 @@
   width: 20px;
   height: 20px;
   border-width: 2px;
-  border-color: #dbeafe;
-  border-top-color: #2563eb;
+  border-color: var(--spinner-track);
+  border-top-color: var(--spinner-indicator);
 }
 
 .medium {
@@ -32,8 +32,8 @@
   width: 40px;
   height: 40px;
   border-width: 3px;
-  border-color: #dbeafe;
-  border-top-color: #2563eb;
+  border-color: var(--spinner-track);
+  border-top-color: var(--spinner-indicator);
 }
 
 .large {
@@ -45,8 +45,8 @@
   width: 60px;
   height: 60px;
   border-width: 4px;
-  border-color: #dbeafe;
-  border-top-color: #2563eb;
+  border-color: var(--spinner-track);
+  border-top-color: var(--spinner-indicator);
 }
 
 @keyframes spin {
@@ -57,4 +57,3 @@
     transform: rotate(360deg);
   }
 }
-

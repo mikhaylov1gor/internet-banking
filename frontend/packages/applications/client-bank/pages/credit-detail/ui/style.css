@@ -2,7 +2,7 @@
   padding: 2rem 1.5rem 1.5rem 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
-  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
   min-height: calc(100vh - 80px);
 }
 
@@ -18,11 +18,11 @@
 }
 
 .credit-detail-page-credit-info {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  background: linear-gradient(135deg, var(--bg-card-start) 0%, var(--bg-card-end) 100%);
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1);
-  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-default);
   margin-bottom: 2rem;
 }
 
@@ -30,7 +30,7 @@
   font-size: 2rem;
   margin-top: 0;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--btn-primary-start) 0%, var(--btn-primary-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -49,48 +49,48 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 1rem;
-  background: #eff6ff;
+  background: var(--bg-surface-alt);
   border-radius: 8px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--border-light);
 }
 
 .credit-detail-page-label {
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 .credit-detail-page-amount {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1e40af;
+  color: var(--credit-amount-color);
 }
 
 .credit-detail-page-remaining {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #ef4444;
+  color: var(--credit-remaining-color);
 }
 
 .credit-detail-page-active {
-  color: #10b981;
+  color: var(--status-active);
   font-weight: 500;
 }
 
 .credit-detail-page-paid {
-  color: #3b82f6;
+  color: var(--status-paid-credit);
   font-weight: 500;
 }
 
 .credit-detail-page-account-link {
   cursor: pointer;
-  color: #3b82f6;
+  color: var(--link-color);
   text-decoration: underline;
   transition: color 0.2s;
 }
 
 .credit-detail-page-account-link:hover {
-  color: #2563eb;
+  color: var(--link-hover-color);
 }
 
 .actions {
@@ -104,12 +104,12 @@
 }
 
 .error {
-  color: #ef4444;
+  color: var(--error-color);
   font-size: 0.875rem;
   padding: 0.75rem 1rem;
-  background-color: #fef2f2;
+  background-color: var(--error-bg);
   border-radius: 8px;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--error-border);
 }
 
 .modalActions {
@@ -125,4 +125,3 @@
   align-items: center;
   min-height: 200px;
 }
-

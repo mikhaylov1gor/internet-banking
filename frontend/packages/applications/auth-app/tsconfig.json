@@ -19,6 +19,8 @@
     "paths": {
       "@shared/ui": ["../../../node_modules/@shared/ui"],
       "@shared/ui/*": ["../../../node_modules/@shared/ui/*"],
+      "@shared/features": ["../../../node_modules/@shared/features"],
+      "@shared/features/*": ["../../../node_modules/@shared/features/*"],
       "@shared/api": ["../../../node_modules/@shared/api"],
       "@shared/api/*": ["../../../node_modules/@shared/api/*"],
       "@shared/utils": ["../../shared/utils"],

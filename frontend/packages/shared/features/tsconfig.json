@@ -16,7 +16,8 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/ui/*": ["../ui/*"]
+      "@shared/ui/*": ["../ui/*"],
+      "@shared/features/*": ["./*"]
     }
   },
   "include": ["."]

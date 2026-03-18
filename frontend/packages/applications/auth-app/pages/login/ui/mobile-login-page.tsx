@@ -3,6 +3,7 @@ import { EmailInput } from '@shared/ui/email-input'
 import { PasswordInput } from '@shared/ui/password-input'
 import { Button } from '@shared/ui/button'
 import { Spinner } from '@shared/ui/spinner'
+import { ThemeToggle } from '@shared/ui/theme-toggle'
 import { useLoginPage } from '../model/use-login'
 import './style.css'
 
@@ -53,6 +54,7 @@ export const MobileLoginPage: React.FC = () => {
 
   return (
     <div className={`login-page-container mobile-login-page ${isWebView ? 'webview' : ''}`}>
+      <div className="login-theme-toggle"><ThemeToggle /></div>
       <form onSubmit={handleSubmit} className="login-form mobile-login-form">
         <h1 className="login-form-title mobile-login-title">Z-Банк</h1>
         <EmailInput

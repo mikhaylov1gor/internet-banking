@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@shared/ui": "*",
+    "@shared/features": "*",
     "@shared/api": "*",
     "@shared/utils": "*",
     "@tanstack/react-query": "^5.17.0",

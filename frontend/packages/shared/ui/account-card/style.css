@@ -1,17 +1,17 @@
 .account-card {
   padding: 1.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+  background: linear-gradient(135deg, var(--bg-card-start) 0%, var(--bg-card-end) 100%);
+  box-shadow: var(--shadow-sm);
 }
 
 .account-card:hover {
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-4px);
-  border-color: #93c5fd;
+  border-color: var(--border-hover);
 }
 
 .account-card-info {
@@ -23,7 +23,7 @@
 .account-card-id {
   font-weight: 600;
   font-size: 1.125rem;
-  color: #1e40af;
+  color: var(--text-accent);
   margin-top: 0;
   margin-bottom: 0;
 }
@@ -37,7 +37,7 @@
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .account-card-status {
@@ -46,14 +46,13 @@
 }
 
 .account-card-status.active {
-  color: #10b981;
+  color: var(--status-active);
 }
 
 .account-card-status.closed {
-  color: #ef4444;
+  color: var(--status-closed);
 }
 
 .account-card-details span {
   display: block;
 }
-

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useLocation } from 'react-router-dom'
 import { Button } from '../button'
+import { ThemeToggle } from '../theme-toggle'
 import { useLogout } from '@shared/features/auth'
 import './style.css'
 
@@ -40,9 +41,12 @@ export const DesktopAppBar: React.FC<DesktopAppBarProps> = ({ buttons, onLogoCli
             </Button>
           ))}
         </nav>
-        <Button variant="secondary" size="small" onClick={logout}>
-          Выйти
-        </Button>
+        <div className="app-bar-actions">
+          <ThemeToggle />
+          <Button variant="secondary" size="small" onClick={logout}>
+            Выйти
+          </Button>
+        </div>
       </div>
     </div>
   )

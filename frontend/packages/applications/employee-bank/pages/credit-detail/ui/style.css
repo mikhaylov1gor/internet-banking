@@ -16,10 +16,10 @@
 }
 
 .credit-detail-page-credit-info {
-  background: white;
+  background: var(--bg-surface);
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .credit-detail-page-title {
@@ -27,7 +27,7 @@
   font-weight: 600;
   margin-top: 0;
   margin-bottom: 24px;
-  color: #333;
+  color: var(--text-default);
 }
 
 .credit-detail-page-details {
@@ -41,7 +41,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .credit-detail-page-detail-item:last-child {
@@ -50,40 +50,39 @@
 
 .credit-detail-page-label {
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
   min-width: 180px;
 }
 
 .credit-detail-page-amount {
   font-size: 18px;
   font-weight: 600;
-  color: #2563eb;
+  color: var(--credit-amount-color);
 }
 
 .credit-detail-page-remaining {
   font-size: 18px;
   font-weight: 600;
-  color: #dc2626;
+  color: var(--credit-remaining-color);
 }
 
 .credit-detail-page-active {
-  color: #16a34a;
+  color: var(--status-active);
   font-weight: 600;
 }
 
 .credit-detail-page-paid {
-  color: #6b7280;
+  color: var(--status-paid-secondary);
   font-weight: 600;
 }
 
 .credit-detail-page-clickable {
   cursor: pointer;
-  color: #2563eb;
+  color: var(--link-color);
   text-decoration: underline;
   transition: color 0.2s ease;
 }
 
 .credit-detail-page-clickable:hover {
-  color: #1e40af;
+  color: var(--link-hover-color);
 }
-
