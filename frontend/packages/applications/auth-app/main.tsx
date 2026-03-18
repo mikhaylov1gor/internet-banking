@@ -1,13 +1,10 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { MobileApp, DesktopApp } from './app/App'
-import { isMobileDevice } from '@shared/utils'
+import { App } from './app/App'
 import './index.css'
-
-const isMobile = isMobileDevice()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {isMobile ? <MobileApp /> : <DesktopApp />}
+    <App />
   </React.StrictMode>
 )

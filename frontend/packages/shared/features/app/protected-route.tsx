@@ -1,7 +1,13 @@
 import React from 'react'
-import { Navigate } from 'react-router-dom'
 import { isAuthenticated, getUserType } from '../auth'
+import { redirectToAuth } from '@shared/utils'
 import { ErrorFallback } from '@shared/ui/error-fallback'
+import { AppBarWithNavigation } from './app-bar-with-navigation'
+
+const USER_HOME_URL: Record<string, string> = {
+  client: 'http://localhost:5174',
+  employee: 'http://localhost:5173',
+}
 
 export interface ProtectedRouteProps {
   children: React.ReactNode
@@ -15,22 +21,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   appBarComponent 
 }) => {
   if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />
+    redirectToAuth()
+    return null
   }
-  
-  if (allowedUserType && getUserType() !== allowedUserType) {
-    const deniedUserType = allowedUserType === 'client' ? 'employee' : 'client'
+
+  const userType = getUserType()
+
+  if (allowedUserType && userType !== allowedUserType) {
+    const homeUrl = USER_HOME_URL[userType || 'client']
     return (
       <>
-        {appBarComponent}
-        <div style={{ padding: '20px' }}>
-          <ErrorFallback
-            title="Нет доступа"
-            message="У вас нет доступа к этой странице"
-            onGoBack={() => window.location.href = '/'}
-            goBackLabel="На главную"
-          />
-        </div>
+        <AppBarWithNavigation buttons={[]} />
+        <ErrorFallback
+          title="Страница не найдена"
+          message="Запрашиваемая страница не существует"
+          onGoBack={() => { window.location.href = homeUrl }}
+          goBackLabel="На главную"
+        />
       </>
     )
   }
@@ -42,4 +49,3 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     </>
   )
 }
-

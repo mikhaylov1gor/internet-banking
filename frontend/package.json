@@ -9,8 +9,10 @@
   "scripts": {
     "dev:client": "yarn workspace client-bank dev",
     "dev:employee": "yarn workspace employee-bank dev",
+    "dev:auth": "yarn workspace auth-app dev",
     "build:client": "yarn workspace client-bank build",
     "build:employee": "yarn workspace employee-bank build",
+    "build:auth": "yarn workspace auth-app build",
     "lint": "eslint .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

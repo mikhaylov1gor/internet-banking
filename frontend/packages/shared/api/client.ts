@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import { redirectToAuth, tokenStorage } from '@shared/utils'
 
 const API_BASE_URL = process.env.NODE_ENV === 'development' ? '/api' : (process.env.API_BASE_URL || 'http://localhost:8080')
 
@@ -18,7 +19,7 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token')
+    const token = tokenStorage.getAccessToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -70,26 +71,27 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true
       isRefreshing = true
 
-      const refreshToken = localStorage.getItem('refresh_token')
+      const refreshTokenValue = tokenStorage.getRefreshToken()
 
-      if (!refreshToken) {
+      if (!refreshTokenValue) {
         processQueue(new Error('No refresh token'), null)
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login'
-        }
+        tokenStorage.clear()
+        redirectToAuth()
         return Promise.reject(error)
       }
 
       try {
         const response = await refreshClient.post('/auth/refresh', {
-          refresh_token: refreshToken,
+          refresh_token: refreshTokenValue,
         })
 
         const { token, refresh_token } = response.data
-        localStorage.setItem('access_token', token)
-        localStorage.setItem('refresh_token', refresh_token)
+        tokenStorage.setTokens({
+          accessToken: token,
+          refreshToken: refresh_token,
+          userId: tokenStorage.getUserId() || '',
+          userType: tokenStorage.getUserType() || '',
+        })
 
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${token}`
@@ -99,11 +101,8 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError as Error, null)
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login'
-        }
+        tokenStorage.clear()
+        redirectToAuth()
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
@@ -113,4 +112,3 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-

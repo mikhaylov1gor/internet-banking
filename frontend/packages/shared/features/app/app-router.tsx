@@ -1,8 +1,7 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { isAuthenticated } from '../auth'
-import { ProtectedRoute, ProtectedRouteProps } from './protected-route'
+import { ProtectedRoute } from './protected-route'
 import { createQueryClient } from './query-client'
 
 export interface AppRoute {
@@ -14,17 +13,17 @@ export interface AppRoute {
 
 export interface AppRouterProps {
   routes: AppRoute[]
-  loginPage: React.ReactNode
   notFoundPage: React.ReactNode
   appBarComponent?: React.ReactNode
+  allowedUserType?: 'client' | 'employee'
   queryClient?: ReturnType<typeof createQueryClient>
 }
 
 export const AppRouter: React.FC<AppRouterProps> = ({
   routes,
-  loginPage,
   notFoundPage,
   appBarComponent,
+  allowedUserType,
   queryClient = createQueryClient(),
 }) => {
   return (
@@ -32,12 +31,6 @@ export const AppRouter: React.FC<AppRouterProps> = ({
       <BrowserRouter>
         <div className="app">
           <Routes>
-            <Route
-              path="/login"
-              element={
-                isAuthenticated() ? <Navigate to="/" replace /> : loginPage
-              }
-            />
             {routes.map((route) => (
               <Route
                 key={route.path}
@@ -59,7 +52,10 @@ export const AppRouter: React.FC<AppRouterProps> = ({
             <Route
               path="*"
               element={
-                <ProtectedRoute appBarComponent={appBarComponent}>
+                <ProtectedRoute
+                  allowedUserType={allowedUserType}
+                  appBarComponent={appBarComponent}
+                >
                   {notFoundPage}
                 </ProtectedRoute>
               }
@@ -70,4 +66,3 @@ export const AppRouter: React.FC<AppRouterProps> = ({
     </QueryClientProvider>
   )
 }
-

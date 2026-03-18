@@ -1,5 +1,4 @@
 import React from 'react'
-import { MobileLoginPage, DesktopLoginPage } from '../pages/login'
 import { MobileHomePage, DesktopHomePage } from '../pages/home'
 import { MobileAccountsPage, DesktopAccountsPage } from '../pages/accounts'
 import { AccountDetailPage } from '../pages/account-detail'
@@ -15,15 +14,19 @@ import {
   NotFoundPage,
   createQueryClient 
 } from '@shared/features/app'
+import type { NavigationButton } from '@shared/features/app'
 import './style.css'
 
 const queryClient = createQueryClient()
 
-const navigationButtons = [
+const CLIENT_APP_URL = 'http://localhost:5174'
+
+const navigationButtons: NavigationButton[] = [
   { name: 'Счета', path: '/accounts' },
   { name: 'Кредиты', path: '/credits' },
   { name: 'Тарифы', path: '/tariffs' },
   { name: 'Пользователи', path: '/users' },
+  { name: 'Приложение клиента', path: CLIENT_APP_URL, external: true },
 ]
 
 const appBarComponent = <AppBarWithNavigation buttons={navigationButtons} />
@@ -83,9 +86,9 @@ export const MobileApp: React.FC = () => {
   return (
     <AppRouter
       routes={createRoutes(true)}
-      loginPage={<MobileLoginPage />}
       notFoundPage={<NotFoundPage />}
       appBarComponent={appBarComponent}
+      allowedUserType="employee"
       queryClient={queryClient}
     />
   )
@@ -95,12 +98,10 @@ export const DesktopApp: React.FC = () => {
   return (
     <AppRouter
       routes={createRoutes(false)}
-      loginPage={<DesktopLoginPage />}
       notFoundPage={<NotFoundPage />}
       appBarComponent={appBarComponent}
+      allowedUserType="employee"
       queryClient={queryClient}
     />
   )
 }
-
-

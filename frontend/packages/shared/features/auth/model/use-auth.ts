@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { redirectToAuth, tokenStorage } from '@shared/utils'
 
 export type LoginRequest = {
   email: string
@@ -20,10 +21,12 @@ export const useLogin = (loginFn: (data: LoginRequest) => Promise<LoginResponse>
   return useMutation({
     mutationFn: loginFn,
     onSuccess: (data) => {
-      localStorage.setItem('access_token', data.token)
-      localStorage.setItem('refresh_token', data.refresh_token)
-      localStorage.setItem('user_id', data.user_id)
-      localStorage.setItem('user_type', data.type)
+      tokenStorage.setTokens({
+        accessToken: data.token,
+        refreshToken: data.refresh_token,
+        userId: data.user_id,
+        userType: data.type,
+      })
       queryClient.setQueryData(['user'], data)
       navigate('/')
     },
@@ -33,28 +36,23 @@ export const useLogin = (loginFn: (data: LoginRequest) => Promise<LoginResponse>
 }
 
 export const useLogout = () => {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   return () => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user_id')
-    localStorage.removeItem('user_type')
-    navigate('/login')
+    tokenStorage.clear()
     queryClient.clear()
+    redirectToAuth()
   }
 }
 
 export const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem('access_token')
+  return !!tokenStorage.getAccessToken()
 }
 
 export const getUserType = (): 'client' | 'employee' | null => {
-  return (localStorage.getItem('user_type') as 'client' | 'employee') || null
+  return tokenStorage.getUserType()
 }
 
 export const getCurrentUserId = (): string | null => {
-  return localStorage.getItem('user_id')
+  return tokenStorage.getUserId()
 }
-

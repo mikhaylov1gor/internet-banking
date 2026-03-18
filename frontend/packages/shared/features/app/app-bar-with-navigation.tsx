@@ -6,6 +6,7 @@ import { isMobileDevice } from '@shared/utils'
 export interface NavigationButton {
   name: string
   path: string
+  external?: boolean
 }
 
 export interface AppBarWithNavigationProps {
@@ -22,8 +23,10 @@ export const AppBarWithNavigation: React.FC<AppBarWithNavigationProps> = ({
 
   const navigationButtons = buttons.map((button) => ({
     name: button.name,
-    onClick: () => navigate(button.path),
-    path: button.path,
+    onClick: button.external
+      ? () => { window.location.href = button.path }
+      : () => navigate(button.path),
+    path: button.external ? undefined : button.path,
   }))
 
   const AppBar = isMobile ? MobileAppBar : DesktopAppBar
