@@ -68,6 +68,8 @@ const sendTokensViaPostMessage = (tokenData: TokenData) => {
 
   if (window.parent !== window) {
     window.parent.postMessage(message, '*')
+  } else {
+    window.postMessage(message, '*')
   }
 
   const rnWebView = (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView

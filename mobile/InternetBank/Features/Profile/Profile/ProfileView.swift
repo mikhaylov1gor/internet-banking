@@ -8,6 +8,7 @@ struct ProfileView: View {
         Form {
             Button("Выйти", role: .destructive) {
                 viewModel.logout()
+                WebAuthContextCleaner.clearAuthWebContext()
                 onLogout()
             }
         }

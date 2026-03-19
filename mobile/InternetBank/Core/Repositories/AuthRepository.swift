@@ -26,6 +26,12 @@ final class AuthRepository: AuthRepositoryProtocol {
         return AuthResult(userId: response.userId, token: response.token)
     }
 
+    func completeWebAuth(accessToken: String, refreshToken: String, userId: String) {
+        authService.saveToken(accessToken)
+        authService.saveRefreshToken(refreshToken)
+        authService.saveUserId(userId)
+    }
+
     func logout() {
         tokenHandler?.invalidateSession()
         if tokenHandler == nil {

@@ -15,6 +15,12 @@ final class MockAuthRepository: AuthRepositoryProtocol {
         return AuthResult(userId: userId, token: "mock-token-\(userId)")
     }
 
+    func completeWebAuth(accessToken: String, refreshToken: String, userId: String) {
+        authService.saveToken(accessToken)
+        authService.saveRefreshToken(refreshToken)
+        authService.saveUserId(userId)
+    }
+
     func logout() {
         authService.clearToken()
         authService.clearRefreshToken()

@@ -2,15 +2,15 @@ import SwiftUI
 
 final class ViewFactory: ViewFactoryProtocol {
     private let viewModelFactory: ViewModelFactoryProtocol
+    private let authRepository: AuthRepositoryProtocol
 
-    init(viewModelFactory: ViewModelFactoryProtocol) {
+    init(viewModelFactory: ViewModelFactoryProtocol, authRepository: AuthRepositoryProtocol) {
         self.viewModelFactory = viewModelFactory
+        self.authRepository = authRepository
     }
 
     func makeLoginView(onSuccess: @escaping () -> Void) -> LoginView {
-        let viewModel = viewModelFactory.makeLoginViewModel()
-        viewModel.onLoginSuccess = onSuccess
-        return LoginView(viewModel: viewModel)
+        LoginView(authRepository: authRepository, onLoginSuccess: onSuccess)
     }
 
     func makeAccountsListView(

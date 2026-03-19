@@ -20,7 +20,7 @@ final class FactoryAssembly {
     }
 
     var viewFactory: ViewFactoryProtocol {
-        ViewFactory(viewModelFactory: viewModelFactory)
+        ViewFactory(viewModelFactory: viewModelFactory, authRepository: repositoryAssembly.authRepository)
     }
 
     var coordinatorFactory: CoordinatorFactoryProtocol {
