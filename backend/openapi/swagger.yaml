@@ -1,0 +1,353 @@
+openapi: 3.0.3
+info:
+  title: Internet Bank API (Swagger)
+  version: 1.1.0
+  description: Упрощенная OpenAPI-спецификация для открытия в Swagger UI.
+servers:
+  - url: http://localhost:8080
+security:
+  - BearerAuth: []
+tags:
+  - name: Auth
+  - name: Users
+  - name: Accounts
+  - name: Credits
+  - name: AppSettings
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum: [client, employee]
+    TokenResponse:
+      type: object
+      required: [token, refresh_token, user_id, type]
+      properties:
+        token:
+          type: string
+        refresh_token:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [client, employee]
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+    User:
+      type: object
+      required: [id, type, roles, email, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [client, employee]
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [client, employee]
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [active, blocked]
+        created_at:
+          type: string
+          format: date-time
+    CreateUserRequest:
+      type: object
+      required: [type, email, full_name]
+      properties:
+        type:
+          type: string
+          enum: [client, employee]
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+    Account:
+      type: object
+      required: [id, client_id, balance, currency, status, opened_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        client_id:
+          type: string
+          format: uuid
+        balance:
+          type: number
+          format: double
+        currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        status:
+          type: string
+          enum: [active, closed]
+        opened_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+    OpenAccountRequest:
+      type: object
+      required: [client_id]
+      properties:
+        client_id:
+          type: string
+          format: uuid
+        currency:
+          type: string
+          enum: [RUB, USD, EUR]
+    Operation:
+      type: object
+      required: [id, account_id, type, amount, balance_after, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        amount:
+          type: number
+          format: double
+        balance_after:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+    ChangeBalanceRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+    Credit:
+      type: object
+      required: [id, client_id, account_id, tariff_id, amount, remaining, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        client_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        tariff_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        remaining:
+          type: number
+        status:
+          type: string
+          enum: [active, paid, overdue]
+    AppSettings:
+      type: object
+      required: [app_type, theme, hidden_account_ids]
+      properties:
+        app_type:
+          type: string
+          enum: [client, employee]
+        theme:
+          type: string
+          enum: [light, dark]
+        hidden_account_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Логин
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Токены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Обновление токенов
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Токены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+  /users:
+    get:
+      tags: [Users]
+      summary: Список пользователей
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Users]
+      summary: Создать пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /accounts:
+    get:
+      tags: [Accounts]
+      summary: Список счетов
+      responses:
+        '200':
+          description: OK
+    post:
+      tags: [Accounts]
+      summary: Открыть счет
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenAccountRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+  /accounts/{accountId}/deposit:
+    post:
+      tags: [Accounts]
+      summary: Пополнение счета
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeBalanceRequest'
+      responses:
+        '200':
+          description: Операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+  /accounts/{accountId}/operations:
+    get:
+      tags: [Accounts]
+      summary: История операций
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  /credits:
+    get:
+      tags: [Credits]
+      summary: Список кредитов
+      responses:
+        '200':
+          description: OK
+  /app-settings/{appType}:
+    get:
+      tags: [AppSettings]
+      summary: Получить настройки приложения
+      parameters:
+        - in: path
+          name: appType
+          required: true
+          schema:
+            type: string
+            enum: [client, employee]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSettings'

@@ -56,7 +56,7 @@ func (r *userRepo) List(userType *entity.UserType, status *entity.UserStatus, li
 	var total int64
 	q := r.db.Model(&entity.User{})
 	if userType != nil {
-		q = q.Where("type = ?", *userType)
+		q = q.Where("roles LIKE ?", "%\""+string(*userType)+"\"%")
 	}
 	if status != nil {
 		q = q.Where("status = ?", *status)

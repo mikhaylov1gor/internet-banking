@@ -12,7 +12,10 @@ type Config struct {
 
 type CoreConfig struct {
 	Config
-	JWTSecret string
+	JWTSecret   string
+	FXBaseURL   string
+	RabbitURL   string
+	RabbitQueue string
 }
 
 func LoadCore() CoreConfig {
@@ -28,7 +31,28 @@ func LoadCore() CoreConfig {
 	if jwtSecret == "" {
 		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
-	return CoreConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret}
+	fxBaseURL := os.Getenv("FX_BASE_URL")
+	if fxBaseURL == "" {
+		fxBaseURL = "https://api.frankfurter.app"
+	}
+	rabbitURL := os.Getenv("RABBITMQ_URL")
+	if rabbitURL == "" {
+		rabbitURL = "amqp://guest:guest@rabbitmq:5672/"
+	}
+	rabbitQueue := os.Getenv("RABBITMQ_QUEUE")
+	if rabbitQueue == "" {
+		rabbitQueue = "core.operations"
+	}
+	return CoreConfig{
+		Config: Config{
+			Port: port,
+			DSN:  dsn,
+		},
+		JWTSecret:   jwtSecret,
+		FXBaseURL:   fxBaseURL,
+		RabbitURL:   rabbitURL,
+		RabbitQueue: rabbitQueue,
+	}
 }
 
 func LoadUsers() (Config, UsersAuth) {
@@ -56,17 +80,37 @@ func LoadUsers() (Config, UsersAuth) {
 			refreshTTL = v
 		}
 	}
+	ssoClients := os.Getenv("SSO_CLIENTS")
+	if ssoClients == "" {
+		ssoClients = "client-app|client|http://localhost:3000/callback,employee-app|employee|http://localhost:3001/callback"
+	}
+	forceSecureSSO := false
+	if raw := os.Getenv("SSO_FORCE_SECURE_COOKIE"); raw != "" {
+		if v, err := strconv.ParseBool(raw); err == nil {
+			forceSecureSSO = v
+		}
+	}
 	return Config{Port: port, DSN: dsn}, UsersAuth{
-		JWTSecret:  jwtSecret,
-		AccessTTL:  accessTTL,
-		RefreshTTL: refreshTTL,
+		JWTSecret:      jwtSecret,
+		AccessTTL:      accessTTL,
+		RefreshTTL:     refreshTTL,
+		SSOClients:     ssoClients,
+		ForceSecureSSO: forceSecureSSO,
 	}
 }
 
 type CreditsConfig struct {
 	Config
+	JWTSecret           string
+	CoreURL             string
+	MasterAccountID     string
+	BankServiceUserID   string
+	InternalTokenTTLMin int
+}
+
+type AppSettingsConfig struct {
+	Config
 	JWTSecret string
-	CoreURL   string
 }
 
 func LoadCredits() CreditsConfig {
@@ -86,11 +130,47 @@ func LoadCredits() CreditsConfig {
 	if coreURL == "" {
 		coreURL = "http://localhost:8001"
 	}
-	return CreditsConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret, CoreURL: coreURL}
+	masterAccountID := os.Getenv("MASTER_ACCOUNT_ID")
+	bankServiceUserID := os.Getenv("BANK_SERVICE_USER_ID")
+	if bankServiceUserID == "" {
+		bankServiceUserID = "11111111-1111-1111-1111-111111111111"
+	}
+	internalTokenTTLMin := 15
+	if ttl := os.Getenv("INTERNAL_TOKEN_TTL_MIN"); ttl != "" {
+		if v, err := strconv.Atoi(ttl); err == nil && v > 0 {
+			internalTokenTTLMin = v
+		}
+	}
+	return CreditsConfig{
+		Config:              Config{Port: port, DSN: dsn},
+		JWTSecret:           jwtSecret,
+		CoreURL:             coreURL,
+		MasterAccountID:     masterAccountID,
+		BankServiceUserID:   bankServiceUserID,
+		InternalTokenTTLMin: internalTokenTTLMin,
+	}
+}
+
+func LoadAppSettings() AppSettingsConfig {
+	port := os.Getenv("APP_SETTINGS_PORT")
+	if port == "" {
+		port = "8004"
+	}
+	dsn := os.Getenv("APP_SETTINGS_DSN")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=postgres dbname=app_settings port=5432 sslmode=disable"
+	}
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
+	}
+	return AppSettingsConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret}
 }
 
 type UsersAuth struct {
-	JWTSecret  string
-	AccessTTL  int
-	RefreshTTL int
+	JWTSecret      string
+	AccessTTL      int
+	RefreshTTL     int
+	SSOClients     string
+	ForceSecureSSO bool
 }

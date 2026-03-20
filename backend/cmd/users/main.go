@@ -37,7 +37,7 @@ func main() {
 		AccessTTL:  authCfg.AccessTTL,
 		RefreshTTL: authCfg.RefreshTTL,
 	})
-	handler := delivery.NewHandler(authUC, userUC, authCfg.JWTSecret)
+	handler := delivery.NewHandler(authUC, userUC, authCfg.JWTSecret, authCfg.SSOClients, authCfg.ForceSecureSSO)
 
 	r := chi.NewRouter()
 	r.Route("/", handler.Mount)

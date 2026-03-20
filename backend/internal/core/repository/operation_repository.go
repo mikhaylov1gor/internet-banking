@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type OperationRepository interface {
@@ -21,7 +22,7 @@ func NewOperationRepository(db *gorm.DB) OperationRepository {
 }
 
 func (r *operationRepo) Create(op *entity.Operation) error {
-	return r.db.Create(op).Error
+	return r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(op).Error
 }
 
 func (r *operationRepo) ListByAccountID(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error) {

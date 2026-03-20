@@ -1,0 +1,1172 @@
+openapi: 3.0.3
+info:
+  title: Internet Bank Backend API
+  version: 1.1.0
+  description: |
+    Актуальная HTTP-спецификация backend-сервисов интернет-банка через API Gateway.
+    Все запросы отправляются на один базовый URL.
+servers:
+  - url: http://localhost:8080
+    description: API Gateway
+security:
+  - BearerAuth: []
+tags:
+  - name: Auth
+  - name: SSO
+  - name: Users
+  - name: Accounts
+  - name: Operations
+  - name: Tariffs
+  - name: Credits
+  - name: AppSettings
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    Account:
+      type: object
+      required: [id, client_id, balance, currency, status, opened_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        client_id:
+          type: string
+          format: uuid
+        balance:
+          type: number
+          format: double
+        currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        status:
+          type: string
+          enum: [active, closed]
+        opened_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+    Operation:
+      type: object
+      required: [id, account_id, type, amount, balance_after, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [deposit, withdraw, credit_issue, credit_repay]
+        amount:
+          type: number
+          format: double
+        balance_after:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+        description:
+          type: string
+        credit_id:
+          type: string
+          format: uuid
+          nullable: true
+    User:
+      type: object
+      required: [id, type, roles, email, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [client, employee]
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [client, employee]
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [active, blocked]
+        created_at:
+          type: string
+          format: date-time
+    CreditTariff:
+      type: object
+      required: [id, name, rate]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        rate:
+          type: number
+          format: double
+        min_amount:
+          type: number
+          format: double
+        max_amount:
+          type: number
+          format: double
+    Credit:
+      type: object
+      required: [id, client_id, account_id, tariff_id, amount, remaining, rate, daily_payment, issued_at, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        client_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        tariff_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        remaining:
+          type: number
+          format: double
+        rate:
+          type: number
+          format: double
+        daily_payment:
+          type: number
+          format: double
+        issued_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, paid, overdue]
+    CreditOverdue:
+      type: object
+      required: [credit_id, client_id, expected_paid, actual_paid, overdue_amount, overdue_payments, minute_payment]
+      properties:
+        credit_id:
+          type: string
+          format: uuid
+        client_id:
+          type: string
+          format: uuid
+        expected_paid:
+          type: number
+          format: double
+        actual_paid:
+          type: number
+          format: double
+        overdue_amount:
+          type: number
+          format: double
+        overdue_payments:
+          type: integer
+        minute_payment:
+          type: number
+          format: double
+    CreditRating:
+      type: object
+      required: [client_id, score, risk_level, overdue_amount, overdue_count]
+      properties:
+        client_id:
+          type: string
+          format: uuid
+        score:
+          type: integer
+        risk_level:
+          type: string
+        overdue_amount:
+          type: number
+          format: double
+        overdue_count:
+          type: integer
+    AppSettings:
+      type: object
+      required: [app_type, theme, hidden_account_ids]
+      properties:
+        app_type:
+          type: string
+          enum: [client, employee]
+        theme:
+          type: string
+          enum: [light, dark]
+        hidden_account_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    AccountListResponse:
+      type: object
+      required: [accounts, pageNumber, pageQuantity]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
+        pageNumber:
+          type: integer
+        pageQuantity:
+          type: integer
+    OperationListResponse:
+      type: object
+      required: [operations, pageNumber, pageQuantity]
+      properties:
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Operation'
+        pageNumber:
+          type: integer
+        pageQuantity:
+          type: integer
+    UserListResponse:
+      type: object
+      required: [users, page_number, page_quantity]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        page_number:
+          type: integer
+        page_quantity:
+          type: integer
+    TariffListResponse:
+      type: object
+      required: [tariffs, pageNumber, pageQuantity]
+      properties:
+        tariffs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditTariff'
+        pageNumber:
+          type: integer
+        pageQuantity:
+          type: integer
+    CreditListResponse:
+      type: object
+      required: [credits, pageNumber, pageQuantity]
+      properties:
+        credits:
+          type: array
+          items:
+            $ref: '#/components/schemas/Credit'
+        pageNumber:
+          type: integer
+        pageQuantity:
+          type: integer
+    TransferResponse:
+      type: object
+      required: [debit_operation, credit_operation]
+      properties:
+        debit_operation:
+          $ref: '#/components/schemas/Operation'
+        credit_operation:
+          $ref: '#/components/schemas/Operation'
+    OpenAccountRequest:
+      type: object
+      required: [client_id]
+      properties:
+        client_id:
+          type: string
+          format: uuid
+        currency:
+          type: string
+          enum: [RUB, USD, EUR]
+          default: RUB
+    ChangeBalanceRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+    TransferRequest:
+      type: object
+      required: [from_account_id, to_account_id, amount]
+      properties:
+        from_account_id:
+          type: string
+          format: uuid
+        to_account_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        role:
+          type: string
+          enum: [client, employee]
+          description: Необязательная роль для выпуска токена при multi-role аккаунте.
+    LoginResponse:
+      type: object
+      required: [token, refresh_token, user_id, type]
+      properties:
+        token:
+          type: string
+        refresh_token:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [client, employee]
+    RefreshTokenRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+    CreateUserRequest:
+      type: object
+      required: [type, email, full_name]
+      properties:
+        type:
+          type: string
+          enum: [client, employee]
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+          description: Если не указан, используется пароль по умолчанию.
+    IssueCreditRequest:
+      type: object
+      required: [client_id, account_id, tariff_id, amount]
+      properties:
+        client_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        tariff_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+    RepayCreditRequest:
+      type: object
+      required: [amount, account_id]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+        account_id:
+          type: string
+          format: uuid
+    CreateTariffRequest:
+      type: object
+      required: [name, rate, min_amount, max_amount]
+      properties:
+        name:
+          type: string
+        rate:
+          type: number
+          format: double
+        min_amount:
+          type: number
+          format: double
+        max_amount:
+          type: number
+          format: double
+    PutAppSettingsRequest:
+      type: object
+      required: [theme, hidden_account_ids]
+      properties:
+        theme:
+          type: string
+          enum: [light, dark]
+        hidden_account_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    SSOTokenResponse:
+      type: object
+      required: [token_type, access_token, token, refresh_token, expires_in, user_id, type]
+      properties:
+        token_type:
+          type: string
+          example: Bearer
+        access_token:
+          type: string
+        token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          example: 900
+        user_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [client, employee]
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Авторизация пользователя
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешная авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Неверное тело запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Неверный логин/пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Обновление пары токенов
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Новая пара токенов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Неверное тело запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Невалидный refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /sso/authorize:
+    get:
+      tags: [SSO]
+      summary: Запуск OAuth2 Authorization Code + PKCE
+      security: []
+      parameters:
+        - in: query
+          name: response_type
+          required: true
+          schema: { type: string, example: code }
+        - in: query
+          name: client_id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: redirect_uri
+          required: true
+          schema: { type: string, format: uri }
+        - in: query
+          name: state
+          required: false
+          schema: { type: string }
+        - in: query
+          name: code_challenge
+          required: true
+          schema: { type: string }
+        - in: query
+          name: code_challenge_method
+          required: true
+          schema: { type: string, example: S256 }
+      responses:
+        '302':
+          description: Redirect на страницу логина или в redirect_uri с code
+  /sso/login:
+    get:
+      tags: [SSO]
+      summary: HTML-форма входа для SSO
+      security: []
+      parameters:
+        - in: query
+          name: response_type
+          required: true
+          schema: { type: string }
+        - in: query
+          name: client_id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: redirect_uri
+          required: true
+          schema: { type: string, format: uri }
+        - in: query
+          name: state
+          required: false
+          schema: { type: string }
+        - in: query
+          name: code_challenge
+          required: true
+          schema: { type: string }
+        - in: query
+          name: code_challenge_method
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: HTML-страница
+          content:
+            text/html:
+              schema:
+                type: string
+    post:
+      tags: [SSO]
+      summary: Авторизация пользователя на SSO-форме
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [email, password, response_type, client_id, redirect_uri, code_challenge, code_challenge_method]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                response_type: { type: string }
+                client_id: { type: string }
+                redirect_uri: { type: string, format: uri }
+                state: { type: string }
+                code_challenge: { type: string }
+                code_challenge_method: { type: string }
+      responses:
+        '302':
+          description: Redirect в redirect_uri с authorization code
+  /sso/token:
+    post:
+      tags: [SSO]
+      summary: Обмен authorization code на access/refresh токены
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type, code, client_id, redirect_uri, code_verifier]
+              properties:
+                grant_type:
+                  type: string
+                  example: authorization_code
+                code:
+                  type: string
+                client_id:
+                  type: string
+                redirect_uri:
+                  type: string
+                code_verifier:
+                  type: string
+      responses:
+        '200':
+          description: Токены выданы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SSOTokenResponse'
+        '400':
+          description: Неверные параметры
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Код недействителен / верификация PKCE не прошла
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /users:
+    post:
+      tags: [Users]
+      summary: Создать пользователя (только сотрудник)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Не авторизован
+        '403':
+          description: Только для сотрудника
+    get:
+      tags: [Users]
+      summary: Список пользователей
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [client, employee]
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, blocked]
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+  /users/{userId}:
+    get:
+      tags: [Users]
+      summary: Получить пользователя по ID
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags: [Users]
+      summary: Блокировка/разблокировка пользователя
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: action
+          required: true
+          schema:
+            type: string
+            enum: [block, unblock]
+      responses:
+        '204':
+          description: Статус обновлен
+        '403':
+          description: Нельзя заблокировать себя / нет прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /accounts:
+    post:
+      tags: [Accounts]
+      summary: Открыть счет
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenAccountRequest'
+      responses:
+        '201':
+          description: Счет создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+    get:
+      tags: [Accounts]
+      summary: Список счетов
+      parameters:
+        - in: query
+          name: client_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, closed]
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+      responses:
+        '200':
+          description: Список счетов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountListResponse'
+  /accounts/{accountId}:
+    get:
+      tags: [Accounts]
+      summary: Получить счет
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Счет
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+    delete:
+      tags: [Accounts]
+      summary: Закрыть счет
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: client_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Счет закрыт
+  /accounts/{accountId}/deposit:
+    post:
+      tags: [Operations]
+      summary: Пополнение счета
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeBalanceRequest'
+      responses:
+        '200':
+          description: Создана операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+  /accounts/{accountId}/withdraw:
+    post:
+      tags: [Operations]
+      summary: Списание со счета
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeBalanceRequest'
+      responses:
+        '200':
+          description: Создана операция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Operation'
+  /accounts/transfer:
+    post:
+      tags: [Operations]
+      summary: Перевод между счетами (с FX-конвертацией при разных валютах)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Возвращает дебетовую и кредитовую операции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+  /accounts/{accountId}/operations:
+    get:
+      tags: [Operations]
+      summary: История операций по счету
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+      responses:
+        '200':
+          description: Список операций
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationListResponse'
+  /ws/accounts/{accountId}/operations:
+    get:
+      tags: [Operations]
+      summary: WebSocket stream операций по счету
+      description: |
+        Требует `Authorization: Bearer <token>` при WS-handshake.
+        Сначала сервер отправляет `operations_snapshot`, затем события `operation_created` в реальном времени.
+      parameters:
+        - in: path
+          name: accountId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+      responses:
+        '101':
+          description: Protocol Switch to WebSocket
+  /tariffs:
+    post:
+      tags: [Tariffs]
+      summary: Создать тариф кредита (только сотрудник)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTariffRequest'
+      responses:
+        '201':
+          description: Тариф создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditTariff'
+    get:
+      tags: [Tariffs]
+      summary: Список тарифов
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+      responses:
+        '200':
+          description: Список тарифов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffListResponse'
+  /credits:
+    post:
+      tags: [Credits]
+      summary: Выдать кредит
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueCreditRequest'
+      responses:
+        '201':
+          description: Кредит выдан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Credit'
+    get:
+      tags: [Credits]
+      summary: Список кредитов клиента
+      parameters:
+        - in: query
+          name: client_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+      responses:
+        '200':
+          description: Список кредитов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditListResponse'
+  /credits/{creditId}:
+    get:
+      tags: [Credits]
+      summary: Получить кредит по ID
+      parameters:
+        - in: path
+          name: creditId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Кредит
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Credit'
+  /credits/{creditId}/repay:
+    post:
+      tags: [Credits]
+      summary: Погасить кредит
+      parameters:
+        - in: path
+          name: creditId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepayCreditRequest'
+      responses:
+        '200':
+          description: Обновленный кредит
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Credit'
+  /credits/{creditId}/overdue:
+    get:
+      tags: [Credits]
+      summary: Просрочка по конкретному кредиту
+      parameters:
+        - in: path
+          name: creditId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Данные по просрочке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditOverdue'
+  /clients/{clientId}/credit-rating:
+    get:
+      tags: [Credits]
+      summary: Кредитный рейтинг клиента
+      parameters:
+        - in: path
+          name: clientId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Рейтинг клиента
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditRating'
+  /app-settings/{appType}:
+    get:
+      tags: [AppSettings]
+      summary: Получить настройки приложения текущего пользователя
+      parameters:
+        - in: path
+          name: appType
+          required: true
+          schema:
+            type: string
+            enum: [client, employee]
+      responses:
+        '200':
+          description: Настройки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSettings'
+    put:
+      tags: [AppSettings]
+      summary: Обновить настройки приложения текущего пользователя
+      parameters:
+        - in: path
+          name: appType
+          required: true
+          schema:
+            type: string
+            enum: [client, employee]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutAppSettingsRequest'
+      responses:
+        '200':
+          description: Настройки обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppSettings'

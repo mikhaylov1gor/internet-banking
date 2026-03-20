@@ -1,0 +1,164 @@
+asyncapi: 2.6.0
+info:
+  title: Internet Bank Async API
+  version: 1.1.0
+  description: |
+    Актуальная спецификация асинхронного взаимодействия backend:
+    - WebSocket real-time обновления операций по счету
+    - RabbitMQ очередь для гарантированной доставки операций перед сохранением в БД
+defaultContentType: application/json
+servers:
+  gateway-ws:
+    url: localhost:8080
+    protocol: ws
+    description: WebSocket через API Gateway
+    security:
+      - bearerAuth: []
+  rabbitmq:
+    url: localhost:5672
+    protocol: amqp
+    description: RabbitMQ broker
+channels:
+  wsAccountOperations:
+    description: |
+      WS endpoint `GET /ws/accounts/{accountId}/operations`.
+      После подключения клиент получает snapshot, затем только инкрементальные события.
+    parameters:
+      accountId:
+        description: Идентификатор счета
+        schema:
+          type: string
+          format: uuid
+    bindings:
+      ws:
+        method: GET
+        query:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: 1
+              default: 1
+            page_size:
+              type: integer
+              minimum: 1
+              default: 50
+        headers:
+          type: object
+          required: [Authorization]
+          properties:
+            Authorization:
+              type: string
+              description: Bearer access token
+    subscribe:
+      summary: Клиент получает real-time события по операциям
+      message:
+        oneOf:
+          - $ref: '#/components/messages/OperationsSnapshot'
+          - $ref: '#/components/messages/OperationCreated'
+          - $ref: '#/components/messages/WSError'
+  coreOperationsQueue:
+    description: |
+      Очередь `core.operations` в RabbitMQ.
+      Новая операция сначала публикуется в очередь, затем consumer сохраняет ее в PostgreSQL.
+    bindings:
+      amqp:
+        is: routingKey
+        queue:
+          name: core.operations
+          durable: true
+        exchange:
+          name: ""
+          type: default
+          durable: true
+    publish:
+      summary: Producer публикует новую операцию в очередь
+      message:
+        $ref: '#/components/messages/OperationQueued'
+    subscribe:
+      summary: Consumer читает операцию из очереди и сохраняет в БД
+      message:
+        $ref: '#/components/messages/OperationQueued'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  messages:
+    OperationsSnapshot:
+      name: operations_snapshot
+      title: Initial snapshot
+      payload:
+        type: object
+        required: [type, operations, page_number, page_quantity]
+        properties:
+          type:
+            type: string
+            enum: [operations_snapshot]
+          operations:
+            type: array
+            items:
+              $ref: '#/components/schemas/Operation'
+          page_number:
+            type: integer
+          page_quantity:
+            type: integer
+    OperationCreated:
+      name: operation_created
+      title: New operation
+      payload:
+        type: object
+        required: [type, operation]
+        properties:
+          type:
+            type: string
+            enum: [operation_created]
+          operation:
+            $ref: '#/components/schemas/Operation'
+    WSError:
+      name: ws_error
+      title: WS error
+      payload:
+        type: object
+        required: [type, error]
+        properties:
+          type:
+            type: string
+            enum: [error]
+          error:
+            type: string
+    OperationQueued:
+      name: operation_queued
+      title: Operation in queue
+      payload:
+        $ref: '#/components/schemas/Operation'
+  schemas:
+    Operation:
+      type: object
+      required: [id, account_id, type, amount, balance_after, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [deposit, withdraw, credit_issue, credit_repay]
+        amount:
+          type: number
+          format: double
+        balance_after:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+        description:
+          type: string
+        credit_id:
+          type: string
+          format: uuid
+          nullable: true

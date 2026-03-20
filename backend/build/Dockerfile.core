@@ -3,7 +3,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /core ./cmd/core
+RUN CGO_ENABLED=0 go build -mod=mod -o /core ./cmd/core
 
 FROM alpine:3.19
 RUN apk --no-cache add ca-certificates

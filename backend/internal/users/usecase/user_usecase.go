@@ -31,9 +31,20 @@ func NewUserUseCase(repo UserRepository) *UserUseCase {
 }
 
 func (uc *UserUseCase) Create(userType entity.UserType, email, fullName, phone, password string) (*entity.User, error) {
-	_, err := uc.repo.GetByEmail(email)
+	existing, err := uc.repo.GetByEmail(email)
 	if err == nil {
-		return nil, ErrEmailExists
+		if existing.HasRole(userType) {
+			return nil, ErrEmailExists
+		}
+		roles := existing.GetRoles()
+		roles = append(roles, userType)
+		if err := existing.SetRoles(roles); err != nil {
+			return nil, err
+		}
+		if err := uc.repo.Update(existing); err != nil {
+			return nil, err
+		}
+		return existing, nil
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -47,6 +58,9 @@ func (uc *UserUseCase) Create(userType entity.UserType, email, fullName, phone, 
 		FullName:     fullName,
 		Phone:        phone,
 		Status:       entity.UserStatusActive,
+	}
+	if err := u.SetRoles([]entity.UserType{userType}); err != nil {
+		return nil, err
 	}
 	if err := uc.repo.Create(u); err != nil {
 		return nil, err

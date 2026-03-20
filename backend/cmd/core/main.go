@@ -4,8 +4,11 @@ import (
 	"log"
 	"net/http"
 
+	"internet-bank/internal/core/broker"
+	"internet-bank/internal/core/client"
 	"internet-bank/internal/core/delivery"
 	"internet-bank/internal/core/entity"
+	"internet-bank/internal/core/realtime"
 	"internet-bank/internal/core/repository"
 	"internet-bank/internal/core/usecase"
 	"internet-bank/pkg/config"
@@ -27,8 +30,24 @@ func main() {
 
 	accRepo := repository.NewAccountRepository(db)
 	opRepo := repository.NewOperationRepository(db)
-	uc := usecase.NewAccountUseCase(accRepo, opRepo)
-	handler := delivery.NewHandler(uc, cfg.JWTSecret)
+	fxProvider := client.NewFrankfurterClient(cfg.FXBaseURL)
+	hub := realtime.NewHub()
+	opsBroker, err := broker.NewOperationsBroker(cfg.RabbitURL, cfg.RabbitQueue)
+	if err != nil {
+		log.Fatalf("broker: %v", err)
+	}
+	defer opsBroker.Close()
+	if err := opsBroker.Consume(func(op *entity.Operation) error {
+		if err := opRepo.Create(op); err != nil {
+			return err
+		}
+		hub.Publish(op)
+		return nil
+	}); err != nil {
+		log.Fatalf("broker consume: %v", err)
+	}
+	uc := usecase.NewAccountUseCase(accRepo, opRepo, fxProvider, opsBroker)
+	handler := delivery.NewHandler(uc, cfg.JWTSecret, hub)
 
 	r := chi.NewRouter()
 	r.Route("/", handler.Mount)

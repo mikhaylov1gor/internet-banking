@@ -24,6 +24,8 @@ type CreditUseCase interface {
 	GetByID(id uuid.UUID) (*entity.Credit, error)
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
 	Repay(creditID uuid.UUID, accountID uuid.UUID, amount float64, userID uuid.UUID, bearerToken string) (*entity.Credit, error)
+	GetOverdue(creditID uuid.UUID) (*usecase.CreditOverdue, error)
+	GetClientRating(clientID uuid.UUID) (*usecase.CreditRating, error)
 }
 
 type Handler struct {
@@ -77,6 +79,8 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/credits", h.listCredits)
 		r.Post("/credits", h.issueCredit)
 		r.Get("/credits/{creditId}", h.getCredit)
+		r.Get("/credits/{creditId}/overdue", h.getCreditOverdue)
+		r.Get("/clients/{clientId}/credit-rating", h.getClientRating)
 		r.Post("/credits/{creditId}/repay", h.repayCredit)
 	})
 
@@ -140,7 +144,7 @@ func (h *Handler) listTariffs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
-	userID, _, bearer := userFromContext(r.Context())
+	userID, userType, bearer := userFromContext(r.Context())
 	if userID == nil {
 		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
@@ -160,6 +164,10 @@ func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 	tariffID, _ := uuid.Parse(body.TariffID)
 	if clientID == uuid.Nil || accountID == uuid.Nil || tariffID == uuid.Nil {
 		response.Err(w, http.StatusBadRequest, "неверные id")
+		return
+	}
+	if userType == auth.UserTypeClient && *userID != clientID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
 	credit, err := h.creditUC.Issue(clientID, accountID, tariffID, body.Amount, bearer)
@@ -309,6 +317,57 @@ func (h *Handler) repayCredit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.JSON(w, http.StatusOK, toCreditResp(credit))
+}
+
+func (h *Handler) getCreditOverdue(w http.ResponseWriter, r *http.Request) {
+	userID, userType, _ := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	creditID, err := uuid.Parse(chi.URLParam(r, "creditId"))
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный creditId")
+		return
+	}
+	credit, err := h.creditUC.GetByID(creditID)
+	if err != nil {
+		response.Err(w, http.StatusNotFound, "кредит не найден")
+		return
+	}
+	if userType == auth.UserTypeClient && credit.ClientID != *userID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
+		return
+	}
+	overdue, err := h.creditUC.GetOverdue(creditID)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.JSON(w, http.StatusOK, overdue)
+}
+
+func (h *Handler) getClientRating(w http.ResponseWriter, r *http.Request) {
+	userID, userType, _ := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	clientID, err := uuid.Parse(chi.URLParam(r, "clientId"))
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный clientId")
+		return
+	}
+	if userType == auth.UserTypeClient && *userID != clientID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
+		return
+	}
+	rating, err := h.creditUC.GetClientRating(clientID)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.JSON(w, http.StatusOK, rating)
 }
 
 type tariffResp struct {
