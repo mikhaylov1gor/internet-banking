@@ -1,0 +1,21 @@
+{
+  "name": "@shared/features",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./auth": "./auth/index.ts"
+  },
+  "dependencies": {
+    "@shared/ui": "*",
+    "@shared/api": "*",
+    "@tanstack/react-query": "^5.17.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.0"
+  }
+}
+

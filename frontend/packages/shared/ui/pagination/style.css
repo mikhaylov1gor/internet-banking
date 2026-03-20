@@ -1,0 +1,98 @@
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem 0;
+  flex-wrap: wrap;
+}
+
+.pagination-items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.pagination-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background-color: var(--bg-surface);
+  color: var(--text-default);
+  transition: all 0.2s ease;
+}
+
+.pagination-select:hover {
+  border-color: var(--border-hover);
+}
+
+.pagination-select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pagination-page-info {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.desktop-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem 0;
+  flex-wrap: wrap;
+}
+
+.mobile-pagination {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.mobile-pagination-items {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  width: 100%;
+}
+
+.mobile-pagination-select {
+  flex: 1;
+  max-width: 120px;
+}
+
+.mobile-pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.mobile-pagination-button {
+  min-width: 48px;
+  padding: 0.5rem 1rem;
+}
+
+.mobile-pagination-info {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}

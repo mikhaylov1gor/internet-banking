@@ -1,0 +1,4 @@
+.not-found-page-container {
+  padding: 2rem;
+  background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
+}

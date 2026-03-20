@@ -1,0 +1,210 @@
+.user-select-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.user-select-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-accent);
+}
+
+.user-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.user-select-button {
+  width: 100%;
+  padding: 12px 16px;
+  padding-right: 40px;
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  background-color: var(--bg-surface);
+  color: var(--text-default);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+
+.user-select-button:hover {
+  border-color: var(--border-hover);
+}
+
+.user-select-button:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.user-select-button-open {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.user-select-button-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-select-button-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.user-select-clear {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: var(--clear-btn-bg);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.user-select-clear:hover {
+  background: var(--clear-btn-hover-bg);
+  color: var(--text-default);
+}
+
+.user-select-arrow {
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+}
+
+.user-select-arrow-open {
+  transform: rotate(180deg);
+}
+
+.user-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  box-shadow: var(--dropdown-shadow);
+  z-index: 1000;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.user-select-search {
+  padding: 8px;
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+  min-height: fit-content;
+}
+
+.user-select-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-medium);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+  min-height: 36px;
+  background-color: var(--bg-surface);
+  color: var(--text-default);
+}
+
+.user-select-search-input:focus {
+  border-color: var(--border-focus);
+}
+
+.user-select-list {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.user-select-option {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid var(--border-separator);
+}
+
+.user-select-option:last-child {
+  border-bottom: none;
+}
+
+.user-select-option:hover {
+  background-color: var(--bg-surface-hover);
+}
+
+.user-select-option-selected {
+  background-color: var(--bg-surface-alt);
+  color: var(--text-accent);
+}
+
+.user-select-option-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-default);
+  margin-bottom: 2px;
+}
+
+.user-select-option-selected .user-select-option-name {
+  color: var(--text-accent);
+}
+
+.user-select-option-email {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.user-select-option-selected .user-select-option-email {
+  color: var(--link-color);
+}
+
+.user-select-loading,
+.user-select-loading-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.user-select-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .user-select-dropdown {
+    max-height: 250px;
+  }
+
+  .user-select-option {
+    padding: 10px 12px;
+  }
+}

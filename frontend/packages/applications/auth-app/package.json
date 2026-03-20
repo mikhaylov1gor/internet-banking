@@ -1,0 +1,33 @@
+{
+  "name": "auth-app",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "webpack serve",
+    "build": "tsc && webpack --mode production",
+    "preview": "webpack serve --mode production"
+  },
+  "dependencies": {
+    "@shared/ui": "*",
+    "@shared/features": "*",
+    "@shared/api": "*",
+    "@shared/utils": "*",
+    "@tanstack/react-query": "^5.17.0",
+    "axios": "^1.6.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "css-loader": "^6.11.0",
+    "html-webpack-plugin": "^5.6.0",
+    "style-loader": "^3.3.4",
+    "ts-loader": "^9.5.1",
+    "tsconfig-paths-webpack-plugin": "^4.0.0",
+    "typescript": "^5.2.2",
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}

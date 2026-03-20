@@ -1,0 +1,35 @@
+import SwiftUI
+
+struct AccountsCoordinatorView: View {
+    let viewFactory: ViewFactoryProtocol
+    let clientId: String
+    @Binding var path: NavigationPath
+    @Binding var sheetItem: SheetItem?
+    let accountsRefreshTrigger: Int
+
+    var body: some View {
+        viewFactory.makeAccountsListView(
+            clientId: clientId,
+            refreshTrigger: accountsRefreshTrigger,
+            onAccountTap: { account in
+                path.append(Route.accountDetail(account))
+            },
+            onOpenAccount: {
+                sheetItem = .openAccount(clientId)
+            })
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                    case let .accountDetail(account):
+                        viewFactory.makeAccountDetailView(
+                            account: account,
+                            refreshTrigger: accountsRefreshTrigger,
+                            onDeposit: { sheetItem = .deposit(account) },
+                            onWithdraw: { sheetItem = .withdraw(account) },
+                            onHistory: { path.append(Route.operationHistory(account)) },
+                            onCloseAccount: { sheetItem = .closeAccount(account) })
+                    case let .operationHistory(account):
+                        viewFactory.makeOperationHistoryView(account: account)
+                }
+            }
+    }
+}

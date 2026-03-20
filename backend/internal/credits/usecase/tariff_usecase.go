@@ -13,7 +13,7 @@ var ErrTariffNotFound = errors.New("тариф не найден")
 type TariffRepository interface {
 	Create(t *entity.CreditTariff) error
 	GetByID(id uuid.UUID) (*entity.CreditTariff, error)
-	List(limit, offset int) ([]*entity.CreditTariff, error)
+	List(limit, offset int) ([]*entity.CreditTariff, int64, error)
 }
 
 type TariffUseCase struct {
@@ -42,6 +42,6 @@ func (uc *TariffUseCase) GetByID(id uuid.UUID) (*entity.CreditTariff, error) {
 	return uc.repo.GetByID(id)
 }
 
-func (uc *TariffUseCase) List(limit, offset int) ([]*entity.CreditTariff, error) {
+func (uc *TariffUseCase) List(limit, offset int) ([]*entity.CreditTariff, int64, error) {
 	return uc.repo.List(limit, offset)
 }

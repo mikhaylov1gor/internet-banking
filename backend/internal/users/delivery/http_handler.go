@@ -24,7 +24,7 @@ type AuthUseCase interface {
 type UserUseCase interface {
 	Create(userType entity.UserType, email, fullName, phone, password string) (*entity.User, error)
 	GetByID(id uuid.UUID) (*entity.User, error)
-	List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, error)
+	List(userType *entity.UserType, status *entity.UserStatus, limit, offset int) ([]*entity.User, int64, error)
 	Block(userID uuid.UUID) error
 	Unblock(userID uuid.UUID) error
 }
@@ -193,19 +193,20 @@ func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		status = &st
 	}
-	limit := 100
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if v, err := parseInt(l); err == nil && v > 0 {
-			limit = v
+	pageSize := 100
+	if p := r.URL.Query().Get("page_size"); p != "" {
+		if v, err := parseInt(p); err == nil && v > 0 {
+			pageSize = v
 		}
 	}
-	offset := 0
-	if o := r.URL.Query().Get("offset"); o != "" {
-		if v, err := parseInt(o); err == nil && v >= 0 {
-			offset = v
+	page := 1
+	if pg := r.URL.Query().Get("page"); pg != "" {
+		if v, err := parseInt(pg); err == nil && v > 0 {
+			page = v
 		}
 	}
-	list, err := h.userUC.List(userType, status, limit, offset)
+	offset := (page - 1) * pageSize
+	list, total, err := h.userUC.List(userType, status, pageSize, offset)
 	if err != nil {
 		response.Err(w, http.StatusInternalServerError, err.Error())
 		return
@@ -214,7 +215,15 @@ func (h *Handler) listUsers(w http.ResponseWriter, r *http.Request) {
 	for i, u := range list {
 		res[i] = toUserResp(u)
 	}
-	response.JSON(w, http.StatusOK, res)
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	if totalPages == 0 {
+		totalPages = 1
+	}
+	response.JSON(w, http.StatusOK, userListResp{
+		Users:        res,
+		PageNumber:   page,
+		PageQuantity: int(totalPages),
+	})
 }
 
 func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
@@ -271,6 +280,12 @@ type userResp struct {
 	Phone     string `json:"phone,omitempty"`
 	Status    string `json:"status"`
 	CreatedAt string `json:"created_at"`
+}
+
+type userListResp struct {
+	Users        []userResp `json:"users"`
+	PageNumber   int        `json:"page_number"`
+	PageQuantity int        `json:"page_quantity"`
 }
 
 func toUserResp(u *entity.User) userResp {

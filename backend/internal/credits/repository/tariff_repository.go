@@ -10,7 +10,7 @@ import (
 type TariffRepository interface {
 	Create(t *entity.CreditTariff) error
 	GetByID(id uuid.UUID) (*entity.CreditTariff, error)
-	List(limit, offset int) ([]*entity.CreditTariff, error)
+	List(limit, offset int) ([]*entity.CreditTariff, int64, error)
 }
 
 type tariffRepo struct {
@@ -34,7 +34,7 @@ func (r *tariffRepo) GetByID(id uuid.UUID) (*entity.CreditTariff, error) {
 	return &t, nil
 }
 
-func (r *tariffRepo) List(limit, offset int) ([]*entity.CreditTariff, error) {
+func (r *tariffRepo) List(limit, offset int) ([]*entity.CreditTariff, int64, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -42,6 +42,10 @@ func (r *tariffRepo) List(limit, offset int) ([]*entity.CreditTariff, error) {
 		offset = 0
 	}
 	var list []*entity.CreditTariff
+	var total int64
+	if err := r.db.Model(&entity.CreditTariff{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 	err := r.db.Order("created_at DESC").Offset(offset).Limit(limit).Find(&list).Error
-	return list, err
+	return list, total, err
 }

@@ -1,0 +1,40 @@
+.operation-card {
+  padding: 1.25rem;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--bg-surface-alt) 0%, var(--bg-card-start) 100%);
+  transition: all 0.2s ease;
+}
+
+.operation-card:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--border-hover);
+}
+
+.operation-card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.operation-card-type {
+  font-weight: 600;
+  color: var(--text-accent);
+}
+
+.operation-card-date {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.operation-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.operation-card-details span {
+  display: block;
+}

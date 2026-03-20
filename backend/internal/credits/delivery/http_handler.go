@@ -16,14 +16,14 @@ import (
 
 type TariffUseCase interface {
 	Create(name string, rate, minAmount, maxAmount float64) (*entity.CreditTariff, error)
-	List(limit, offset int) ([]*entity.CreditTariff, error)
+	List(limit, offset int) ([]*entity.CreditTariff, int64, error)
 }
 
 type CreditUseCase interface {
 	Issue(clientID, accountID, tariffID uuid.UUID, amount float64, bearerToken string) (*entity.Credit, error)
 	GetByID(id uuid.UUID) (*entity.Credit, error)
-	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, error)
-	Repay(creditID uuid.UUID, amount float64, bearerToken string) (*entity.Credit, error)
+	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
+	Repay(creditID uuid.UUID, accountID uuid.UUID, amount float64, userID uuid.UUID, bearerToken string) (*entity.Credit, error)
 }
 
 type Handler struct {
@@ -106,17 +106,37 @@ func (h *Handler) createTariff(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) listTariffs(w http.ResponseWriter, r *http.Request) {
-	limit, offset := parseLimitOffset(r, 50, 0)
-	list, err := h.tariffUC.List(limit, offset)
+	pageSize := 50
+	if p := r.URL.Query().Get("page_size"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+	page := 1
+	if pg := r.URL.Query().Get("page"); pg != "" {
+		if v, err := strconv.Atoi(pg); err == nil && v > 0 {
+			page = v
+		}
+	}
+	offset := (page - 1) * pageSize
+	list, total, err := h.tariffUC.List(pageSize, offset)
 	if err != nil {
 		response.Err(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	if totalPages == 0 {
+		totalPages = 1
 	}
 	res := make([]tariffResp, len(list))
 	for i, t := range list {
 		res[i] = toTariffResp(t)
 	}
-	response.JSON(w, http.StatusOK, res)
+	response.JSON(w, http.StatusOK, tariffListResp{
+		Tariffs:      res,
+		PageNumber:   page,
+		PageQuantity: int(totalPages),
+	})
 }
 
 func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
@@ -178,17 +198,37 @@ func (h *Handler) listCredits(w http.ResponseWriter, r *http.Request) {
 		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
-	limit, offset := parseLimitOffset(r, 50, 0)
-	list, err := h.creditUC.ListByClientID(clientID, limit, offset)
+	pageSize := 50
+	if p := r.URL.Query().Get("page_size"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+	page := 1
+	if pg := r.URL.Query().Get("page"); pg != "" {
+		if v, err := strconv.Atoi(pg); err == nil && v > 0 {
+			page = v
+		}
+	}
+	offset := (page - 1) * pageSize
+	list, total, err := h.creditUC.ListByClientID(clientID, pageSize, offset)
 	if err != nil {
 		response.Err(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	if totalPages == 0 {
+		totalPages = 1
 	}
 	res := make([]creditResp, len(list))
 	for i, c := range list {
 		res[i] = toCreditResp(c)
 	}
-	response.JSON(w, http.StatusOK, res)
+	response.JSON(w, http.StatusOK, creditListResp{
+		Credits:      res,
+		PageNumber:   page,
+		PageQuantity: int(totalPages),
+	})
 }
 
 func (h *Handler) getCredit(w http.ResponseWriter, r *http.Request) {
@@ -235,15 +275,33 @@ func (h *Handler) repayCredit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Amount float64 `json:"amount"`
+		Amount    float64 `json:"amount"`
+		AccountID string  `json:"account_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
 		return
 	}
-	credit, err = h.creditUC.Repay(creditID, body.Amount, bearer)
+	if body.AccountID == "" {
+		response.Err(w, http.StatusBadRequest, "обязателен параметр account_id")
+		return
+	}
+	accountID, err := uuid.Parse(body.AccountID)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный account_id")
+		return
+	}
+	credit, err = h.creditUC.Repay(creditID, accountID, body.Amount, *userID, bearer)
 	if err != nil {
 		if err == usecase.ErrCreditNotFound || err == usecase.ErrCreditNotActive {
+			response.Err(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err.Error() == "счёт не найден" || err.Error() == "счёт не принадлежит пользователю" || err.Error() == "счёт закрыт или заблокирован" {
+			response.Err(w, http.StatusForbidden, err.Error())
+			return
+		}
+		if err.Error() == "недостаточно средств на счёте" {
 			response.Err(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -261,6 +319,12 @@ type tariffResp struct {
 	MaxAmount float64 `json:"max_amount,omitempty"`
 }
 
+type tariffListResp struct {
+	Tariffs      []tariffResp `json:"tariffs"`
+	PageNumber   int          `json:"pageNumber"`
+	PageQuantity int          `json:"pageQuantity"`
+}
+
 type creditResp struct {
 	ID           string  `json:"id"`
 	ClientID     string  `json:"client_id"`
@@ -272,6 +336,12 @@ type creditResp struct {
 	DailyPayment float64 `json:"daily_payment"`
 	IssuedAt     string  `json:"issued_at"`
 	Status       string  `json:"status"`
+}
+
+type creditListResp struct {
+	Credits      []creditResp `json:"credits"`
+	PageNumber   int          `json:"pageNumber"`
+	PageQuantity int          `json:"pageQuantity"`
 }
 
 func toTariffResp(t *entity.CreditTariff) tariffResp {

@@ -17,11 +17,11 @@ import (
 type AccountUseCase interface {
 	OpenAccount(clientID uuid.UUID) (*entity.Account, error)
 	GetByID(id uuid.UUID) (*entity.Account, error)
-	List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, error)
+	List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error)
 	CloseAccount(accountID, clientID uuid.UUID) error
 	Deposit(accountID uuid.UUID, amount float64, description string) (*entity.Operation, error)
 	Withdraw(accountID uuid.UUID, amount float64, description string) (*entity.Operation, error)
-	ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, error)
+	ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error)
 }
 
 type Handler struct {
@@ -127,28 +127,37 @@ func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 		}
 		status = &st
 	}
-	limit := 50
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if v, err := strconv.Atoi(l); err == nil && v > 0 {
-			limit = v
+	pageSize := 50
+	if p := r.URL.Query().Get("page_size"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			pageSize = v
 		}
 	}
-	offset := 0
-	if o := r.URL.Query().Get("offset"); o != "" {
-		if v, err := strconv.Atoi(o); err == nil && v >= 0 {
-			offset = v
+	page := 1
+	if pg := r.URL.Query().Get("page"); pg != "" {
+		if v, err := strconv.Atoi(pg); err == nil && v > 0 {
+			page = v
 		}
 	}
-	list, err := h.uc.List(clientID, status, limit, offset)
+	offset := (page - 1) * pageSize
+	list, total, err := h.uc.List(clientID, status, pageSize, offset)
 	if err != nil {
 		response.Err(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	if totalPages == 0 {
+		totalPages = 1
 	}
 	res := make([]accountResp, len(list))
 	for i, a := range list {
 		res[i] = toAccountResp(a)
 	}
-	response.JSON(w, http.StatusOK, res)
+	response.JSON(w, http.StatusOK, accountListResp{
+		Accounts:     res,
+		PageNumber:   page,
+		PageQuantity: int(totalPages),
+	})
 }
 
 func (h *Handler) getAccount(w http.ResponseWriter, r *http.Request) {
@@ -309,21 +318,37 @@ func (h *Handler) listOperations(w http.ResponseWriter, r *http.Request) {
 		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	if limit <= 0 {
-		limit = 50
+	pageSize := 50
+	if p := r.URL.Query().Get("page_size"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			pageSize = v
+		}
 	}
-	list, err := h.uc.ListOperations(accountID, limit, offset)
+	page := 1
+	if pg := r.URL.Query().Get("page"); pg != "" {
+		if v, err := strconv.Atoi(pg); err == nil && v > 0 {
+			page = v
+		}
+	}
+	offset := (page - 1) * pageSize
+	list, total, err := h.uc.ListOperations(accountID, pageSize, offset)
 	if err != nil {
 		response.Err(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+	if totalPages == 0 {
+		totalPages = 1
 	}
 	res := make([]operationResp, len(list))
 	for i, o := range list {
 		res[i] = toOperationResp(o)
 	}
-	response.JSON(w, http.StatusOK, res)
+	response.JSON(w, http.StatusOK, operationListResp{
+		Operations:   res,
+		PageNumber:   page,
+		PageQuantity: int(totalPages),
+	})
 }
 
 type accountResp struct {
@@ -334,6 +359,18 @@ type accountResp struct {
 	Status   string  `json:"status"`
 	OpenedAt string  `json:"opened_at"`
 	ClosedAt *string `json:"closed_at,omitempty"`
+}
+
+type accountListResp struct {
+	Accounts     []accountResp `json:"accounts"`
+	PageNumber   int           `json:"pageNumber"`
+	PageQuantity int           `json:"pageQuantity"`
+}
+
+type operationListResp struct {
+	Operations   []operationResp `json:"operations"`
+	PageNumber   int             `json:"pageNumber"`
+	PageQuantity int             `json:"pageQuantity"`
 }
 
 type operationResp struct {

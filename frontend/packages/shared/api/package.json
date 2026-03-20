@@ -1,0 +1,20 @@
+{
+  "name": "@shared/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./endpoints/accounts": "./endpoints/accounts/index.ts",
+    "./endpoints/auth": "./endpoints/auth/index.ts",
+    "./endpoints/credits": "./endpoints/credits/index.ts",
+    "./endpoints/tariffs": "./endpoints/tariffs/index.ts",
+    "./endpoints/users": "./endpoints/users/index.ts",
+    "./client": "./client.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.5"
+  }
+}
