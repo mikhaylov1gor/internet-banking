@@ -74,6 +74,16 @@ module.exports = {
     hot: true,
     open: true,
     historyApiFallback: true,
+    client: {
+      webSocketURL: {
+        pathname: '/webpack-hmr',
+      },
+    },
+    webSocketServer: {
+      options: {
+        path: '/webpack-hmr',
+      },
+    },
     watchFiles: {
       paths: [
         path.resolve(__dirname, '../../shared/**/*'),
@@ -90,6 +100,19 @@ module.exports = {
         secure: false,
         pathRewrite: { '^/api': '' },
         logLevel: 'debug',
+      },
+      '/ws': {
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+        onProxyReqWs: (proxyReq, req) => {
+          const reqUrl = new URL(req.url, 'http://localhost');
+          const token = reqUrl.searchParams.get('token');
+          if (token) {
+            proxyReq.setHeader('Authorization', `Bearer ${token}`);
+          }
+        },
       },
     },
   },

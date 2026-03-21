@@ -20,6 +20,7 @@
     "./spinner": "./spinner/index.ts"
   },
   "dependencies": {
+    "@shared/utils": "*",
     "@shared/features": "*",
     "@shared/api": "*",
     "react": "^18.2.0",

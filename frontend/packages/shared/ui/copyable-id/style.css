@@ -1,0 +1,16 @@
+.copyable-id {
+  display: inline;
+  cursor: pointer !important;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+.copyable-id:hover {
+  cursor: pointer !important;
+}
+
+.copyable-id:focus-visible {
+  box-shadow: 0 0 0 2px var(--border-focus);
+  border-radius: 4px;
+}

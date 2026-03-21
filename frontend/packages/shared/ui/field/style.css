@@ -1,0 +1,17 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-accent);
+}
+
+.field__error {
+  color: var(--error-color);
+  font-size: 12px;
+  margin-top: -4px;
+}

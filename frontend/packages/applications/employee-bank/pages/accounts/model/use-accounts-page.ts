@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAccounts } from '../../../features/accounts'
 import { getAccountById } from '@shared/api/endpoints/accounts'
+import { useTheme } from '@shared/features/theme'
 import type { GetAccountsParams } from '@shared/api/endpoints/accounts'
 
 export const useAccountsPage = () => {
@@ -11,7 +12,10 @@ export const useAccountsPage = () => {
   const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [showHidden, setShowHidden] = useState(false)
   const navigate = useNavigate()
+
+  const { hiddenAccountIds, toggleHiddenAccount, hideAccountsFeatureEnabled } = useTheme()
 
   const params: GetAccountsParams = {
     ...(status && { status: status as 'active' | 'closed' }),
@@ -21,8 +25,19 @@ export const useAccountsPage = () => {
   }
 
   const { data: accountsResponse, isLoading } = useAccounts(params)
-  const accounts = accountsResponse?.accounts || []
+  const allAccounts = accountsResponse?.accounts ?? []
   const totalPages = accountsResponse?.pageQuantity || 1
+
+  const visibleAccounts =
+    !hideAccountsFeatureEnabled
+      ? allAccounts
+      : showHidden
+        ? allAccounts
+        : allAccounts.filter((a) => !hiddenAccountIds.includes(a.id))
+
+  const hiddenCount = hideAccountsFeatureEnabled
+    ? allAccounts.filter((a) => hiddenAccountIds.includes(a.id)).length
+    : 0
 
   const handleSearch = async () => {
     if (!accountId.trim()) {
@@ -32,8 +47,9 @@ export const useAccountsPage = () => {
     try {
       await getAccountById(accountId.trim())
       navigate(`/accounts/${accountId.trim()}`)
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number } }
+      if (axiosErr?.response?.status === 404) {
         setError('Счёт не существует')
       } else {
         setError('Ошибка при поиске счёта')
@@ -56,7 +72,7 @@ export const useAccountsPage = () => {
     setAccountId,
     error,
     setError,
-    accounts,
+    accounts: visibleAccounts,
     isLoading,
     handleSearch,
     status,
@@ -68,7 +84,11 @@ export const useAccountsPage = () => {
     limit: pageSize,
     setLimit: setPageSize,
     totalPages,
+    hiddenAccountIds,
+    toggleHiddenAccount,
+    showHidden,
+    setShowHidden,
+    hiddenCount,
+    hideAccountsFeatureEnabled,
   }
 }
-
-

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getCredits,
   getCreditById,
+  getClientCreditRating,
   issueCredit,
   repayCredit,
   type GetCreditsParams,
@@ -15,6 +16,18 @@ export const useCredits = (params?: Omit<GetCreditsParams, 'client_id'>) => {
   return useQuery({
     queryKey: ['credits', { ...params, client_id: clientId }],
     queryFn: () => getCredits({ ...params, client_id: clientId || undefined }),
+    enabled: !!clientId,
+  })
+}
+
+export const useClientCreditRating = () => {
+  const clientId = getCurrentUserId()
+  return useQuery({
+    queryKey: ['credit-rating', clientId],
+    queryFn: () => {
+      if (!clientId) throw new Error('client id required')
+      return getClientCreditRating(clientId)
+    },
     enabled: !!clientId,
   })
 }

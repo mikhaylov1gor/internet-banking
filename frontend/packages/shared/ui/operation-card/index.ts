@@ -1,3 +1,2 @@
-export { OperationCard } from './operation-card'
-export type { OperationCardProps } from './operation-card'
-
+export { OperationCard } from './ui/operation-card'
+export type { OperationCardProps } from './ui/operation-card'

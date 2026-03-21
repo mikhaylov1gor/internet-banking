@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Button } from '../button'
 import { ThemeToggle } from '../theme-toggle'
@@ -16,7 +16,7 @@ export type MobileAppBarProps = {
   onLogoClick?: () => void
 }
 
-export const MobileAppBar: React.FC<MobileAppBarProps> = ({ buttons, onLogoClick }) => {
+export const MobileAppBar = ({ buttons, onLogoClick }: MobileAppBarProps) => {
   const location = useLocation()
   const logout = useLogout()
   const [isMenuOpen, setIsMenuOpen] = useState(false)

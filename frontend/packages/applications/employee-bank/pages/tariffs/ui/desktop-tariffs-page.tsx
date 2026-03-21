@@ -1,4 +1,3 @@
-import React from 'react'
 import { Input } from '@shared/ui/input'
 import { Button } from '@shared/ui/button'
 import { Spinner } from '@shared/ui/spinner'
@@ -7,7 +6,7 @@ import { Modal } from '@shared/ui/modal'
 import { useTariffsPage } from '../model/use-tariffs-page'
 import './style.css'
 
-export const DesktopTariffsPage: React.FC = () => {
+export const DesktopTariffsPage = () => {
   const {
     name,
     setName,

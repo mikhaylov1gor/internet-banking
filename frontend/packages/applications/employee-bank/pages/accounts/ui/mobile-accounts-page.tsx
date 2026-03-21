@@ -10,7 +10,7 @@ import { useAccountsPage } from '../model/use-accounts-page'
 import { UserSelect } from '@shared/ui/user-select'
 import './style.css'
 
-export const MobileAccountsPage: React.FC = () => {
+export const MobileAccountsPage = () => {
   const navigate = useNavigate()
   const {
     accountId,
@@ -29,6 +29,12 @@ export const MobileAccountsPage: React.FC = () => {
     limit,
     setLimit,
     totalPages,
+    hideAccountsFeatureEnabled,
+    hiddenAccountIds,
+    toggleHiddenAccount,
+    showHidden,
+    setShowHidden,
+    hiddenCount,
   } = useAccountsPage()
 
   return (
@@ -69,6 +75,15 @@ export const MobileAccountsPage: React.FC = () => {
               { value: 'closed', label: 'Закрытые' },
             ]}
           />
+          {hideAccountsFeatureEnabled && hiddenCount > 0 && (
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => setShowHidden(!showHidden)}
+            >
+              {showHidden ? 'Скрыть скрытые' : `Показать скрытые (${hiddenCount})`}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -87,6 +102,8 @@ export const MobileAccountsPage: React.FC = () => {
               <AccountCard
                 key={account.id}
                 account={account}
+                isHidden={hideAccountsFeatureEnabled && hiddenAccountIds.includes(account.id)}
+                onToggleHidden={hideAccountsFeatureEnabled ? toggleHiddenAccount : undefined}
                 onClick={() => navigate(`/accounts/${account.id}`)}
                 shortenId={false}
               />

@@ -1,4 +1,3 @@
-import React from 'react'
 import { useLocation } from 'react-router-dom'
 import { Button } from '../button'
 import { ThemeToggle } from '../theme-toggle'
@@ -16,7 +15,7 @@ export type DesktopAppBarProps = {
   onLogoClick?: () => void
 }
 
-export const DesktopAppBar: React.FC<DesktopAppBarProps> = ({ buttons, onLogoClick }) => {
+export const DesktopAppBar = ({ buttons, onLogoClick }: DesktopAppBarProps) => {
   const location = useLocation()
   const logout = useLogout()
 

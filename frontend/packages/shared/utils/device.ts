@@ -5,7 +5,8 @@ export const isMobileDevice = (): boolean => {
 
   const isMobileWidth = window.innerWidth <= 768
 
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera
+  const win = window as Window & { opera?: string }
+  const userAgent = navigator.userAgent || navigator.vendor || win.opera || ''
   const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
     userAgent.toLowerCase()
   )

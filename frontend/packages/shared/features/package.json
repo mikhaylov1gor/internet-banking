@@ -7,7 +7,8 @@
   "types": "./index.ts",
   "exports": {
     ".": "./index.ts",
-    "./auth": "./auth/index.ts"
+    "./auth": "./auth/index.ts",
+    "./accounts": "./accounts/index.ts"
   },
   "dependencies": {
     "@shared/ui": "*",

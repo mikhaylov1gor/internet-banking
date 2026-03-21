@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCredits } from '../../../features/credits'
-import { getCreditById } from '@shared/api/endpoints/credits'
+import { isForbiddenError, isNotFoundError, isUnauthorizedError } from '@shared/api'
+import { useCredits, verifyCreditExistsForNavigation } from '../../../features/credits'
 import type { GetCreditsParams } from '@shared/api/endpoints/credits'
 
 export const useCreditsPage = () => {
@@ -24,13 +24,12 @@ export const useCreditsPage = () => {
 
   const handleSearch = async () => {
     const trimmedCreditId = creditId.trim()
-    
+
     if (!trimmedCreditId) {
       setError('Введите ID кредита')
       return
     }
 
-    // Валидация формата UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(trimmedCreditId)) {
       setError('ID кредита должен быть в формате UUID')
@@ -38,15 +37,15 @@ export const useCreditsPage = () => {
     }
 
     try {
-      await getCreditById(trimmedCreditId)
+      await verifyCreditExistsForNavigation(trimmedCreditId)
       navigate(`/credits/${trimmedCreditId}`)
       setError('')
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
+    } catch (err: unknown) {
+      if (isNotFoundError(err)) {
         setError('Кредит не найден')
-      } else if (err?.response?.status === 403) {
+      } else if (isForbiddenError(err)) {
         setError('Нет доступа к этому кредиту')
-      } else if (err?.response?.status === 401) {
+      } else if (isUnauthorizedError(err)) {
         setError('Необходима авторизация')
       } else {
         setError('Ошибка при поиске кредита. Попробуйте еще раз')
@@ -76,4 +75,3 @@ export const useCreditsPage = () => {
     totalPages,
   }
 }
-

@@ -1,18 +1,19 @@
-import React from 'react'
-import { useLocation } from 'react-router-dom'
 import { Button } from '@shared/ui/button'
 import { Spinner } from '@shared/ui/spinner'
 import { ErrorFallback } from '@shared/ui/error-fallback'
+import { Modal } from '@shared/ui/modal'
 import { MobilePagination, DesktopPagination } from '@shared/ui/pagination'
 import { CreditCard } from '@shared/ui/credit-card'
+import { CreditRatingGauge } from '@shared/ui/credit-rating-gauge'
+import { isNotFoundError } from '@shared/api'
 import { getCurrentUserId } from '@shared/features/auth'
+import { isMobileDevice } from '@shared/utils'
 import { useUserDetailPage } from '../model/use-user-detail-page'
 import './style.css'
-import {isMobile} from "../../../main";
 
-export const UserDetailPage: React.FC = () => {
-  const location = useLocation()
-  const returnTo = (location.state as { returnTo?: string })?.returnTo
+const isMobile = isMobileDevice()
+
+export const UserDetailPage = () => {
   const {
     user,
     userLoading,
@@ -27,6 +28,13 @@ export const UserDetailPage: React.FC = () => {
     handleToggleStatus,
     totalPages,
     navigate,
+    returnTo,
+    showRatingModal,
+    openRatingModal,
+    closeRatingModal,
+    creditRating,
+    ratingLoading,
+    ratingError,
   } = useUserDetailPage()
 
   if (userLoading) {
@@ -38,11 +46,15 @@ export const UserDetailPage: React.FC = () => {
   }
 
   if (userError || !user) {
-    const isNotFound = (userError as any)?.response?.status === 404
+    const notFound = userError ? isNotFoundError(userError) : true
     return (
       <ErrorFallback
         title="Пользователь не найден"
-        message={isNotFound ? 'Пользователь с указанным ID не существует' : 'Произошла ошибка при загрузке пользователя'}
+        message={
+          notFound
+            ? 'Пользователь с указанным ID не существует'
+            : 'Произошла ошибка при загрузке пользователя'
+        }
         onGoBack={() => navigate(returnTo || '/users')}
         goBackLabel="Назад"
       />
@@ -53,9 +65,9 @@ export const UserDetailPage: React.FC = () => {
 
   return (
     <div className="user-detail-page-container">
-      <Button 
-        variant="secondary" 
-        onClick={() => navigate(returnTo || '/users')} 
+      <Button
+        variant="secondary"
+        onClick={() => navigate(returnTo || '/users')}
         className="user-detail-page-back-button"
       >
         ← Назад
@@ -91,6 +103,11 @@ export const UserDetailPage: React.FC = () => {
         </div>
 
         <div className="user-detail-page-actions">
+          {user.type === 'client' && (
+            <Button type="button" variant="secondary" onClick={openRatingModal}>
+              Кредитный рейтинг
+            </Button>
+          )}
           <Button
             variant={user.status === 'active' ? 'danger' : 'primary'}
             onClick={handleToggleStatus}
@@ -100,6 +117,24 @@ export const UserDetailPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      <Modal
+        isOpen={showRatingModal}
+        onClose={closeRatingModal}
+        title="Кредитный рейтинг клиента"
+      >
+        <div className="user-detail-rating-modal-body">
+          <CreditRatingGauge
+            rating={creditRating}
+            isLoading={ratingLoading}
+            isError={ratingError}
+            showTitle={false}
+            showDescription
+            descriptionContext="employee"
+            className="user-detail-rating-modal-gauge"
+          />
+        </div>
+      </Modal>
 
       {user.type === 'client' && (
         <div className="user-detail-page-credits">
@@ -119,7 +154,9 @@ export const UserDetailPage: React.FC = () => {
                   <CreditCard
                     key={credit.id}
                     credit={credit}
-                    onClick={() => navigate(`/credits/${credit.id}`, { state: { returnTo: `/users/${user.id}` } })}
+                    onClick={() =>
+                      navigate(`/credits/${credit.id}`, { state: { returnTo: `/users/${user.id}` } })
+                    }
                     shortenId={false}
                   />
                 ))}
@@ -141,5 +178,3 @@ export const UserDetailPage: React.FC = () => {
     </div>
   )
 }
-
-

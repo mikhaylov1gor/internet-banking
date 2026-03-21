@@ -1,35 +1,44 @@
-export type Account = {
-  id: string
-  client_id: string
-  balance: number
-  currency?: 'RUB' | 'USD' | 'EUR'
-  status: 'active' | 'closed'
-  opened_at: string
-  closed_at?: string
-}
+import { z } from 'zod'
 
-export type Operation = {
-  id: string
-  account_id: string
-  type: string
-  amount: number
-  balance_after: number
-  description?: string
-  created_at: string
-  credit_id?: string
-}
+const CurrencySchema = z.enum(['RUB', 'USD', 'EUR'])
+const AccountStatusSchema = z.enum(['active', 'closed'])
 
-export type AccountListResponse = {
-  accounts: Account[]
-  pageNumber: number
-  pageQuantity: number
-}
+export const AccountSchema = z.object({
+  id: z.string(),
+  client_id: z.string(),
+  balance: z.number(),
+  currency: CurrencySchema.nullish(),
+  status: AccountStatusSchema,
+  opened_at: z.string(),
+  closed_at: z.string().nullish(),
+})
+export type Account = z.infer<typeof AccountSchema>
 
-export type OperationListResponse = {
-  operations: Operation[]
-  pageNumber: number
-  pageQuantity: number
-}
+export const OperationSchema = z.object({
+  id: z.string(),
+  account_id: z.string(),
+  type: z.string(),
+  amount: z.number(),
+  balance_after: z.number(),
+  description: z.string().nullish(),
+  created_at: z.string(),
+  credit_id: z.string().nullish(),
+})
+export type Operation = z.infer<typeof OperationSchema>
+
+export const AccountListResponseSchema = z.object({
+  accounts: z.array(AccountSchema),
+  pageNumber: z.number(),
+  pageQuantity: z.number(),
+})
+export type AccountListResponse = z.infer<typeof AccountListResponseSchema>
+
+export const OperationListResponseSchema = z.object({
+  operations: z.array(OperationSchema),
+  pageNumber: z.number(),
+  pageQuantity: z.number(),
+})
+export type OperationListResponse = z.infer<typeof OperationListResponseSchema>
 
 export type GetAccountsParams = {
   client_id?: string
@@ -51,3 +60,15 @@ export type CreateAccountRequest = {
 export type ChangeBalanceRequest = {
   amount: number
 }
+
+export type TransferRequest = {
+  from_account_id: string
+  to_account_id: string
+  amount: number
+}
+
+export const TransferResponseSchema = z.object({
+  debit_operation: OperationSchema,
+  credit_operation: OperationSchema,
+})
+export type TransferResponse = z.infer<typeof TransferResponseSchema>

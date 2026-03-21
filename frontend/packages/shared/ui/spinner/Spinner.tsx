@@ -1,4 +1,3 @@
-import React from 'react'
 import './style.css'
 
 export type SpinnerProps = {
@@ -6,7 +5,7 @@ export type SpinnerProps = {
   className?: string
 }
 
-export const Spinner: React.FC<SpinnerProps> = ({ size = 'medium', className }) => {
+export const Spinner = ({ size = 'medium', className }: SpinnerProps) => {
   return (
     <div className={`spinner ${size} ${className || ''}`}>
       <div className="circle"></div>

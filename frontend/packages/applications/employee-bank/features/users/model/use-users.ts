@@ -54,4 +54,5 @@ export const useToggleUserStatus = () => {
   })
 }
 
+export const verifyUserExistsForNavigation = (userId: string) => getUserById(userId)
 

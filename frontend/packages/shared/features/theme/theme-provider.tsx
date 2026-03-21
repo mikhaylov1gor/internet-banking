@@ -1,35 +1,14 @@
-import React, { useState, useCallback, useEffect } from 'react'
-import { themeStorage, tokenStorage } from '@shared/utils'
-import type { Theme } from '@shared/utils'
+import type { ReactNode } from 'react'
+import type { AppType } from '@shared/api/endpoints/app-settings'
 import { ThemeContext } from './theme-context'
+import { useThemeProviderState } from './model/use-theme-provider-state'
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const userId = tokenStorage.getUserId()
+type ThemeProviderProps = {
+  children: ReactNode
+  appType: AppType
+}
 
-  const [theme, setTheme] = useState<Theme>(() => themeStorage.getTheme(userId))
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-  }, [theme])
-
-  useEffect(() => {
-    const currentTheme = themeStorage.getTheme(userId)
-    if (currentTheme !== theme) {
-      setTheme(currentTheme)
-    }
-  }, [userId])
-
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next: Theme = prev === 'light' ? 'dark' : 'light'
-      themeStorage.setTheme(userId, next)
-      return next
-    })
-  }, [userId])
-
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  )
+export const ThemeProvider = ({ children, appType }: ThemeProviderProps) => {
+  const value = useThemeProviderState(appType)
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

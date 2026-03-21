@@ -1,4 +1,3 @@
-import React from 'react'
 import { EmailInput } from '@shared/ui/email-input'
 import { PasswordInput } from '@shared/ui/password-input'
 import { Button } from '@shared/ui/button'
@@ -7,7 +6,7 @@ import { ThemeToggle } from '@shared/ui/theme-toggle'
 import { useLoginPage } from '../model/use-login'
 import './style.css'
 
-export const DesktopLoginPage: React.FC = () => {
+export const DesktopLoginPage = () => {
   const {
     email,
     password,
@@ -44,7 +43,9 @@ export const DesktopLoginPage: React.FC = () => {
           {userType === 'employee' && !isWebView && (
             <div className="app-select-buttons">
               <Button onClick={goToEmployeeApp}>Приложение сотрудника</Button>
-              <Button variant="secondary" onClick={goToClientApp}>Приложение клиента</Button>
+              <Button variant="secondary" onClick={goToClientApp}>
+                Приложение клиента
+              </Button>
             </div>
           )}
         </div>
@@ -54,11 +55,18 @@ export const DesktopLoginPage: React.FC = () => {
 
   return (
     <div className={`login-page-container desktop-login-page ${isWebView ? 'webview' : ''}`}>
-      <div className="login-theme-toggle"><ThemeToggle /></div>
-      <form onSubmit={handleSubmit} className="login-form desktop-login-form">
+      <div className="login-theme-toggle">
+        <ThemeToggle />
+      </div>
+      <form
+        onSubmit={handleSubmit}
+        className="login-form desktop-login-form"
+      >
         <h1 className="login-form-title">Z-Банк</h1>
+
         <EmailInput
           label="Email"
+          name="email"
           value={email}
           onChange={handleEmailChange}
           onValidationChange={handleEmailValidationChange}
@@ -66,13 +74,12 @@ export const DesktopLoginPage: React.FC = () => {
         />
         <PasswordInput
           label="Пароль"
+          name="password"
           value={password}
           onChange={handlePasswordChange}
           required
         />
-        {isError && errorMessage && (
-          <div className="login-form-error">{errorMessage}</div>
-        )}
+        {isError && errorMessage && <div className="login-form-error">{errorMessage}</div>}
         <Button type="submit" disabled={isSubmitDisabled}>
           {isPending ? 'Вход...' : 'Войти'}
         </Button>

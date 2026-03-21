@@ -1,3 +1,2 @@
-export { PhoneInput } from './phone-input'
-export type { PhoneInputProps } from './phone-input'
-
+export { PhoneInput } from './ui/phone-input'
+export type { PhoneInputProps } from './ui/phone-input'

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useUsers, useCreateUser, useToggleUserStatus } from '../../../features/users'
+import { isForbiddenError, isNotFoundError, isUnauthorizedError } from '@shared/api'
+import { useUsers, useCreateUser, useToggleUserStatus, verifyUserExistsForNavigation } from '../../../features/users'
 
 export const useUsersPage = () => {
   const [userId, setUserId] = useState('')
@@ -36,27 +37,25 @@ export const useUsersPage = () => {
       page,
       page_size: pageSize,
     }
-    
+
     if (typeFilter !== 'all') {
       result.type = typeFilter
     }
-    
+
     if (statusFilter !== 'all') {
       result.status = statusFilter
     }
-    
+
     return result
   }, [typeFilter, statusFilter, page, pageSize])
 
   const { data: usersResponse, isLoading, error: usersError } = useUsers(params)
-  
-  // Извлекаем данные напрямую, чтобы они обновлялись при изменении ответа
+
   const users = usersResponse?.users || []
   const totalPages = usersResponse?.pageQuantity || 1
   const createUserMutation = useCreateUser()
   const toggleStatusMutation = useToggleUserStatus()
 
-  // Сбрасываем страницу, если текущая страница больше общего количества страниц
   useEffect(() => {
     if (totalPages > 0 && page > totalPages) {
       setPage(totalPages)
@@ -65,13 +64,12 @@ export const useUsersPage = () => {
 
   const handleSearch = async () => {
     const trimmedUserId = userId.trim()
-    
+
     if (!trimmedUserId) {
       setError('Введите ID пользователя')
       return
     }
 
-    // Валидация формата UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(trimmedUserId)) {
       setError('ID пользователя должен быть в формате UUID')
@@ -79,16 +77,15 @@ export const useUsersPage = () => {
     }
 
     try {
-      const { getUserById } = await import('@shared/api/endpoints/users')
-      await getUserById(trimmedUserId)
+      await verifyUserExistsForNavigation(trimmedUserId)
       navigate(`/users/${trimmedUserId}`)
       setError('')
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
+    } catch (err: unknown) {
+      if (isNotFoundError(err)) {
         setError('Пользователь не найден')
-      } else if (err?.response?.status === 403) {
+      } else if (isForbiddenError(err)) {
         setError('Нет доступа к этому пользователю')
-      } else if (err?.response?.status === 401) {
+      } else if (isUnauthorizedError(err)) {
         setError('Необходима авторизация')
       } else {
         setError('Ошибка при поиске пользователя. Попробуйте еще раз')
@@ -175,5 +172,3 @@ export const useUsersPage = () => {
     totalPages,
   }
 }
-
-

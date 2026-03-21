@@ -1,8 +1,7 @@
-import React from 'react'
 import { useTheme } from '@shared/features/theme'
 import './style.css'
 
-export const ThemeToggle: React.FC = () => {
+export const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme()
 
   return (

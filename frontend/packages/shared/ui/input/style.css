@@ -1,15 +1,3 @@
-.input-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.input-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-accent);
-}
-
 .input-input {
   width: 100%;
   padding: 12px 16px;
@@ -52,9 +40,4 @@
 .input-input.input-error:focus {
   border-color: var(--error-color);
   box-shadow: var(--error-focus-shadow);
-}
-
-.input-error-text {
-  color: var(--error-color);
-  font-size: 12px;
 }

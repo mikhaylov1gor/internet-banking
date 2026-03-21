@@ -1,4 +1,3 @@
-import React from 'react'
 import { useLocation } from 'react-router-dom'
 import { Button } from '@shared/ui/button'
 import { Spinner } from '@shared/ui/spinner'
@@ -6,7 +5,7 @@ import { ErrorFallback } from '@shared/ui/error-fallback'
 import { useCreditDetailPage } from '../model/use-credit-detail-page'
 import './style.css'
 
-export const CreditDetailPage: React.FC = () => {
+export const CreditDetailPage = () => {
   const location = useLocation()
   const returnTo = (location.state as { returnTo?: string })?.returnTo
   const { credit, creditLoading, creditError, client, clientLoading, tariff, tariffLoading, navigate } = useCreditDetailPage()
@@ -36,7 +35,7 @@ export const CreditDetailPage: React.FC = () => {
       </Button>
 
       <div className="credit-detail-page-credit-info">
-        <h1 className="credit-detail-page-title">Кредит #{credit.id}</h1>
+        <h1 className="credit-detail-page-title">Кредит # {credit.id}</h1>
         <div className="credit-detail-page-details">
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Клиент:</span>

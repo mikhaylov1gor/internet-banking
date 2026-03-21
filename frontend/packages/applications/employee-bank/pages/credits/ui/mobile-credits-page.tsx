@@ -9,7 +9,7 @@ import { CreditCard } from '@shared/ui/credit-card'
 import { useCreditsPage } from '../model/use-credits-page'
 import './style.css'
 
-export const MobileCreditsPage: React.FC = () => {
+export const MobileCreditsPage = () => {
   const navigate = useNavigate()
   const {
     creditId,

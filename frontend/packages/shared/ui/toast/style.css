@@ -1,0 +1,30 @@
+.shared-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  max-width: min(420px, calc(100vw - 2rem));
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--toast-fg, #fff);
+  background: var(--toast-bg, rgba(30, 30, 35, 0.92));
+  border: 1px solid var(--toast-border, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.35));
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  animation: shared-toast-in 0.22s ease-out;
+}
+
+@keyframes shared-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

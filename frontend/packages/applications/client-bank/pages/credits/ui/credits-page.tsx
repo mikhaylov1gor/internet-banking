@@ -1,4 +1,3 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@shared/ui/button'
 import { Input } from '@shared/ui/input'
@@ -7,17 +6,17 @@ import { Modal } from '@shared/ui/modal'
 import { Select } from '@shared/ui/select'
 import { DesktopPagination, MobilePagination } from '@shared/ui/pagination'
 import { CreditCard } from '@shared/ui/credit-card'
+import { CreditRatingGauge } from '@shared/ui/credit-rating-gauge'
+import { getApiErrorMessage } from '@shared/api'
 import { useCreditsPage } from '../model/use-credits-page'
 import { isMobile } from '../../../main'
 import './style.css'
 
-export const CreditsPage: React.FC = () => {
+export const CreditsPage = () => {
   const navigate = useNavigate()
   const {
     credits,
     isLoading,
-    accounts,
-    tariffs,
     showModal,
     handleOpenModal,
     handleCloseModal,
@@ -37,6 +36,17 @@ export const CreditsPage: React.FC = () => {
     limit,
     setLimit,
     totalPages,
+    showRatingModal,
+    openRatingModal,
+    closeRatingModal,
+    creditRating,
+    ratingLoading,
+    ratingError,
+    tariffLimitsHint,
+    amountValidationIssue,
+    issueCreditSubmitDisabled,
+    tariffSelectOptions,
+    accountSelectOptions,
   } = useCreditsPage()
 
   const Pagination = isMobile ? MobilePagination : DesktopPagination
@@ -45,14 +55,35 @@ export const CreditsPage: React.FC = () => {
     <div className="credits-page-container">
       <div className="credits-page-header">
         <h1 className="credits-page-title">Мои кредиты</h1>
-        <Button onClick={handleOpenModal}>Взять кредит</Button>
+        <div className="credits-page-header-actions">
+          <Button type="button" variant="secondary" onClick={openRatingModal}>
+            Мой кредитный рейтинг
+          </Button>
+          <Button type="button" onClick={handleOpenModal}>
+            Взять кредит
+          </Button>
+        </div>
       </div>
 
-      {noAccountsError && (
-        <div className="error-message">
-          {noAccountsError}
+      <Modal
+        isOpen={showRatingModal}
+        onClose={closeRatingModal}
+        title="Мой кредитный рейтинг"
+      >
+        <div className="credits-rating-modal-body">
+          <CreditRatingGauge
+            rating={creditRating}
+            isLoading={ratingLoading}
+            isError={ratingError}
+            showTitle={false}
+            showDescription
+            descriptionContext="client"
+            className="credits-rating-modal-gauge"
+          />
         </div>
-      )}
+      </Modal>
+
+      {noAccountsError && <div className="error-message">{noAccountsError}</div>}
 
       {isLoading && (
         <div className="loading">
@@ -96,46 +127,34 @@ export const CreditsPage: React.FC = () => {
             <Select
               value={selectedTariff}
               onChange={(e) => setSelectedTariff(e.target.value)}
-              options={
-                tariffs
-                  ? tariffs.map((tariff) => ({
-                      value: tariff.id,
-                      label: `${tariff.name} (${(tariff.rate * 100).toFixed(2)}%)`,
-                    }))
-                  : []
-              }
+              options={tariffSelectOptions}
             />
-            {selectedTariff && tariffs && (() => {
-              const selectedTariffData = tariffs.find(t => t.id === selectedTariff)
-              if (selectedTariffData && (selectedTariffData.min_amount || selectedTariffData.max_amount)) {
-                return (
-                  <div className="tariff-hint">
-                    {selectedTariffData.min_amount && selectedTariffData.max_amount ? (
-                      <>Для выбранного тарифа минимальная{'\u00A0'}сумма {selectedTariffData.min_amount.toLocaleString()}{'\u00A0'}₽, максимальная{'\u00A0'}сумма {selectedTariffData.max_amount.toLocaleString()}{'\u00A0'}₽</>
-                    ) : selectedTariffData.min_amount ? (
-                      <>Для выбранного тарифа минимальная{'\u00A0'}сумма {selectedTariffData.min_amount.toLocaleString()}{'\u00A0'}₽</>
-                    ) : selectedTariffData.max_amount ? (
-                      <>Для выбранного тарифа максимальная{'\u00A0'}сумма {selectedTariffData.max_amount.toLocaleString()}{'\u00A0'}₽</>
-                    ) : null}
-                  </div>
-                )
-              }
-              return null
-            })()}
+            {tariffLimitsHint.kind === 'range' && (
+              <div className="tariff-hint">
+                Для выбранного тарифа минимальная&nbsp;сумма{' '}
+                {tariffLimitsHint.min.toLocaleString()}
+                &nbsp;₽, максимальная&nbsp;сумма {tariffLimitsHint.max.toLocaleString()}&nbsp;₽
+              </div>
+            )}
+            {tariffLimitsHint.kind === 'min' && (
+              <div className="tariff-hint">
+                Для выбранного тарифа минимальная&nbsp;сумма{' '}
+                {tariffLimitsHint.min.toLocaleString()}&nbsp;₽
+              </div>
+            )}
+            {tariffLimitsHint.kind === 'max' && (
+              <div className="tariff-hint">
+                Для выбранного тарифа максимальная&nbsp;сумма{' '}
+                {tariffLimitsHint.max.toLocaleString()}&nbsp;₽
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label>Счет для получения</label>
             <Select
               value={selectedAccount}
               onChange={(e) => setSelectedAccount(e.target.value)}
-              options={
-                accounts
-                  ? accounts.map((account) => ({
-                      value: account.id,
-                      label: `Счет ${account.id.slice(0, 8)}... (${account.balance.toLocaleString()} ${account.currency || 'RUB'})`,
-                    }))
-                  : []
-              }
+              options={accountSelectOptions}
             />
           </div>
           <div className="form-group">
@@ -149,65 +168,31 @@ export const CreditsPage: React.FC = () => {
               onBlur={() => setAmountBlurred(true)}
               placeholder="Введите сумму"
             />
-            {amountBlurred && selectedTariff && tariffs && (() => {
-              const selectedTariffData = tariffs.find(t => t.id === selectedTariff)
-              if (selectedTariffData && amount) {
-                const amountValue = parseFloat(amount)
-                if (!isNaN(amountValue)) {
-                  const isInvalid = 
-                    (selectedTariffData.min_amount && amountValue < selectedTariffData.min_amount) ||
-                    (selectedTariffData.max_amount && amountValue > selectedTariffData.max_amount)
-                  
-                  if (isInvalid) {
-                    return (
-                      <div className="error" style={{ marginTop: '8px' }}>
-                        {selectedTariffData.min_amount && amountValue < selectedTariffData.min_amount && (
-                          <>Сумма не может быть меньше {selectedTariffData.min_amount.toLocaleString()}{'\u00A0'}₽</>
-                        )}
-                        {selectedTariffData.max_amount && amountValue > selectedTariffData.max_amount && (
-                          <>Сумма не может быть больше {selectedTariffData.max_amount.toLocaleString()}{'\u00A0'}₽</>
-                        )}
-                      </div>
-                    )
-                  }
-                }
-              }
-              return null
-            })()}
+            {amountValidationIssue && (
+              <div className="error" style={{ marginTop: '8px' }}>
+                {amountValidationIssue.kind === 'below_min' && (
+                  <>
+                    Сумма не может быть меньше {amountValidationIssue.min.toLocaleString()}&nbsp;₽
+                  </>
+                )}
+                {amountValidationIssue.kind === 'above_max' && (
+                  <>
+                    Сумма не может быть больше {amountValidationIssue.max.toLocaleString()}&nbsp;₽
+                  </>
+                )}
+              </div>
+            )}
           </div>
           {issueCreditMutation.isError && (
             <div className="error">
-              {issueCreditMutation.error instanceof Error
-                ? issueCreditMutation.error.message
-                : 'Ошибка оформления кредита'}
+              {getApiErrorMessage(issueCreditMutation.error, 'Ошибка оформления кредита')}
             </div>
           )}
           <div className="modalActions">
             <Button variant="secondary" onClick={handleCloseModal}>
               Отмена
             </Button>
-            <Button
-              onClick={handleIssueCredit}
-              disabled={(() => {
-                if (issueCreditMutation.isPending || !selectedTariff || !selectedAccount || !amount) {
-                  return true
-                }
-                const amountValue = parseFloat(amount)
-                if (isNaN(amountValue) || amountValue <= 0) {
-                  return true
-                }
-                const selectedTariffData = tariffs?.find(t => t.id === selectedTariff)
-                if (selectedTariffData) {
-                  if (selectedTariffData.min_amount && amountValue < selectedTariffData.min_amount) {
-                    return true
-                  }
-                  if (selectedTariffData.max_amount && amountValue > selectedTariffData.max_amount) {
-                    return true
-                  }
-                }
-                return false
-              })()}
-            >
+            <Button onClick={handleIssueCredit} disabled={issueCreditSubmitDisabled}>
               {issueCreditMutation.isPending ? 'Оформление...' : 'Оформить'}
             </Button>
           </div>
@@ -216,4 +201,3 @@ export const CreditsPage: React.FC = () => {
     </div>
   )
 }
-

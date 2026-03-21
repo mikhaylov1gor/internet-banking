@@ -27,14 +27,41 @@
 }
 
 .credit-detail-page-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15em;
   font-size: 2rem;
   margin-top: 0;
   margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+.credit-detail-page-title-gradient {
   background: linear-gradient(135deg, var(--btn-primary-start) 0%, var(--btn-primary-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.credit-detail-page-title-gradient:not(.credit-detail-page-title-id) {
+  cursor: default;
+}
+
+.credit-detail-page-title-id {
+  font: inherit;
   font-weight: 700;
+  border: none;
+  padding: 0;
+  cursor: pointer !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.credit-detail-page-title-id:hover {
+  cursor: pointer !important;
+  text-decoration: underline;
+  text-decoration-color: var(--btn-primary-end);
 }
 
 .credit-detail-page-details {
@@ -82,14 +109,53 @@
   font-weight: 500;
 }
 
-.credit-detail-page-account-link {
-  cursor: pointer;
-  color: var(--link-color);
-  text-decoration: underline;
-  transition: color 0.2s;
+.credit-detail-page-detail-item--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
 }
 
-.credit-detail-page-account-link:hover {
+.credit-detail-page-account-value {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.credit-detail-page-id-copy {
+  font: inherit;
+  font-weight: 600;
+  color: var(--link-color);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.credit-detail-page-id-copy:hover {
+  cursor: pointer !important;
+  color: var(--link-hover-color);
+}
+
+.credit-detail-page-account-open {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--link-color);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.credit-detail-page-account-open:hover {
   color: var(--link-hover-color);
 }
 

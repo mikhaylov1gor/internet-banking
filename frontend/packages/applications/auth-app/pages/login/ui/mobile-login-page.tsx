@@ -1,4 +1,3 @@
-import React from 'react'
 import { EmailInput } from '@shared/ui/email-input'
 import { PasswordInput } from '@shared/ui/password-input'
 import { Button } from '@shared/ui/button'
@@ -7,7 +6,7 @@ import { ThemeToggle } from '@shared/ui/theme-toggle'
 import { useLoginPage } from '../model/use-login'
 import './style.css'
 
-export const MobileLoginPage: React.FC = () => {
+export const MobileLoginPage = () => {
   const {
     email,
     password,
@@ -43,8 +42,12 @@ export const MobileLoginPage: React.FC = () => {
           <div className="login-success">Вы успешно авторизованы</div>
           {userType === 'employee' && !isWebView && (
             <div className="app-select-buttons">
-              <Button onClick={goToEmployeeApp} className="mobile-login-button">Приложение сотрудника</Button>
-              <Button variant="secondary" onClick={goToClientApp} className="mobile-login-button">Приложение клиента</Button>
+              <Button onClick={goToEmployeeApp} className="mobile-login-button">
+                Приложение сотрудника
+              </Button>
+              <Button variant="secondary" onClick={goToClientApp} className="mobile-login-button">
+                Приложение клиента
+              </Button>
             </div>
           )}
         </div>
@@ -54,11 +57,18 @@ export const MobileLoginPage: React.FC = () => {
 
   return (
     <div className={`login-page-container mobile-login-page ${isWebView ? 'webview' : ''}`}>
-      <div className="login-theme-toggle"><ThemeToggle /></div>
-      <form onSubmit={handleSubmit} className="login-form mobile-login-form">
+      <div className="login-theme-toggle">
+        <ThemeToggle />
+      </div>
+      <form
+        onSubmit={handleSubmit}
+        className="login-form mobile-login-form"
+      >
         <h1 className="login-form-title mobile-login-title">Z-Банк</h1>
+
         <EmailInput
           label="Email"
+          name="email"
           value={email}
           onChange={handleEmailChange}
           onValidationChange={handleEmailValidationChange}
@@ -66,18 +76,13 @@ export const MobileLoginPage: React.FC = () => {
         />
         <PasswordInput
           label="Пароль"
+          name="password"
           value={password}
           onChange={handlePasswordChange}
           required
         />
-        {isError && errorMessage && (
-          <div className="login-form-error">{errorMessage}</div>
-        )}
-        <Button
-          type="submit"
-          disabled={isSubmitDisabled}
-          className="mobile-login-button"
-        >
+        {isError && errorMessage && <div className="login-form-error">{errorMessage}</div>}
+        <Button type="submit" disabled={isSubmitDisabled} className="mobile-login-button">
           {isPending ? 'Вход...' : 'Войти'}
         </Button>
       </form>

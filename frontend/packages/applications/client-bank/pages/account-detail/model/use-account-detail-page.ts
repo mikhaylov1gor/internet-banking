@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useAccountOperationsWsSync } from '@shared/features/accounts'
 import {
   useAccount,
+  useAccounts,
   useAccountOperations,
   useCloseAccount,
   useDepositToAccount,
   useWithdrawFromAccount,
 } from '../../../features/accounts'
+
+const OPERATIONS_PAGE_SIZE = 10
 
 export const useAccountDetailPage = () => {
   const { accountId } = useParams<{ accountId: string }>()
@@ -19,16 +23,35 @@ export const useAccountDetailPage = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [pageSize, setPageSize] = useState(10)
-  const [page, setPage] = useState(1)
+  const [operationsPage, setOperationsPage] = useState(1)
+
+  useEffect(() => {
+    setOperationsPage(1)
+  }, [accountId])
+
+  useAccountOperationsWsSync(accountId || null, OPERATIONS_PAGE_SIZE)
 
   const { data: account, isLoading: accountLoading, error: accountError } = useAccount(accountId || null)
-  const { data: operationsResponse, isLoading: operationsLoading } = useAccountOperations(accountId || null, {
-    page,
-    page_size: pageSize,
+
+  const { data: accountsListData } = useAccounts({ status: 'active', page: 1, page_size: 100 })
+  const otherActiveAccounts = useMemo(() => {
+    if (!accountId) return []
+    return (accountsListData?.accounts ?? []).filter((a) => a.id !== accountId && a.status === 'active')
+  }, [accountsListData, accountId])
+
+  const {
+    data: operationsData,
+    isLoading: operationsLoading,
+    isError: operationsError,
+    error: operationsFetchError,
+  } = useAccountOperations(accountId || null, {
+    page: operationsPage,
+    page_size: OPERATIONS_PAGE_SIZE,
   })
-  const operations = operationsResponse?.operations
-  const totalPages = operationsResponse?.pageQuantity || 1
+
+  const operations = operationsData?.operations ?? []
+  const operationsTotalPages = Math.max(operationsData?.pageQuantity ?? 1, 1)
+
   const closeAccountMutation = useCloseAccount()
   const depositMutation = useDepositToAccount()
   const withdrawMutation = useWithdrawFromAccount()
@@ -85,12 +108,22 @@ export const useAccountDetailPage = () => {
     }
   }
 
+  const goPrevOperationsPage = () => setOperationsPage((p) => Math.max(1, p - 1))
+  const goNextOperationsPage = () =>
+    setOperationsPage((p) => Math.min(operationsTotalPages, p + 1))
+
   return {
     account,
     accountLoading,
     accountError,
     operations,
     operationsLoading,
+    operationsError,
+    operationsFetchError,
+    operationsPage,
+    operationsTotalPages,
+    goPrevOperationsPage,
+    goNextOperationsPage,
     showConfirm,
     setShowConfirm,
     showDepositModal,
@@ -101,11 +134,6 @@ export const useAccountDetailPage = () => {
     setDepositAmount,
     withdrawAmount,
     setWithdrawAmount,
-    limit: pageSize,
-    setLimit: setPageSize,
-    page,
-    setPage,
-    totalPages,
     handleCloseAccount,
     closeAccountMutation,
     depositMutation,
@@ -114,7 +142,6 @@ export const useAccountDetailPage = () => {
     handleWithdraw,
     handleBack,
     navigate,
+    otherActiveAccounts,
   }
 }
-
-

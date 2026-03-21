@@ -1,18 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { redirectToAuth, tokenStorage } from '@shared/utils'
+import { redirectToSso, tokenStorage } from '@shared/utils'
+import type { LoginRequest, LoginResponse } from '@shared/api/endpoints/auth'
 
-export type LoginRequest = {
-  email: string
-  password: string
-}
-
-export type LoginResponse = {
-  token: string
-  refresh_token: string
-  user_id: string
-  type: 'client' | 'employee'
-}
+export type { LoginRequest, LoginResponse } from '@shared/api/endpoints/auth'
 
 export const useLogin = (loginFn: (data: LoginRequest) => Promise<LoginResponse>) => {
   const navigate = useNavigate()
@@ -30,8 +21,6 @@ export const useLogin = (loginFn: (data: LoginRequest) => Promise<LoginResponse>
       queryClient.setQueryData(['user'], data)
       navigate('/')
     },
-    onError: () => {
-    },
   })
 }
 
@@ -41,7 +30,7 @@ export const useLogout = () => {
   return () => {
     tokenStorage.clear()
     queryClient.clear()
-    redirectToAuth()
+    redirectToSso()
   }
 }
 

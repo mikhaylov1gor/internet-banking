@@ -1,4 +1,3 @@
-import React from 'react'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { isMobileDevice } from '@shared/utils'
 import { DesktopLoginPage, MobileLoginPage } from '../pages/login'
@@ -15,7 +14,7 @@ const queryClient = new QueryClient({
 
 const isMobile = isMobileDevice()
 
-export const App: React.FC = () => {
+export const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="auth-app">

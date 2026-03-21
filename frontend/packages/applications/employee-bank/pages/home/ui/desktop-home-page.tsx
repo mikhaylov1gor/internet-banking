@@ -1,9 +1,8 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@shared/ui/button'
 import './style.css'
 
-export const DesktopHomePage: React.FC = () => {
+export const DesktopHomePage = () => {
   const navigate = useNavigate()
 
   return (

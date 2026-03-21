@@ -1,3 +1,2 @@
-export { UserSelect } from './user-select'
-export type { UserSelectProps } from './user-select'
-
+export { UserSelect } from './ui/user-select'
+export type { UserSelectProps } from './ui/user-select'

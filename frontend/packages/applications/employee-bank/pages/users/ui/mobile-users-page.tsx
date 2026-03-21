@@ -1,4 +1,3 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@shared/ui/button'
 import { Input } from '@shared/ui/input'
@@ -10,11 +9,12 @@ import { Modal } from '@shared/ui/modal'
 import { EmailInput } from '@shared/ui/email-input'
 import { PhoneInput } from '@shared/ui/phone-input'
 import { PasswordInput } from '@shared/ui/password-input'
+import { formatUserCreateErrorMessage } from '@shared/api'
 import { getCurrentUserId } from '@shared/features/auth'
 import { useUsersPage } from '../model/use-users-page'
 import './style.css'
 
-export const MobileUsersPage: React.FC = () => {
+export const MobileUsersPage = () => {
   const navigate = useNavigate()
   const {
     userId,
@@ -124,13 +124,14 @@ export const MobileUsersPage: React.FC = () => {
 
       {usersError && (
         <ErrorFallback
+          variant="embedded"
           title="Ошибка загрузки"
           message="Не удалось загрузить список пользователей"
           onRetry={() => window.location.reload()}
         />
       )}
 
-      {!isLoading && users.length === 0 && (
+      {!isLoading && !usersError && users.length === 0 && (
         <div className="users-page-empty">Пользователи не найдены</div>
       )}
 
@@ -259,20 +260,7 @@ export const MobileUsersPage: React.FC = () => {
           />
           {createUserMutation.isError && (
             <div className="users-page-error">
-              {(() => {
-                const error = createUserMutation.error as any
-                if (error?.response?.data?.error) {
-                  const apiError = error.response.data.error
-                  if (apiError === 'email already exists' || apiError.includes('email already exists')) {
-                    return 'Email уже занят'
-                  }
-                  return apiError
-                }
-                if (error instanceof Error) {
-                  return error.message
-                }
-                return 'Ошибка создания пользователя'
-              })()}
+              {formatUserCreateErrorMessage(createUserMutation.error)}
             </div>
           )}
           <div className="users-page-modal-actions mobile-modal-actions">

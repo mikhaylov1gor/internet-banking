@@ -31,8 +31,6 @@ export const useEmployeeLogin = (loginFn: (data: LoginRequest) => Promise<LoginR
       queryClient.setQueryData(['user'], data)
       navigate('/')
     },
-    onError: () => {
-    },
   })
 }
 

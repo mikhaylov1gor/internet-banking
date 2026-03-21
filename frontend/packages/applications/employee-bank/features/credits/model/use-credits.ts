@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { getCredits, getCreditById, type GetCreditsParams } from '@shared/api/endpoints/credits'
+import {
+  getCredits,
+  getCreditById,
+  getClientCreditRating,
+  type GetCreditsParams,
+} from '@shared/api/endpoints/credits'
 
 export const useCredits = (params?: GetCreditsParams, options?: { enabled?: boolean }) => {
   return useQuery({
@@ -17,6 +22,19 @@ export const useCredit = (creditId: string | null) => {
       return getCreditById(creditId)
     },
     enabled: !!creditId,
+  })
+}
+
+export const verifyCreditExistsForNavigation = (creditId: string) => getCreditById(creditId)
+
+export const useClientCreditRatingForUser = (
+  clientId: string | null | undefined,
+  options?: { enabled?: boolean }
+) => {
+  return useQuery({
+    queryKey: ['credit-rating', clientId],
+    queryFn: () => getClientCreditRating(clientId!),
+    enabled: !!clientId && options?.enabled !== false,
   })
 }
 

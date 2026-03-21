@@ -39,3 +39,16 @@
   justify-content: center;
   flex-wrap: wrap;
 }
+
+.error-fallback-container--embedded {
+  min-height: 0;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.75rem 0 1.25rem;
+}
+
+.error-fallback-container--embedded .error-fallback-content {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}

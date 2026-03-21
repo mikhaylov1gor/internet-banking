@@ -7,10 +7,12 @@ import {
   getAccountOperations,
   depositToAccount,
   withdrawFromAccount,
+  transferBetweenAccounts,
   type GetAccountsParams,
   type GetOperationsParams,
   type CreateAccountRequest,
   type ChangeBalanceRequest,
+  type TransferRequest,
 } from '@shared/api/endpoints/accounts'
 import { getCurrentUserId } from '@shared/features/auth'
 
@@ -105,6 +107,21 @@ export const useWithdrawFromAccount = () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
       queryClient.invalidateQueries({ queryKey: ['account', variables.accountId] })
       queryClient.invalidateQueries({ queryKey: ['account-operations', variables.accountId] })
+    },
+  })
+}
+
+export const useTransferBetweenAccounts = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: TransferRequest) => transferBetweenAccounts(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['account', variables.from_account_id] })
+      queryClient.invalidateQueries({ queryKey: ['account', variables.to_account_id] })
+      queryClient.invalidateQueries({ queryKey: ['account-operations', variables.from_account_id] })
+      queryClient.invalidateQueries({ queryKey: ['account-operations', variables.to_account_id] })
     },
   })
 }

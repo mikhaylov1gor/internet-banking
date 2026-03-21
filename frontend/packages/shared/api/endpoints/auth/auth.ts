@@ -1,21 +1,22 @@
-import axios from 'axios'
-import type { LoginRequest, LoginResponse, RefreshTokenRequest } from './types'
-
-const API_BASE_URL = process.env.NODE_ENV === 'development' ? '/api' : (process.env.API_BASE_URL || 'http://localhost:8080')
-
-const authClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+import { parseApiResponse } from '../../parse-response'
+import { jsonPublicClient } from '../../http/http-client'
+import {
+  LoginRequestSchema,
+  LoginResponseSchema,
+  RefreshTokenRequestSchema,
+  type LoginRequest,
+  type LoginResponse,
+  type RefreshTokenRequest,
+} from './types'
 
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
-  const response = await authClient.post<LoginResponse>('/auth/login', data)
-  return response.data
+  LoginRequestSchema.parse(data)
+  const { data: body } = await jsonPublicClient.post('/auth/login', data)
+  return parseApiResponse(LoginResponseSchema, body)
 }
 
 export const refreshToken = async (data: RefreshTokenRequest): Promise<LoginResponse> => {
-  const response = await authClient.post<LoginResponse>('/auth/refresh', data)
-  return response.data
+  RefreshTokenRequestSchema.parse(data)
+  const { data: body } = await jsonPublicClient.post('/auth/refresh', data)
+  return parseApiResponse(LoginResponseSchema, body)
 }

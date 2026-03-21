@@ -31,8 +31,6 @@ export const useClientLogin = (loginFn: (data: LoginRequest) => Promise<LoginRes
       queryClient.setQueryData(['user'], data)
       navigate('/')
     },
-    onError: () => {
-    },
   })
 }
 

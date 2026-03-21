@@ -1,4 +1,3 @@
-import React from 'react'
 import { MobileHomePage, DesktopHomePage } from '../pages/home'
 import { MobileAccountsPage, DesktopAccountsPage } from '../pages/accounts'
 import { AccountDetailPage } from '../pages/account-detail'
@@ -7,6 +6,7 @@ import { MobileUsersPage, DesktopUsersPage } from '../pages/users'
 import { UserDetailPage } from '../pages/user-detail'
 import { MobileCreditsPage, DesktopCreditsPage } from '../pages/credits'
 import { CreditDetailPage } from '../pages/credit-detail'
+import { CallbackPage } from '../pages/callback'
 import { 
   AppRouter, 
   AppRoute, 
@@ -15,6 +15,7 @@ import {
   createQueryClient 
 } from '@shared/features/app'
 import type { NavigationButton } from '@shared/features/app'
+import { EmployeeHideAccountsFeatureSync } from '../features/hide-accounts-feature'
 import './style.css'
 
 const queryClient = createQueryClient()
@@ -32,6 +33,11 @@ const navigationButtons: NavigationButton[] = [
 const appBarComponent = <AppBarWithNavigation buttons={navigationButtons} />
 
 const createRoutes = (isMobile: boolean): AppRoute[] => [
+  {
+    path: '/callback',
+    element: <CallbackPage />,
+    protected: false,
+  },
   {
     path: '/',
     element: isMobile ? <MobileHomePage /> : <DesktopHomePage />,
@@ -82,7 +88,7 @@ const createRoutes = (isMobile: boolean): AppRoute[] => [
   },
 ]
 
-export const MobileApp: React.FC = () => {
+export const MobileApp = () => {
   return (
     <AppRouter
       routes={createRoutes(true)}
@@ -90,11 +96,12 @@ export const MobileApp: React.FC = () => {
       appBarComponent={appBarComponent}
       allowedUserType="employee"
       queryClient={queryClient}
+      insideBrowserRouter={<EmployeeHideAccountsFeatureSync />}
     />
   )
 }
 
-export const DesktopApp: React.FC = () => {
+export const DesktopApp = () => {
   return (
     <AppRouter
       routes={createRoutes(false)}
@@ -102,6 +109,7 @@ export const DesktopApp: React.FC = () => {
       appBarComponent={appBarComponent}
       allowedUserType="employee"
       queryClient={queryClient}
+      insideBrowserRouter={<EmployeeHideAccountsFeatureSync />}
     />
   )
 }

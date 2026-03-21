@@ -1,43 +1,69 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import axios from 'axios'
+import { getApiErrorMessage } from '@shared/api'
 import { login, refreshToken } from '@shared/api/endpoints/auth'
 import type { LoginResponse } from '@shared/api/endpoints/auth'
+import { ssoLoginWithPassword } from '@shared/api/endpoints/sso'
 import { tokenStorage } from '@shared/utils'
 
 const CLIENT_APP_URL = 'http://localhost:5174'
 const EMPLOYEE_APP_URL = 'http://localhost:5173'
 
-const ALLOWED_REDIRECT_ORIGINS = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-]
+const ALLOWED_REDIRECT_ORIGINS = ['http://localhost:5173', 'http://localhost:5174']
 
 const isValidRedirectUri = (uri: string): boolean => {
   try {
     const url = new URL(uri)
-    return ALLOWED_REDIRECT_ORIGINS.some(origin => url.origin === origin)
+    return ALLOWED_REDIRECT_ORIGINS.some((origin) => url.origin === origin)
   } catch {
     return false
   }
 }
 
-const getAuthParams = () => {
-  const params = new URLSearchParams(window.location.search)
-  const rawRedirectUri = params.get('redirect_uri') || ''
+export type SsoParams = {
+  responseType: string
+  clientId: string
+  redirectUri: string
+  state: string
+  codeChallenge: string
+  codeChallengeMethod: string
+}
+
+const parseSsoParams = (): SsoParams | null => {
+  const p = new URLSearchParams(window.location.search)
+  const responseType = p.get('response_type')
+  const clientId = p.get('client_id')
+  const redirectUri = p.get('redirect_uri')
+  const codeChallenge = p.get('code_challenge')
+  const codeChallengeMethod = p.get('code_challenge_method')
+
+  if (!responseType || !clientId || !redirectUri || !codeChallenge || !codeChallengeMethod) {
+    return null
+  }
+  if (!isValidRedirectUri(redirectUri)) return null
+
   return {
-    redirectUri: isValidRedirectUri(rawRedirectUri) ? rawRedirectUri : '',
-    isWebView: params.get('iswebview') === 'true',
+    responseType,
+    clientId,
+    redirectUri,
+    state: p.get('state') ?? '',
+    codeChallenge,
+    codeChallengeMethod,
   }
 }
 
-const getErrorMessage = (error: Error | null): string | null => {
-  if (!error) return null
-  if (axios.isAxiosError(error) && error.response?.data) {
-    const data = error.response.data as Record<string, unknown>
-    if (typeof data.error === 'string') return data.error
+const parseLegacyParams = () => {
+  const p = new URLSearchParams(window.location.search)
+  const rawRedirectUri = p.get('redirect_uri') ?? ''
+  return {
+    redirectUri: isValidRedirectUri(rawRedirectUri) ? rawRedirectUri : '',
+    isWebView: p.get('iswebview') === 'true',
   }
-  return error.message || 'Ошибка авторизации'
+}
+
+const getErrorMessage = (error: unknown): string | null => {
+  if (error == null) return null
+  return getApiErrorMessage(error, 'Ошибка авторизации')
 }
 
 type TokenData = {
@@ -65,70 +91,29 @@ const storeSession = (response: LoginResponse) => {
 
 const sendTokensViaPostMessage = (tokenData: TokenData) => {
   const message = { type: 'auth_success', payload: tokenData }
-
   if (window.parent !== window) {
     window.parent.postMessage(message, '*')
   } else {
     window.postMessage(message, '*')
   }
-
-  const rnWebView = (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView
+  const rnWebView = (
+    window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }
+  ).ReactNativeWebView
   if (rnWebView) {
     rnWebView.postMessage(JSON.stringify(message))
   }
 }
 
-const isEmployeeAppUri = (uri: string): boolean => {
-  try {
-    return new URL(uri).origin === EMPLOYEE_APP_URL
-  } catch {
-    return false
-  }
-}
+const resolveAppUrl = (userType: string): string =>
+  userType === 'employee' ? EMPLOYEE_APP_URL : CLIENT_APP_URL
 
-const resolveRedirectUri = (redirectUri: string, userType: string): string => {
-  if (userType === 'client' && isEmployeeAppUri(redirectUri)) {
-    return CLIENT_APP_URL
-  }
-  return redirectUri
-}
-
-const deliverTokens = (
-  redirectUri: string,
-  isWebView: boolean,
-  tokenData: TokenData,
-  onComplete: () => void,
-) => {
-  if (isWebView) {
-    sendTokensViaPostMessage(tokenData)
-    onComplete()
-    return
-  }
-
-  if (redirectUri) {
-    window.location.href = resolveRedirectUri(redirectUri, tokenData.user_type)
-    return
-  }
-
-  if (tokenData.user_type === 'client') {
-    window.location.href = CLIENT_APP_URL
-    return
-  }
-
-  onComplete()
-}
-
-const useAuthLogin = () => {
-  const { redirectUri, isWebView } = getAuthParams()
-  const [authComplete, setAuthComplete] = useState(false)
-  const [userType, setUserType] = useState<'client' | 'employee' | null>(null)
-  const hasStoredSession = !!tokenStorage.getRefreshToken()
-  const [checkingSession, setCheckingSession] = useState(hasStoredSession)
-  const autoLoginAttempted = useRef(false)
+const useSsoAutoRefresh = (ssoParams: SsoParams) => {
+  const [checkingSession, setCheckingSession] = useState(!!tokenStorage.getRefreshToken())
+  const attempted = useRef(false)
 
   useEffect(() => {
-    if (autoLoginAttempted.current) return
-    autoLoginAttempted.current = true
+    if (attempted.current) return
+    attempted.current = true
 
     const storedRefreshToken = tokenStorage.getRefreshToken()
     if (!storedRefreshToken) {
@@ -136,44 +121,126 @@ const useAuthLogin = () => {
       return
     }
 
-    const tryAutoLogin = async () => {
-      try {
-        const refreshed = await refreshToken({ refresh_token: storedRefreshToken })
+    refreshToken({ refresh_token: storedRefreshToken })
+      .then((refreshed) => {
+        storeSession(refreshed)
+        const appRoot = resolveAppUrl(refreshed.type)
+        window.location.href = appRoot
+      })
+      .catch(() => {
+        tokenStorage.clear()
+        setCheckingSession(false)
+      })
+  }, [])
+
+  return { checkingSession, ssoParams }
+}
+
+const useLegacyAuth = () => {
+  const { redirectUri, isWebView } = parseLegacyParams()
+  const [authComplete, setAuthComplete] = useState(false)
+  const [userType, setUserType] = useState<'client' | 'employee' | null>(null)
+  const [checkingSession, setCheckingSession] = useState(!!tokenStorage.getRefreshToken())
+  const attempted = useRef(false)
+
+  useEffect(() => {
+    if (attempted.current) return
+    attempted.current = true
+
+    const storedRefreshToken = tokenStorage.getRefreshToken()
+    if (!storedRefreshToken) {
+      setCheckingSession(false)
+      return
+    }
+
+    refreshToken({ refresh_token: storedRefreshToken })
+      .then((refreshed) => {
         storeSession(refreshed)
         const tokenData = toTokenData(refreshed)
-        deliverTokens(redirectUri, isWebView, tokenData, () => {
+        if (isWebView) {
+          sendTokensViaPostMessage(tokenData)
           setUserType(refreshed.type)
           setAuthComplete(true)
           setCheckingSession(false)
-        })
-      } catch {
+          return
+        }
+        if (redirectUri) {
+          window.location.href =
+            refreshed.type === 'client' && redirectUri.startsWith(EMPLOYEE_APP_URL)
+              ? CLIENT_APP_URL
+              : redirectUri
+          return
+        }
+        window.location.href = resolveAppUrl(refreshed.type)
+      })
+      .catch(() => {
         tokenStorage.clear()
         setCheckingSession(false)
-      }
-    }
-
-    tryAutoLogin()
+      })
   }, [redirectUri, isWebView])
 
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
       storeSession(data)
-      deliverTokens(redirectUri, isWebView, toTokenData(data), () => {
+      const tokenData = toTokenData(data)
+      if (isWebView) {
+        sendTokensViaPostMessage(tokenData)
         setUserType(data.type)
         setAuthComplete(true)
-      })
+        return
+      }
+      if (redirectUri) {
+        window.location.href =
+          data.type === 'client' && redirectUri.startsWith(EMPLOYEE_APP_URL)
+            ? CLIENT_APP_URL
+            : redirectUri
+        return
+      }
+      setUserType(data.type)
+      setAuthComplete(true)
     },
   })
 
   return { mutation, isWebView, authComplete, checkingSession, userType }
 }
 
+type SsoLoginParams = SsoParams & { email: string; password: string }
+
+const useSsoLogin = () =>
+  useMutation({
+    mutationFn: (params: SsoLoginParams) =>
+      ssoLoginWithPassword({
+        email: params.email,
+        password: params.password,
+        response_type: params.responseType,
+        client_id: params.clientId,
+        redirect_uri: params.redirectUri,
+        state: params.state,
+        code_challenge: params.codeChallenge,
+        code_challenge_method: params.codeChallengeMethod,
+      }),
+    onSuccess: (data) => {
+      if (data.redirect) {
+        window.location.replace(data.redirect)
+      }
+    },
+  })
+
 export const useLoginPage = () => {
+  const ssoParams = parseSsoParams()
+  const isSsoMode = !!ssoParams
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailValid, setEmailValid] = useState(false)
-  const { mutation, isWebView, authComplete, checkingSession, userType } = useAuthLogin()
+  const formRef = useRef<HTMLFormElement>(null)
+
+  const sso = useSsoAutoRefresh(ssoParams ?? ({} as SsoParams))
+  const legacy = useLegacyAuth()
+  const ssoMutation = useSsoLogin()
+
+  const checkingSession = isSsoMode ? sso.checkingSession : legacy.checkingSession
 
   const handleEmailChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value)
@@ -187,12 +254,23 @@ export const useLoginPage = () => {
     setEmailValid(valid)
   }, [])
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault()
-    if (emailValid && password) {
-      mutation.mutate({ email, password })
-    }
-  }, [emailValid, password, email, mutation])
+  const isSubmitDisabled =
+    !emailValid ||
+    !password ||
+    (isSsoMode ? ssoMutation.isPending : legacy.mutation.isPending)
+
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!emailValid || !password) return
+      if (isSsoMode && ssoParams) {
+        ssoMutation.mutate({ ...ssoParams, email, password })
+      } else {
+        legacy.mutation.mutate({ email, password })
+      }
+    },
+    [emailValid, password, email, isSsoMode, ssoParams, ssoMutation, legacy.mutation],
+  )
 
   const goToClientApp = useCallback(() => {
     window.location.href = CLIENT_APP_URL
@@ -205,14 +283,18 @@ export const useLoginPage = () => {
   return {
     email,
     password,
-    isWebView,
-    authComplete,
+    emailValid,
+    isSsoMode,
+    ssoParams,
+    formRef,
+    isWebView: isSsoMode ? false : legacy.isWebView,
+    authComplete: isSsoMode ? false : legacy.authComplete,
     checkingSession,
-    userType,
-    isPending: mutation.isPending,
-    isError: mutation.isError,
-    errorMessage: getErrorMessage(mutation.error),
-    isSubmitDisabled: !emailValid || !password || mutation.isPending,
+    userType: isSsoMode ? null : legacy.userType,
+    isPending: isSsoMode ? ssoMutation.isPending : legacy.mutation.isPending,
+    isError: isSsoMode ? ssoMutation.isError : legacy.mutation.isError,
+    errorMessage: isSsoMode ? getErrorMessage(ssoMutation.error) : getErrorMessage(legacy.mutation.error),
+    isSubmitDisabled,
     handleSubmit,
     handleEmailChange,
     handlePasswordChange,

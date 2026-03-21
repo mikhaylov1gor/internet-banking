@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { PhoneInput } from './phone-input'
+import { PhoneInput } from './ui/phone-input'
 
 const meta: Meta<typeof PhoneInput> = {
   title: 'Shared/PhoneInput',

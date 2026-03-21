@@ -1,9 +1,10 @@
-import React from 'react'
 import { MobileHomePage, DesktopHomePage } from '../pages/home'
 import { MobileAccountsPage, DesktopAccountsPage } from '../pages/accounts'
 import { AccountDetailPage } from '../pages/account-detail'
 import { CreditsPage } from '../pages/credits'
 import { CreditDetailPage } from '../pages/credit-detail'
+import { CallbackPage } from '../pages/callback'
+import { TransferPage } from '../pages/transfer'
 import { 
   AppRouter, 
   AppRoute, 
@@ -22,6 +23,7 @@ const EMPLOYEE_APP_URL = 'http://localhost:5173'
 const getNavigationButtons = (): NavigationButton[] => {
   const buttons: NavigationButton[] = [
     { name: 'Счета', path: '/accounts' },
+    { name: 'Перевод', path: '/transfer' },
     { name: 'Кредиты', path: '/credits' },
   ]
   if (getUserType() === 'employee') {
@@ -31,6 +33,11 @@ const getNavigationButtons = (): NavigationButton[] => {
 }
 
 const createRoutes = (isMobile: boolean): AppRoute[] => [
+  {
+    path: '/callback',
+    element: <CallbackPage />,
+    protected: false,
+  },
   {
     path: '/',
     element: isMobile ? <MobileHomePage /> : <DesktopHomePage />,
@@ -47,6 +54,11 @@ const createRoutes = (isMobile: boolean): AppRoute[] => [
     protected: true,
   },
   {
+    path: '/transfer',
+    element: <TransferPage />,
+    protected: true,
+  },
+  {
     path: '/credits',
     element: <CreditsPage />,
     protected: true,
@@ -58,7 +70,7 @@ const createRoutes = (isMobile: boolean): AppRoute[] => [
   },
 ]
 
-export const MobileApp: React.FC = () => {
+export const MobileApp = () => {
   const appBarComponent = <AppBarWithNavigation buttons={getNavigationButtons()} />
   return (
     <AppRouter
@@ -70,7 +82,7 @@ export const MobileApp: React.FC = () => {
   )
 }
 
-export const DesktopApp: React.FC = () => {
+export const DesktopApp = () => {
   const appBarComponent = <AppBarWithNavigation buttons={getNavigationButtons()} />
   return (
     <AppRouter

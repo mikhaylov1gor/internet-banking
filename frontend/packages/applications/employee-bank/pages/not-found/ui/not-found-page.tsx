@@ -1,10 +1,9 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ErrorFallback } from '@shared/ui/error-fallback'
 import { isAuthenticated } from '@shared/features/auth'
 import './style.css'
 
-export const NotFoundPage: React.FC = () => {
+export const NotFoundPage = () => {
   const navigate = useNavigate()
   const authenticated = isAuthenticated()
 

@@ -74,6 +74,50 @@ module.exports = {
     hot: true,
     open: true,
     historyApiFallback: true,
+    setupMiddlewares: (middlewares, devServer) => {
+      const http = require('http');
+
+      devServer.app.post('/api/sso/login', (req, res) => {
+        const chunks = [];
+        req.on('data', (chunk) => chunks.push(chunk));
+        req.on('end', () => {
+          const body = Buffer.concat(chunks);
+          const backendReq = http.request(
+            {
+              hostname: 'localhost',
+              port: 8080,
+              path: '/sso/login',
+              method: 'POST',
+              headers: {
+                'content-type': req.headers['content-type'] || 'application/x-www-form-urlencoded',
+                'content-length': body.length,
+              },
+            },
+            (backendRes) => {
+              if (backendRes.statusCode === 302) {
+                const location = backendRes.headers['location'] || '';
+                backendRes.resume();
+                res.setHeader('Content-Type', 'application/json');
+                res.status(200).end(JSON.stringify({ redirect: location }));
+              } else {
+                res.status(backendRes.statusCode);
+                Object.entries(backendRes.headers).forEach(([k, v]) => {
+                  if (v !== undefined) res.setHeader(k, v);
+                });
+                backendRes.pipe(res);
+              }
+            },
+          );
+          backendReq.on('error', () => {
+            res.status(502).json({ error: 'Ошибка соединения с сервером' });
+          });
+          backendReq.write(body);
+          backendReq.end();
+        });
+      });
+
+      return middlewares;
+    },
     watchFiles: {
       paths: [
         path.resolve(__dirname, '../../shared/**/*'),

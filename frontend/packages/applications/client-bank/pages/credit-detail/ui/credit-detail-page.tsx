@@ -5,10 +5,11 @@ import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
 import { ErrorFallback } from '@shared/ui/error-fallback'
 import { Modal } from '@shared/ui/modal'
+import { CopyableId } from '@shared/ui/copyable-id'
 import { useCreditDetailPage } from '../model/use-credit-detail-page'
 import './style.css'
 
-export const CreditDetailPage: React.FC = () => {
+export const CreditDetailPage = () => {
   const {
     credit,
     creditLoading,
@@ -50,7 +51,17 @@ export const CreditDetailPage: React.FC = () => {
       </Button>
 
       <div className="credit-detail-page-credit-info">
-        <h1 className="credit-detail-page-title">Кредит #{credit.id.slice(0, 8)}...</h1>
+        <h1 className="credit-detail-page-title">
+          <span className="credit-detail-page-title-gradient">Кредит</span>
+          <CopyableId
+            className="credit-detail-page-title-gradient credit-detail-page-title-id"
+            copyText={credit.id}
+            toastOk="Номер кредита скопирован"
+            title="Скопировать полный номер кредита"
+          >
+            {` #${credit.id.slice(0, 8)}…`}
+          </CopyableId>
+        </h1>
         <div className="credit-detail-page-details">
           <div className="credit-detail-page-detail-item">
             <span className="credit-detail-page-label">Сумма:</span>
@@ -82,13 +93,28 @@ export const CreditDetailPage: React.FC = () => {
             <span className="credit-detail-page-label">Выдан:</span>
             <span>{new Date(credit.issued_at).toLocaleDateString('ru-RU')}</span>
           </div>
-          <div className="credit-detail-page-detail-item">
-            <span className="credit-detail-page-label">Счет:</span>
-            <span 
-              className="credit-detail-page-account-link"
-              onClick={() => navigate(`/accounts/${credit.account_id}`, { state: { fromCredit: true, creditId: credit.id } })}
-            >
-              #{credit.account_id.slice(0, 8)}...
+          <div className="credit-detail-page-detail-item credit-detail-page-detail-item--row">
+            <span className="credit-detail-page-label">Счёт:</span>
+            <span className="credit-detail-page-account-value">
+              <CopyableId
+                className="credit-detail-page-id-copy"
+                copyText={credit.account_id}
+                toastOk="Номер счёта скопирован"
+                title="Скопировать полный номер счёта"
+              >
+                {` #${credit.account_id.slice(0, 8)}…`}
+              </CopyableId>
+              <button
+                type="button"
+                className="credit-detail-page-account-open"
+                onClick={() =>
+                  navigate(`/accounts/${credit.account_id}`, {
+                    state: { fromCredit: true, creditId: credit.id },
+                  })
+                }
+              >
+                Открыть
+              </button>
             </span>
           </div>
           {credit.paid_at && (
@@ -122,7 +148,7 @@ export const CreditDetailPage: React.FC = () => {
                     { value: '', label: 'Выберите счет' },
                     ...accounts.map((account) => ({
                       value: account.id,
-                      label: `Счёт #${account.id.slice(0, 8)}... (Баланс: ${account.balance.toLocaleString()} ${account.currency || 'RUB'})`,
+                      label: `Счёт # ${account.id.slice(0, 8)}... (Баланс: ${account.balance.toLocaleString()} ${account.currency || 'RUB'})`,
                     })),
                   ]
                 : [{ value: '', label: 'Загрузка счетов...' }]
