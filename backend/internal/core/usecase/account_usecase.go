@@ -17,11 +17,13 @@ import (
 )
 
 var (
-	ErrAccountNotFound   = errors.New("счёт не найден")
-	ErrAccountClosed     = errors.New("счёт закрыт")
-	ErrInsufficientFunds = errors.New("недостаточно средств")
-	ErrInvalidAmount     = errors.New("сумма должна быть положительной")
-	ErrInvalidCurrency   = errors.New("неверная валюта")
+	ErrAccountNotFound    = errors.New("счёт не найден")
+	ErrAccountClosed      = errors.New("счёт закрыт")
+	ErrInsufficientFunds  = errors.New("недостаточно средств")
+	ErrInvalidAmount      = errors.New("сумма должна быть положительной")
+	ErrInvalidCurrency    = errors.New("неверная валюта")
+	ErrFXUnavailable      = errors.New("провайдер курсов валют не настроен")
+	ErrConversionTooSmall = errors.New("сумма после конвертации меньше минимально допустимой")
 )
 
 type AccountRepository interface {
@@ -59,6 +61,15 @@ type TransferQuote struct {
 	DebitAmount     float64         `json:"debit_amount"`
 	CreditAmount    float64         `json:"credit_amount"`
 	Rate            float64         `json:"rate"`
+}
+
+// CurrencyConvertQuote — расчёт суммы в целевой валюте без привязки к счетам.
+type CurrencyConvertQuote struct {
+	Amount       float64         `json:"amount"`
+	FromCurrency entity.Currency `json:"from_currency"`
+	ToCurrency   entity.Currency `json:"to_currency"`
+	Rate         float64         `json:"rate"`
+	ResultAmount float64         `json:"result_amount"`
 }
 
 func NewAccountUseCase(accRepo AccountRepository, opRepo OperationRepository, fxProvider client.FXRateProvider, producer OperationProducer) *AccountUseCase {
@@ -182,7 +193,7 @@ func (uc *AccountUseCase) buildTransferQuote(fromAcc, toAcc *entity.Account, amo
 	rate := 1.0
 	if fromAcc.Currency != toAcc.Currency {
 		if uc.fxProvider == nil {
-			return nil, errors.New("провайдер курсов валют не настроен")
+			return nil, ErrFXUnavailable
 		}
 		r, err := uc.fxProvider.Rate(fromAcc.Currency, toAcc.Currency)
 		if err != nil {
@@ -191,7 +202,7 @@ func (uc *AccountUseCase) buildTransferQuote(fromAcc, toAcc *entity.Account, amo
 		rate = r
 		creditAmount = roundMoney(amount * rate)
 		if creditAmount < 0.01 {
-			return nil, errors.New("сумма после конвертации меньше минимально допустимой")
+			return nil, ErrConversionTooSmall
 		}
 	}
 	return &TransferQuote{
@@ -203,6 +214,48 @@ func (uc *AccountUseCase) buildTransferQuote(fromAcc, toAcc *entity.Account, amo
 		DebitAmount:     roundMoney(amount),
 		CreditAmount:    creditAmount,
 		Rate:            rate,
+	}, nil
+}
+
+func supportedCurrency(c entity.Currency) bool {
+	return c == entity.CurrencyRUB || c == entity.CurrencyUSD || c == entity.CurrencyEUR
+}
+
+// ConvertCurrency возвращает эквивалент суммы в целевой валюте по текущему курсу.
+func (uc *AccountUseCase) ConvertCurrency(amount float64, from, to entity.Currency) (*CurrencyConvertQuote, error) {
+	if amount < 0.01 {
+		return nil, ErrInvalidAmount
+	}
+	if !supportedCurrency(from) || !supportedCurrency(to) {
+		return nil, ErrInvalidCurrency
+	}
+	if from == to {
+		a := roundMoney(amount)
+		return &CurrencyConvertQuote{
+			Amount:       a,
+			FromCurrency: from,
+			ToCurrency:   to,
+			Rate:         1,
+			ResultAmount: a,
+		}, nil
+	}
+	if uc.fxProvider == nil {
+		return nil, ErrFXUnavailable
+	}
+	rate, err := uc.fxProvider.Rate(from, to)
+	if err != nil {
+		return nil, err
+	}
+	result := roundMoney(amount * rate)
+	if result < 0.01 {
+		return nil, ErrConversionTooSmall
+	}
+	return &CurrencyConvertQuote{
+		Amount:       roundMoney(amount),
+		FromCurrency: from,
+		ToCurrency:   to,
+		Rate:         rate,
+		ResultAmount: result,
 	}, nil
 }
 

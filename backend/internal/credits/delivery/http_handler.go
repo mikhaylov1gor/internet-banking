@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"internet-bank/internal/credits/entity"
 	"internet-bank/internal/credits/usecase"
@@ -20,13 +21,14 @@ type TariffUseCase interface {
 }
 
 type CreditUseCase interface {
-	Issue(clientID, accountID, tariffID uuid.UUID, amount float64, bearerToken string) (*entity.Credit, error)
+	Issue(clientID, accountID, tariffID uuid.UUID, amount float64, termDays, termMonths *int, bearerToken string) (*entity.Credit, error)
 	GetByID(id uuid.UUID) (*entity.Credit, error)
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
 	Repay(creditID uuid.UUID, accountID uuid.UUID, amount float64, userID uuid.UUID, bearerToken string) (*entity.Credit, error)
 	GetOverdue(creditID uuid.UUID) (*usecase.CreditOverdue, error)
 	GetPayments(creditID uuid.UUID, page, pageSize int, onlyOverdue bool) (*usecase.CreditPaymentList, error)
 	GetClientRating(clientID uuid.UUID) (*usecase.CreditRating, error)
+	CheckCreditAvailability(amount float64) (*usecase.CreditAvailability, error)
 }
 
 type Handler struct {
@@ -78,6 +80,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Use(h.authMiddleware)
 		r.Get("/tariffs", h.listTariffs)
 		r.Get("/credits", h.listCredits)
+		r.Post("/credits/availability", h.checkCreditAvailability)
 		r.Post("/credits", h.issueCredit)
 		r.Get("/credits/{creditId}", h.getCredit)
 		r.Get("/credits/{creditId}/overdue", h.getCreditOverdue)
@@ -145,6 +148,27 @@ func (h *Handler) listTariffs(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) checkCreditAvailability(w http.ResponseWriter, r *http.Request) {
+	userID, _, _ := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	var body struct {
+		Amount float64 `json:"amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
+		return
+	}
+	res, err := h.creditUC.CheckCreditAvailability(body.Amount)
+	if err != nil {
+		writeCheckCreditAvailabilityError(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, res)
+}
+
 func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 	userID, userType, bearer := userFromContext(r.Context())
 	if userID == nil {
@@ -152,10 +176,12 @@ func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		ClientID  string  `json:"client_id"`
-		AccountID string  `json:"account_id"`
-		TariffID  string  `json:"tariff_id"`
-		Amount    float64 `json:"amount"`
+		ClientID   string  `json:"client_id"`
+		AccountID  string  `json:"account_id"`
+		TariffID   string  `json:"tariff_id"`
+		Amount     float64 `json:"amount"`
+		TermDays   *int    `json:"term_days"`
+		TermMonths *int    `json:"term_months"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
@@ -172,7 +198,7 @@ func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 		response.Err(w, http.StatusForbidden, "доступ запрещён")
 		return
 	}
-	credit, err := h.creditUC.Issue(clientID, accountID, tariffID, body.Amount, bearer)
+	credit, err := h.creditUC.Issue(clientID, accountID, tariffID, body.Amount, body.TermDays, body.TermMonths, bearer)
 	if err != nil {
 		writeIssueCreditError(w, err)
 		return
@@ -418,7 +444,10 @@ type creditResp struct {
 	Amount       float64 `json:"amount"`
 	Remaining    float64 `json:"remaining"`
 	Rate         float64 `json:"rate"`
+	TermDays     int     `json:"term_days"`
+	TotalDue     float64 `json:"total_due"`
 	DailyPayment float64 `json:"daily_payment"`
+	MaturityAt   string  `json:"maturity_at,omitempty"`
 	IssuedAt     string  `json:"issued_at"`
 	Status       string  `json:"status"`
 }
@@ -440,7 +469,7 @@ func toTariffResp(t *entity.CreditTariff) tariffResp {
 }
 
 func toCreditResp(c *entity.Credit) creditResp {
-	return creditResp{
+	r := creditResp{
 		ID:           c.ID.String(),
 		ClientID:     c.ClientID.String(),
 		AccountID:    c.AccountID.String(),
@@ -448,10 +477,21 @@ func toCreditResp(c *entity.Credit) creditResp {
 		Amount:       c.Amount,
 		Remaining:    c.Remaining,
 		Rate:         c.Rate,
+		TermDays:     c.TermDays,
+		TotalDue:     c.TotalDue,
 		DailyPayment: c.DailyPayment,
 		IssuedAt:     c.IssuedAt.Format("2006-01-02T15:04:05.000Z07:00"),
 		Status:       string(c.Status),
 	}
+	if c.TermDays > 0 {
+		mat := calendarBase(c.IssuedAt).AddDate(0, 0, c.TermDays)
+		r.MaturityAt = mat.Format("2006-01-02T15:04:05.000Z07:00")
+	}
+	return r
+}
+
+func calendarBase(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
 func parseLimitOffset(r *http.Request, defaultLimit, defaultOffset int) (limit, offset int) {

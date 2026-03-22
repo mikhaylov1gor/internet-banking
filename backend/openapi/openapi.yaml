@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Internet Bank Backend API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     Актуальная HTTP-спецификация backend-сервисов интернет-банка через API Gateway.
     Все запросы отправляются на один базовый URL.
@@ -15,6 +15,7 @@ tags:
   - name: SSO
   - name: Users
   - name: Accounts
+  - name: FX
   - name: Operations
   - name: Tariffs
   - name: Credits
@@ -358,6 +359,42 @@ components:
           type: number
           format: double
           minimum: 0.01
+    FXConvertRequest:
+      type: object
+      required: [amount, from_currency, to_currency]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Сумма в исходной валюте
+        from_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        to_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+    FXConvertResponse:
+      type: object
+      required: [amount, from_currency, to_currency, rate, result_amount]
+      properties:
+        amount:
+          type: number
+          format: double
+        from_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        to_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        rate:
+          type: number
+          format: double
+          description: Курс умножения (result_amount ≈ amount × rate, с округлением до копеек)
+        result_amount:
+          type: number
+          format: double
+          description: Сумма в целевой валюте
     TransferPreviewResponse:
       type: object
       required: [from_account_id, to_account_id, from_currency, to_currency, debit_amount, credit_amount, rate]
@@ -466,6 +503,35 @@ components:
         amount:
           type: number
           format: double
+    CreditAvailabilityRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Сумма тела кредита (столько списывается с мастер-счёта при выдаче)
+    CreditAvailabilityResponse:
+      type: object
+      required: [allowed, requested_amount, master_balance, master_currency]
+      properties:
+        allowed:
+          type: boolean
+          description: true, если на мастер-счёте достаточно средств для выдачи
+        requested_amount:
+          type: number
+          format: double
+        master_balance:
+          type: number
+          format: double
+        master_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        shortfall:
+          type: number
+          format: double
+          description: При allowed=false — нехватка средств на мастер-счёте
     RepayCreditRequest:
       type: object
       required: [amount, account_id]
@@ -828,6 +894,45 @@ paths:
           description: Статус обновлен
         '403':
           description: Нельзя заблокировать себя / нет прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /fx/convert:
+    post:
+      tags: [FX]
+      summary: Калькулятор конвертации валют
+      description: |
+        Возвращает эквивалент суммы в целевой валюте по курсу внешнего API (см. FX_BASE_URL в Core).
+        Авторизация не требуется.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FXConvertRequest'
+      responses:
+        '200':
+          description: Расчёт суммы в целевой валюте
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FXConvertResponse'
+        '400':
+          description: Неверная сумма или валюта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Не удалось получить курс
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Провайдер курсов не настроен
           content:
             application/json:
               schema:
@@ -1201,6 +1306,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreditListResponse'
+  /credits/availability:
+    post:
+      tags: [Credits]
+      summary: Проверка — хватит ли средств на мастер-счёте для выдачи кредита
+      description: |
+        Сравнивает запрошенную сумму тела кредита с балансом мастер-счёта банка (куда уходят средства при выдаче).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAvailabilityRequest'
+      responses:
+        '200':
+          description: Результат проверки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAvailabilityResponse'
+        '400':
+          description: Неверная сумма
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Нет токена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Core недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /credits/{creditId}:
     get:
       tags: [Credits]

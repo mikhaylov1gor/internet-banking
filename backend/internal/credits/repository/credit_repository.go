@@ -63,7 +63,5 @@ func (r *creditRepo) Delete(id uuid.UUID) error {
 }
 
 func (r *creditRepo) AccrueInterest() error {
-	return r.db.Model(&entity.Credit{}).
-		Where("status = ?", entity.CreditStatusActive).
-		Update("remaining", gorm.Expr("remaining * (1 + rate / 525600)")).Error
+	return nil
 }

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Internet Bank API (Swagger)
-  version: 1.1.0
+  version: 1.2.0
   description: Упрощенная OpenAPI-спецификация для открытия в Swagger UI.
 servers:
   - url: http://localhost:8080
@@ -11,6 +11,7 @@ tags:
   - name: Auth
   - name: Users
   - name: Accounts
+  - name: FX
   - name: Credits
   - name: AppSettings
 components:
@@ -138,6 +139,36 @@ components:
         currency:
           type: string
           enum: [RUB, USD, EUR]
+    FXConvertRequest:
+      type: object
+      required: [amount, from_currency, to_currency]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+        from_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        to_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+    FXConvertResponse:
+      type: object
+      required: [amount, from_currency, to_currency, rate, result_amount]
+      properties:
+        amount:
+          type: number
+        from_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        to_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        rate:
+          type: number
+        result_amount:
+          type: number
     Operation:
       type: object
       required: [id, account_id, type, amount, balance_after, created_at]
@@ -167,6 +198,54 @@ components:
           type: number
           format: double
           minimum: 0.01
+    IssueCreditRequest:
+      type: object
+      required: [client_id, account_id, tariff_id, amount]
+      properties:
+        client_id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        tariff_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+        term_days:
+          type: integer
+          minimum: 1
+          description: Срок в днях (можно вместе с term_months; итог = term_days + term_months×30)
+        term_months:
+          type: integer
+          minimum: 1
+          description: Срок в месяцах (1 месяц = 30 дней)
+    CreditAvailabilityRequest:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+    CreditAvailabilityResponse:
+      type: object
+      required: [allowed, requested_amount, master_balance, master_currency]
+      properties:
+        allowed:
+          type: boolean
+        requested_amount:
+          type: number
+        master_balance:
+          type: number
+        master_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        shortfall:
+          type: number
     Credit:
       type: object
       required: [id, client_id, account_id, tariff_id, amount, remaining, status]
@@ -185,8 +264,27 @@ components:
           format: uuid
         amount:
           type: number
+          description: Тело кредита (выдано на счёт)
         remaining:
           type: number
+          description: Остаток к возврату (тело + проценты по графику)
+        rate:
+          type: number
+        term_days:
+          type: integer
+        total_due:
+          type: number
+          description: Полная сумма к возврату на весь срок
+        daily_payment:
+          type: number
+          description: Ежедневный платёж по графику
+        maturity_at:
+          type: string
+          format: date-time
+          description: Дата окончания срока (если задан term_days)
+        issued_at:
+          type: string
+          format: date-time
         status:
           type: string
           enum: [active, paid, overdue]
@@ -242,6 +340,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenResponse'
+  /fx/convert:
+    post:
+      tags: [FX]
+      security: []
+      summary: Конвертация суммы по курсу
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FXConvertRequest'
+      responses:
+        '200':
+          description: Результат в целевой валюте
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FXConvertResponse'
   /users:
     get:
       tags: [Users]
@@ -333,6 +449,42 @@ paths:
       responses:
         '200':
           description: OK
+    post:
+      tags: [Credits]
+      summary: Оформить кредит
+      description: |
+        Укажите срок через `term_days` и/или `term_months` (1 месяц = 30 дней).
+        График платежей — по календарным дням; погашение уменьшает остаток и «закрывает» дни по FIFO.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueCreditRequest'
+      responses:
+        '201':
+          description: Кредит создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Credit'
+  /credits/availability:
+    post:
+      tags: [Credits]
+      summary: Проверка ликвидности мастер-счёта
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditAvailabilityRequest'
+      responses:
+        '200':
+          description: Можно ли выдать кредит на эту сумму
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAvailabilityResponse'
   /app-settings/{appType}:
     get:
       tags: [AppSettings]

@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -26,6 +27,7 @@ type AccountUseCase interface {
 	Withdraw(accountID uuid.UUID, amount float64, description string) (*entity.Operation, error)
 	Transfer(fromAccountID, toAccountID uuid.UUID, amount float64, description string) (*entity.Operation, *entity.Operation, error)
 	PreviewTransfer(fromAccountID, toAccountID uuid.UUID, amount float64) (*usecase.TransferQuote, error)
+	ConvertCurrency(amount float64, from, to entity.Currency) (*usecase.CurrencyConvertQuote, error)
 	ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error)
 }
 
@@ -63,6 +65,7 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 }
 
 func (h *Handler) Mount(r chi.Router) {
+	r.Post("/fx/convert", h.convertCurrency)
 	r.Group(func(r chi.Router) {
 		r.Use(h.authMiddleware)
 		r.Post("/accounts", h.openAccount)
@@ -77,6 +80,38 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/accounts/{accountId}/operations", h.listOperations)
 		r.Get("/ws/accounts/{accountId}/operations", h.wsOperations)
 	})
+}
+
+// convertCurrency — калькулятор: сумма в одной валюте → эквивалент в другой (курс с внешнего API). Без авторизации.
+func (h *Handler) convertCurrency(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Amount       float64 `json:"amount"`
+		FromCurrency string  `json:"from_currency"`
+		ToCurrency   string  `json:"to_currency"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
+		return
+	}
+	if body.FromCurrency == "" || body.ToCurrency == "" {
+		response.Err(w, http.StatusBadRequest, "укажите from_currency и to_currency (RUB, USD, EUR)")
+		return
+	}
+	quote, err := h.uc.ConvertCurrency(body.Amount, entity.Currency(body.FromCurrency), entity.Currency(body.ToCurrency))
+	if err != nil {
+		switch {
+		case errors.Is(err, usecase.ErrInvalidAmount),
+			errors.Is(err, usecase.ErrInvalidCurrency),
+			errors.Is(err, usecase.ErrConversionTooSmall):
+			response.Err(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, usecase.ErrFXUnavailable):
+			response.Err(w, http.StatusServiceUnavailable, err.Error())
+		default:
+			response.Err(w, http.StatusBadGateway, err.Error())
+		}
+		return
+	}
+	response.JSON(w, http.StatusOK, quote)
 }
 
 func (h *Handler) openAccount(w http.ResponseWriter, r *http.Request) {

@@ -21,6 +21,8 @@ type Credit struct {
 	TariffID     uuid.UUID    `gorm:"type:uuid;not null"`
 	Amount       float64      `gorm:"not null"`
 	Rate         float64      `gorm:"not null"`
+	TermDays     int          `gorm:"column:term_days;not null;default:0"`
+	TotalDue     float64      `gorm:"column:total_due;not null;default:0"`
 	DailyPayment float64      `gorm:"column:daily_payment;not null"`
 	Remaining    float64      `gorm:"not null"`
 	IssuedAt     time.Time    `gorm:"column:issued_at;not null"`

@@ -30,15 +30,15 @@ Write-Host "account id=$($acc.id) balance=$($acc.balance) (expect 0)"
 $creditAmount = 1000
 Write-Host '=== 6. Issue credit ===' 
 $cr = Invoke-RestMethod -Method Post -Uri "$base/credits" -Headers $hCli -ContentType 'application/json' `
-    -Body (@{ client_id = $user.id; account_id = $acc.id; tariff_id = $tariff.id; amount = $creditAmount } | ConvertTo-Json)
-Write-Host "credit id=$($cr.id) remaining=$($cr.remaining) (expect $creditAmount)"
+    -Body (@{ client_id = $user.id; account_id = $acc.id; tariff_id = $tariff.id; amount = $creditAmount; term_days = 30 } | ConvertTo-Json)
+Write-Host "credit id=$($cr.id) remaining=$($cr.remaining) total_due=$($cr.total_due) (principal on account=$creditAmount)"
 
 $acc2 = Invoke-RestMethod -Method Get -Uri "$base/accounts/$($acc.id)" -Headers $hCli
 Write-Host "account balance after credit: $($acc2.balance) (expect $creditAmount)"
 
 Write-Host '=== 7. Repay credit (full) ===' 
 $rep = Invoke-RestMethod -Method Post -Uri "$base/credits/$($cr.id)/repay" -Headers $hCli -ContentType 'application/json' `
-    -Body (@{ amount = $creditAmount; account_id = $acc.id } | ConvertTo-Json)
+    -Body (@{ amount = $cr.remaining; account_id = $acc.id } | ConvertTo-Json)
 Write-Host "repay remaining=$($rep.remaining) status=$($rep.status) (expect 0, paid)"
 
 $acc3 = Invoke-RestMethod -Method Get -Uri "$base/accounts/$($acc.id)" -Headers $hCli

@@ -49,8 +49,9 @@ docker compose up -d --build
 
 - `POST /auth/login`, `POST /auth/refresh` → Users  
 - `GET/POST/PATCH /users`, `/users/{id}` → Users  
+- `POST /fx/convert` → Core (калькулятор курса, без токена)  
 - `GET/POST/DELETE /accounts`, `/accounts/{id}/deposit`, `/withdraw`, `/operations` → Core  
-- `GET/POST /tariffs`, `GET/POST /credits`, `/credits/{id}/repay` → Credits  
+- `GET/POST /tariffs`, `GET/POST /credits`, `POST /credits/availability` (ликвидность мастер-счёта), `/credits/{id}/repay` → Credits  
 - `GET/PUT /app-settings/{appType}` → App Settings  
 
 Заголовок `Authorization: Bearer <token>` проксируется. CORS: `Access-Control-Allow-Origin: *`.

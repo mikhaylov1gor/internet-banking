@@ -22,6 +22,7 @@ type AccountInfo struct {
 	ID       uuid.UUID `json:"id"`
 	ClientID uuid.UUID `json:"client_id"`
 	Balance  float64   `json:"balance"`
+	Currency string    `json:"currency"`
 	Status   string    `json:"status"`
 }
 
