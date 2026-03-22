@@ -33,7 +33,7 @@ func LoadCore() CoreConfig {
 	}
 	fxBaseURL := os.Getenv("FX_BASE_URL")
 	if fxBaseURL == "" {
-		fxBaseURL = "https://api.frankfurter.app"
+		fxBaseURL = "https://open.er-api.com/v6/latest"
 	}
 	rabbitURL := os.Getenv("RABBITMQ_URL")
 	if rabbitURL == "" {

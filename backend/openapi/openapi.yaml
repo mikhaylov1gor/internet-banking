@@ -34,11 +34,14 @@ components:
           type: string
     Account:
       type: object
-      required: [id, client_id, balance, currency, status, opened_at]
+      required: [id, account_number, client_id, balance, currency, status, opened_at]
       properties:
         id:
           type: string
           format: uuid
+        account_number:
+          type: string
+          example: "40817810000012345678"
         client_id:
           type: string
           format: uuid
@@ -190,6 +193,36 @@ components:
         minute_payment:
           type: number
           format: double
+    CreditPayment:
+      type: object
+      required: [index, due_at, expected_total, paid_now_total, status]
+      properties:
+        index:
+          type: integer
+        due_at:
+          type: string
+          format: date-time
+        expected_total:
+          type: number
+          format: double
+        paid_now_total:
+          type: number
+          format: double
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+    CreditPaymentList:
+      type: object
+      required: [items, pageNumber, pageQuantity]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditPayment'
+        pageNumber:
+          type: integer
+        pageQuantity:
+          type: integer
     CreditRating:
       type: object
       required: [client_id, score, risk_level, overdue_amount, overdue_count]
@@ -310,7 +343,7 @@ components:
           minimum: 0.01
     TransferRequest:
       type: object
-      required: [from_account_id, to_account_id, amount]
+      required: [from_account_id, amount]
       properties:
         from_account_id:
           type: string
@@ -318,10 +351,55 @@ components:
         to_account_id:
           type: string
           format: uuid
+        to_account_number:
+          type: string
+          description: Можно передать вместо to_account_id.
         amount:
           type: number
           format: double
           minimum: 0.01
+    TransferPreviewResponse:
+      type: object
+      required: [from_account_id, to_account_id, from_currency, to_currency, debit_amount, credit_amount, rate]
+      properties:
+        from_account_id:
+          type: string
+          format: uuid
+        to_account_id:
+          type: string
+          format: uuid
+        to_account_number:
+          type: string
+        from_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        to_currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        debit_amount:
+          type: number
+          format: double
+        credit_amount:
+          type: number
+          format: double
+        rate:
+          type: number
+          format: double
+    AccountBasic:
+      type: object
+      required: [id, account_number, currency, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_number:
+          type: string
+        currency:
+          type: string
+          enum: [RUB, USD, EUR]
+        status:
+          type: string
+          enum: [active, closed]
     LoginRequest:
       type: object
       required: [email, password]
@@ -841,6 +919,25 @@ paths:
       responses:
         '204':
           description: Счет закрыт
+  /accounts/by-number/{accountNumber}:
+    get:
+      tags: [Accounts]
+      summary: Получить базовую информацию о счете по номеру
+      parameters:
+        - in: path
+          name: accountNumber
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Базовая информация о счете
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountBasic'
+        '404':
+          description: Счет не найден
   /accounts/{accountId}/deposit:
     post:
       tags: [Operations]
@@ -906,6 +1003,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransferResponse'
+  /accounts/transfer/preview:
+    post:
+      tags: [Operations]
+      summary: Предрасчет перевода по текущему курсу
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Расчет суммы списания/зачисления
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferPreviewResponse'
   /accounts/{accountId}/operations:
     get:
       tags: [Operations]
@@ -1111,6 +1225,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreditOverdue'
+  /credits/{creditId}/payments:
+    get:
+      tags: [Credits]
+      summary: Список платежей по кредиту
+      parameters:
+        - in: path
+          name: creditId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+        - in: query
+          name: only_overdue
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Список платежей с статусом
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditPaymentList'
   /clients/{clientId}/credit-rating:
     get:
       tags: [Credits]

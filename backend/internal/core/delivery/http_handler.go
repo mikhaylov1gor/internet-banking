@@ -19,11 +19,13 @@ import (
 type AccountUseCase interface {
 	OpenAccount(clientID uuid.UUID, currency entity.Currency) (*entity.Account, error)
 	GetByID(id uuid.UUID) (*entity.Account, error)
+	GetByNumber(accountNumber string) (*entity.Account, error)
 	List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error)
 	CloseAccount(accountID, clientID uuid.UUID) error
 	Deposit(accountID uuid.UUID, amount float64, description string) (*entity.Operation, error)
 	Withdraw(accountID uuid.UUID, amount float64, description string) (*entity.Operation, error)
 	Transfer(fromAccountID, toAccountID uuid.UUID, amount float64, description string) (*entity.Operation, *entity.Operation, error)
+	PreviewTransfer(fromAccountID, toAccountID uuid.UUID, amount float64) (*usecase.TransferQuote, error)
 	ListOperations(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error)
 }
 
@@ -66,10 +68,12 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Post("/accounts", h.openAccount)
 		r.Get("/accounts", h.listAccounts)
 		r.Get("/accounts/{accountId}", h.getAccount)
+		r.Get("/accounts/by-number/{accountNumber}", h.getAccountByNumber)
 		r.Delete("/accounts/{accountId}", h.closeAccount)
 		r.Post("/accounts/{accountId}/deposit", h.deposit)
 		r.Post("/accounts/{accountId}/withdraw", h.withdraw)
 		r.Post("/accounts/transfer", h.transfer)
+		r.Post("/accounts/transfer/preview", h.previewTransfer)
 		r.Get("/accounts/{accountId}/operations", h.listOperations)
 		r.Get("/ws/accounts/{accountId}/operations", h.wsOperations)
 	})
@@ -194,6 +198,30 @@ func (h *Handler) getAccount(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, toAccountResp(acc))
 }
 
+func (h *Handler) getAccountByNumber(w http.ResponseWriter, r *http.Request) {
+	userID, _ := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	accountNumber := chi.URLParam(r, "accountNumber")
+	if accountNumber == "" {
+		response.Err(w, http.StatusBadRequest, "неверный accountNumber")
+		return
+	}
+	acc, err := h.uc.GetByNumber(accountNumber)
+	if err != nil {
+		response.Err(w, http.StatusNotFound, "счёт не найден")
+		return
+	}
+	response.JSON(w, http.StatusOK, accountBasicResp{
+		ID:            acc.ID.String(),
+		AccountNumber: acc.AccountNumber,
+		Currency:      string(acc.Currency),
+		Status:        string(acc.Status),
+	})
+}
+
 func (h *Handler) closeAccount(w http.ResponseWriter, r *http.Request) {
 	userID, _ := userFromContext(r.Context())
 	if userID == nil {
@@ -316,9 +344,10 @@ func (h *Handler) transfer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		FromAccountID string  `json:"from_account_id"`
-		ToAccountID   string  `json:"to_account_id"`
-		Amount        float64 `json:"amount"`
+		FromAccountID   string  `json:"from_account_id"`
+		ToAccountID     string  `json:"to_account_id"`
+		ToAccountNumber string  `json:"to_account_number"`
+		Amount          float64 `json:"amount"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
@@ -329,9 +358,22 @@ func (h *Handler) transfer(w http.ResponseWriter, r *http.Request) {
 		response.Err(w, http.StatusBadRequest, "неверный from_account_id")
 		return
 	}
-	toAccountID, err := uuid.Parse(body.ToAccountID)
-	if err != nil {
-		response.Err(w, http.StatusBadRequest, "неверный to_account_id")
+	var toAccountID uuid.UUID
+	if body.ToAccountID != "" {
+		toAccountID, err = uuid.Parse(body.ToAccountID)
+		if err != nil {
+			response.Err(w, http.StatusBadRequest, "неверный to_account_id")
+			return
+		}
+	} else if body.ToAccountNumber != "" {
+		toAcc, err := h.uc.GetByNumber(body.ToAccountNumber)
+		if err != nil {
+			response.Err(w, http.StatusNotFound, "счёт не найден")
+			return
+		}
+		toAccountID = toAcc.ID
+	} else {
+		response.Err(w, http.StatusBadRequest, "обязателен to_account_id или to_account_number")
 		return
 	}
 	fromAcc, err := h.uc.GetByID(fromAccountID)
@@ -360,6 +402,66 @@ func (h *Handler) transfer(w http.ResponseWriter, r *http.Request) {
 		"debit_operation":  toOperationResp(outOp),
 		"credit_operation": toOperationResp(inOp),
 	})
+}
+
+func (h *Handler) previewTransfer(w http.ResponseWriter, r *http.Request) {
+	userID, userType := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	var body struct {
+		FromAccountID   string  `json:"from_account_id"`
+		ToAccountID     string  `json:"to_account_id"`
+		ToAccountNumber string  `json:"to_account_number"`
+		Amount          float64 `json:"amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
+		return
+	}
+	fromAccountID, err := uuid.Parse(body.FromAccountID)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный from_account_id")
+		return
+	}
+	fromAcc, err := h.uc.GetByID(fromAccountID)
+	if err != nil {
+		response.Err(w, http.StatusNotFound, "счёт не найден")
+		return
+	}
+	if userType == auth.UserTypeClient && fromAcc.ClientID != *userID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
+		return
+	}
+	var toAccountID uuid.UUID
+	if body.ToAccountID != "" {
+		toAccountID, err = uuid.Parse(body.ToAccountID)
+		if err != nil {
+			response.Err(w, http.StatusBadRequest, "неверный to_account_id")
+			return
+		}
+	} else if body.ToAccountNumber != "" {
+		toAcc, err := h.uc.GetByNumber(body.ToAccountNumber)
+		if err != nil {
+			response.Err(w, http.StatusNotFound, "счёт не найден")
+			return
+		}
+		toAccountID = toAcc.ID
+	} else {
+		response.Err(w, http.StatusBadRequest, "обязателен to_account_id или to_account_number")
+		return
+	}
+	quote, err := h.uc.PreviewTransfer(fromAccountID, toAccountID, body.Amount)
+	if err != nil {
+		if err == usecase.ErrAccountNotFound {
+			response.Err(w, http.StatusNotFound, "счёт не найден")
+			return
+		}
+		response.Err(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.JSON(w, http.StatusOK, quote)
 }
 
 func (h *Handler) listOperations(w http.ResponseWriter, r *http.Request) {
@@ -495,13 +597,21 @@ func (h *Handler) wsOperations(w http.ResponseWriter, r *http.Request) {
 }
 
 type accountResp struct {
-	ID       string  `json:"id"`
-	ClientID string  `json:"client_id"`
-	Balance  float64 `json:"balance"`
-	Currency string  `json:"currency,omitempty"`
-	Status   string  `json:"status"`
-	OpenedAt string  `json:"opened_at"`
-	ClosedAt *string `json:"closed_at,omitempty"`
+	ID            string  `json:"id"`
+	AccountNumber string  `json:"account_number,omitempty"`
+	ClientID      string  `json:"client_id"`
+	Balance       float64 `json:"balance"`
+	Currency      string  `json:"currency,omitempty"`
+	Status        string  `json:"status"`
+	OpenedAt      string  `json:"opened_at"`
+	ClosedAt      *string `json:"closed_at,omitempty"`
+}
+
+type accountBasicResp struct {
+	ID            string `json:"id"`
+	AccountNumber string `json:"account_number"`
+	Currency      string `json:"currency"`
+	Status        string `json:"status"`
 }
 
 type accountListResp struct {
@@ -529,12 +639,13 @@ type operationResp struct {
 
 func toAccountResp(a *entity.Account) accountResp {
 	r := accountResp{
-		ID:       a.ID.String(),
-		ClientID: a.ClientID.String(),
-		Balance:  a.Balance,
-		Currency: string(a.Currency),
-		Status:   string(a.Status),
-		OpenedAt: a.OpenedAt.Format("2006-01-02T15:04:05.000Z07:00"),
+		ID:            a.ID.String(),
+		AccountNumber: a.AccountNumber,
+		ClientID:      a.ClientID.String(),
+		Balance:       a.Balance,
+		Currency:      string(a.Currency),
+		Status:        string(a.Status),
+		OpenedAt:      a.OpenedAt.Format("2006-01-02T15:04:05.000Z07:00"),
 	}
 	if a.ClosedAt != nil {
 		s := a.ClosedAt.Format("2006-01-02T15:04:05.000Z07:00")

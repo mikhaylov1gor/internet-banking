@@ -52,6 +52,20 @@ type CreditRating struct {
 	OverdueCount  int       `json:"overdue_count"`
 }
 
+type CreditPayment struct {
+	Index         int       `json:"index"`
+	DueAt         time.Time `json:"due_at"`
+	ExpectedTotal float64   `json:"expected_total"`
+	PaidNowTotal  float64   `json:"paid_now_total"`
+	Status        string    `json:"status"`
+}
+
+type CreditPaymentList struct {
+	Items        []CreditPayment `json:"items"`
+	PageNumber   int             `json:"pageNumber"`
+	PageQuantity int             `json:"pageQuantity"`
+}
+
 func NewCreditUseCase(tariffRepo TariffRepository, creditRepo CreditRepository, coreClient client.CoreClient, masterAccountID uuid.UUID, internalAuthToken string) *CreditUseCase {
 	return &CreditUseCase{
 		tariffRepo:        tariffRepo,
@@ -77,7 +91,7 @@ func (uc *CreditUseCase) Issue(clientID, accountID, tariffID uuid.UUID, amount f
 	if uc.coreClient != nil {
 		accInfo, err := uc.coreClient.GetAccount(accountID, uc.internalAuthToken)
 		if err != nil {
-			return nil, errors.New("счёт не найден")
+			return nil, err
 		}
 		if accInfo.ClientID != clientID {
 			return nil, errors.New("счёт не принадлежит клиенту")
@@ -205,6 +219,74 @@ func (uc *CreditUseCase) GetOverdue(creditID uuid.UUID) (*CreditOverdue, error) 
 		OverdueAmount:   round2(overdueAmount),
 		OverduePayments: overduePayments,
 		MinutePayment:   round2(minutePayment),
+	}, nil
+}
+
+func (uc *CreditUseCase) GetPayments(creditID uuid.UUID, page, pageSize int, onlyOverdue bool) (*CreditPaymentList, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 50
+	}
+	c, err := uc.creditRepo.GetByID(creditID)
+	if err != nil {
+		return nil, ErrCreditNotFound
+	}
+	now := time.Now()
+	elapsedMinutes := int(now.Sub(c.IssuedAt).Minutes())
+	if elapsedMinutes < 0 {
+		elapsedMinutes = 0
+	}
+	minutePayment := c.DailyPayment / 1440
+	if minutePayment < 0.01 {
+		minutePayment = 0.01
+	}
+	totalPayments := int(math.Ceil(c.Amount / minutePayment))
+	if totalPayments < 1 {
+		totalPayments = 1
+	}
+	actualPaid := c.Amount - c.Remaining
+	payments := make([]CreditPayment, 0, totalPayments)
+	for i := 1; i <= totalPayments; i++ {
+		expected := math.Min(c.Amount, float64(i)*minutePayment)
+		dueAt := c.IssuedAt.Add(time.Duration(i) * time.Minute)
+		status := "pending"
+		if dueAt.Before(now) || dueAt.Equal(now) {
+			if actualPaid+0.000001 >= expected {
+				status = "paid"
+			} else {
+				status = "overdue"
+			}
+		}
+		if onlyOverdue && status != "overdue" {
+			continue
+		}
+		payments = append(payments, CreditPayment{
+			Index:         i,
+			DueAt:         dueAt,
+			ExpectedTotal: round2(expected),
+			PaidNowTotal:  round2(actualPaid),
+			Status:        status,
+		})
+	}
+	total := len(payments)
+	start := (page - 1) * pageSize
+	if start > total {
+		start = total
+	}
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+	pageQuantity := (total + pageSize - 1) / pageSize
+	if pageQuantity == 0 {
+		pageQuantity = 1
+	}
+	return &CreditPaymentList{
+		Items:        payments[start:end],
+		PageNumber:   page,
+		PageQuantity: pageQuantity,
 	}, nil
 }
 

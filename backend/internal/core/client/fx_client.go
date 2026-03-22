@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -22,7 +21,7 @@ type frankfurterClient struct {
 
 func NewFrankfurterClient(baseURL string) FXRateProvider {
 	if baseURL == "" {
-		baseURL = "https://api.frankfurter.app"
+		baseURL = "https://open.er-api.com/v6/latest"
 	}
 	return &frankfurterClient{
 		baseURL: strings.TrimRight(baseURL, "/"),
@@ -34,7 +33,7 @@ func (c *frankfurterClient) Rate(from, to entity.Currency) (float64, error) {
 	if from == to {
 		return 1, nil
 	}
-	u := fmt.Sprintf("%s/latest?from=%s&to=%s", c.baseURL, url.QueryEscape(string(from)), url.QueryEscape(string(to)))
+	u := fmt.Sprintf("%s/%s", c.baseURL, from)
 	resp, err := c.client.Get(u)
 	if err != nil {
 		return 0, err
@@ -44,10 +43,14 @@ func (c *frankfurterClient) Rate(from, to entity.Currency) (float64, error) {
 		return 0, fmt.Errorf("не удалось получить курс валют: код %d", resp.StatusCode)
 	}
 	var body struct {
-		Rates map[string]float64 `json:"rates"`
+		Result string             `json:"result"`
+		Rates  map[string]float64 `json:"rates"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		return 0, err
+	}
+	if body.Result != "" && body.Result != "success" {
+		return 0, fmt.Errorf("не удалось получить курс валют")
 	}
 	rate, ok := body.Rates[string(to)]
 	if !ok || rate <= 0 {
