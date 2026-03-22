@@ -1,5 +1,6 @@
 export { AppErrorBoundary } from './ui/app-error-boundary'
 export { createQueryClient } from './model/query-client'
+export { inlineHandledMutationMeta } from './model/inline-handled-mutation-meta'
 export { ProtectedRoute } from './ui/protected-route'
 export { AppRouter } from './ui/app-router'
 export { NotFoundPage } from './ui/not-found-page'

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { inlineHandledMutationMeta } from '@shared/features/app/model/inline-handled-mutation-meta'
 import {
   getCredits,
   getCreditById,
@@ -65,6 +66,7 @@ export const useIssueCredit = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: (data: IssueCreditRequest) => issueCredit(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['credits'] })
@@ -77,6 +79,7 @@ export const useRepayCredit = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: ({ creditId, data }: { creditId: string; data: RepayCreditRequest }) =>
       repayCredit(creditId, data),
     onSuccess: (_, variables) => {
@@ -90,6 +93,7 @@ export const useRepayCredit = () => {
 
 export const useCheckCreditAvailability = () =>
   useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: (amount: number) => checkCreditAvailability(amount),
   })
 

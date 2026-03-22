@@ -7,32 +7,19 @@ import {
   useAccountBasicByNumber,
 } from '../../../features/accounts'
 import { getApiErrorMessage, isNotFoundError } from '@shared/api/api-error'
-import {
-  digitsOnlyAccountNumber,
-  formatAccountNumberMasked,
-  isCompleteAccountNumberDigits,
-} from '@shared/utils/account-number'
+import { formatAccountNumberMasked } from '@shared/utils/account-number'
 import type { TransferRequest } from '@shared/api/endpoints/accounts'
+import {
+  resolvePrefillAccountId,
+  buildTransferPreviewRequest,
+  buildTransferSubmitPayload,
+  parseTransferAmount,
+  recipientOtherDigitsState,
+  setOtherAccountMaskedValue,
+  type TransferRecipientMode,
+} from '../use-cases/transfer-page-scenario'
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function resolvePrefillAccountId(
-  accounts: { id: string; account_number: string }[],
-  raw: string
-): string {
-  const trimmed = raw.trim()
-  if (!trimmed) return ''
-  const digits = digitsOnlyAccountNumber(trimmed)
-  if (digits.length === 16) {
-    return accounts.find((a) => a.account_number === digits)?.id ?? ''
-  }
-  if (UUID_RE.test(trimmed)) {
-    return accounts.find((a) => a.id === trimmed)?.id ?? ''
-  }
-  return ''
-}
-
-export type RecipientMode = 'own' | 'other'
+export type RecipientMode = TransferRecipientMode
 
 export const useTransferPage = () => {
   const navigate = useNavigate()
@@ -126,9 +113,7 @@ export const useTransferPage = () => {
     [accounts, toOwnAccountId]
   )
 
-  const toDigitsOther = digitsOnlyAccountNumber(toOtherAccountId)
-  const toOtherDigitsComplete =
-    recipientMode === 'other' && isCompleteAccountNumberDigits(toDigitsOther)
+  const { toDigitsOther, toOtherDigitsComplete } = recipientOtherDigitsState(toOtherAccountId)
   const otherRecipientSameAsDebit = Boolean(
     fromAccount && toOtherDigitsComplete && toDigitsOther === fromAccount.account_number
   )
@@ -174,8 +159,7 @@ export const useTransferPage = () => {
   const toOwnValid =
     recipientMode === 'own' && toOwnAccountId !== '' && toOwnAccountId !== fromAccountId && !!toOwnAccount
 
-  const amount = parseFloat(amountStr.replace(/\s/g, '').replace(',', '.'))
-  const amountValid = Number.isFinite(amount) && amount >= 0.01
+  const { amount, amountValid } = parseTransferAmount(amountStr)
   const withinBalance = fromAccount ? amount <= fromAccount.balance : false
 
   const [debouncedPreviewAmount, setDebouncedPreviewAmount] = useState<number | null>(null)
@@ -189,23 +173,16 @@ export const useTransferPage = () => {
   }, [amount, amountValid])
 
   const previewRequest = useMemo((): TransferRequest | null => {
-    if (debouncedPreviewAmount === null || debouncedPreviewAmount < 0.01) return null
-    if (!fromAccountId || !fromAccount) return null
-    if (recipientMode === 'own' && toOwnValid && toOwnAccount) {
-      return {
-        from_account_id: fromAccountId,
-        to_account_number: toOwnAccount.account_number,
-        amount: debouncedPreviewAmount,
-      }
-    }
-    if (recipientMode === 'other' && toOtherValid) {
-      return {
-        from_account_id: fromAccountId,
-        to_account_number: toDigitsOther,
-        amount: debouncedPreviewAmount,
-      }
-    }
-    return null
+    return buildTransferPreviewRequest({
+      debouncedPreviewAmount,
+      fromAccountId,
+      fromAccount,
+      recipientMode,
+      toOwnValid,
+      toOwnAccount,
+      toOtherValid,
+      toDigitsOther,
+    })
   }, [
     debouncedPreviewAmount,
     fromAccountId,
@@ -230,18 +207,14 @@ export const useTransferPage = () => {
   const handleSubmit = () => {
     if (!canSubmit || !fromAccount) return
 
-    const payload =
-      recipientMode === 'own' && toOwnAccount
-        ? {
-            from_account_id: fromAccountId,
-            to_account_number: toOwnAccount.account_number,
-            amount,
-          }
-        : {
-            from_account_id: fromAccountId,
-            to_account_number: toDigitsOther,
-            amount,
-          }
+    const payload = buildTransferSubmitPayload({
+      recipientMode,
+      fromAccountId,
+      fromAccount,
+      toOwnAccount,
+      toDigitsOther,
+      amount,
+    })
 
     transferMutation.mutate(payload, {
       onSuccess: () => {
@@ -264,14 +237,13 @@ export const useTransferPage = () => {
     (transferMutation.isSuccess && !entryFromTopUpFlow && fromAccountId ? fromAccountId : undefined)
 
   const setToOtherAccountMasked = useCallback((raw: string) => {
-    setToOtherAccountId(formatAccountNumberMasked(digitsOnlyAccountNumber(raw)))
+    setToOtherAccountId(setOtherAccountMaskedValue(raw))
   }, [])
 
   return {
     navigate,
     isLoading,
     accountsLoadError,
-    accounts,
     fromAccountId,
     setFromAccountId,
     fromOptions,

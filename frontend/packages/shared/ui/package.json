@@ -11,6 +11,7 @@
     "./button": "./button/index.ts",
     "./email-input": "./email-input/index.ts",
     "./error-fallback": "./error-fallback/index.ts",
+    "./inline-alert": "./inline-alert/index.ts",
     "./input": "./input/index.ts",
     "./modal": "./modal/index.ts",
     "./pagination": "./pagination/index.ts",

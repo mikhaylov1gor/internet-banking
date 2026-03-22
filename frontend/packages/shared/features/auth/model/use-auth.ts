@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { redirectToSso, tokenStorage } from '@shared/utils'
+import { inlineHandledMutationMeta } from '../../app/model/inline-handled-mutation-meta'
 import type { LoginRequest, LoginResponse } from '@shared/api/endpoints/auth'
 
 export type { LoginRequest, LoginResponse } from '@shared/api/endpoints/auth'
@@ -10,6 +11,7 @@ export const useLogin = (loginFn: (data: LoginRequest) => Promise<LoginResponse>
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: loginFn,
     onSuccess: (data) => {
       tokenStorage.setTokens({

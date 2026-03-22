@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { inlineHandledMutationMeta } from '@shared/features/app/model/inline-handled-mutation-meta'
 import {
   getAccounts,
   getAccountById,
@@ -64,6 +65,7 @@ export const useCreateAccount = () => {
   const clientId = getCurrentUserId()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: (data: Omit<CreateAccountRequest, 'client_id'>) => {
       if (!clientId) {
         throw new Error('User ID is required')
@@ -99,6 +101,7 @@ export const useDepositToAccount = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: ({ accountId, data }: { accountId: string; data: ChangeBalanceRequest }) =>
       depositToAccount(accountId, data),
     onSuccess: (_, variables) => {
@@ -113,6 +116,7 @@ export const useWithdrawFromAccount = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: ({ accountId, data }: { accountId: string; data: ChangeBalanceRequest }) =>
       withdrawFromAccount(accountId, data),
     onSuccess: (_, variables) => {
@@ -127,6 +131,7 @@ export const useTransferBetweenAccounts = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: (data: TransferRequest) => transferBetweenAccounts(data),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] })

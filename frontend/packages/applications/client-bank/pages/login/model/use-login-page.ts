@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { isAuthenticated } from '@shared/features/auth'
+import { inlineHandledMutationMeta } from '@shared/features/app/model/inline-handled-mutation-meta'
 import type { LoginRequest, LoginResponse } from '@shared/features/auth'
 
 export const useLoginPage = () => {
@@ -16,6 +17,7 @@ export const useClientLogin = (loginFn: (data: LoginRequest) => Promise<LoginRes
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: async (data: LoginRequest) => {
       const response = await loginFn(data)
       if (response.type !== 'client') {

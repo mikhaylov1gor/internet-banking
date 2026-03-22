@@ -13,9 +13,12 @@ import {
   getIssueCreditErrorMessage,
   getLoadDataErrorMessage,
 } from '@shared/api'
+import { CREDIT_AMOUNT_NOT_AVAILABLE_MESSAGE } from '@shared/api/endpoints/credits'
 import { useCreditsPage } from '../model/use-credits-page'
-import { isMobile } from '../../../main'
+import { isMobileDevice } from '@shared/utils'
 import './style.css'
+
+const isMobile = isMobileDevice()
 
 export const CreditsPage = () => {
   const navigate = useNavigate()
@@ -256,6 +259,12 @@ export const CreditsPage = () => {
                 {getApiErrorMessage(checkAvailabilityMutation.error)}
               </p>
             )}
+            {checkAvailabilityMutation.isSuccess &&
+              checkAvailabilityMutation.data?.allowed === false && (
+                <p className="issue-credit-preview-error" role="status">
+                  {CREDIT_AMOUNT_NOT_AVAILABLE_MESSAGE}
+                </p>
+              )}
 
             <RubDepositPreview
               variant="credit"

@@ -1,6 +1,7 @@
 import { EmailInput } from '@shared/ui/email-input'
 import { PasswordInput } from '@shared/ui/password-input'
 import { Button } from '@shared/ui/button'
+import { InlineAlert } from '@shared/ui/inline-alert'
 import { Spinner } from '@shared/ui/spinner'
 import { ThemeToggle } from '@shared/ui/theme-toggle'
 import { useLoginPage } from '../model/use-login'
@@ -81,7 +82,7 @@ export const MobileLoginPage = () => {
           onChange={handlePasswordChange}
           required
         />
-        {isError && errorMessage && <div className="login-form-error">{errorMessage}</div>}
+        {isError && errorMessage && <InlineAlert>{errorMessage}</InlineAlert>}
         <Button type="submit" disabled={isSubmitDisabled} className="mobile-login-button">
           {isPending ? 'Вход...' : 'Войти'}
         </Button>

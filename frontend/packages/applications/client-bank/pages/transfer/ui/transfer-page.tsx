@@ -3,6 +3,7 @@ import { Button } from '@shared/ui/button'
 import { Input } from '@shared/ui/input'
 import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
+import { InlineAlert } from '@shared/ui/inline-alert'
 import { getApiErrorMessage, getLoadDataErrorMessage } from '@shared/api'
 import { useTransferPage } from '../model/use-transfer-page'
 import './style.css'
@@ -59,9 +60,7 @@ export const TransferPage = () => {
           Назад
         </Button>
         <div className="transfer-page-card">
-          <div className="transfer-page-error" role="alert">
-            {getLoadDataErrorMessage('счета')}
-          </div>
+          <InlineAlert>{getLoadDataErrorMessage('счета')}</InlineAlert>
         </div>
       </div>
     )
@@ -185,28 +184,22 @@ export const TransferPage = () => {
                     spellCheck={false}
                   />
                   {otherRecipientSameAsDebit && (
-                    <p className="transfer-page-field-error" role="alert">
+                    <InlineAlert tone="plain">
                       Указан тот же счёт, что и для списания — перевод на свой же счёт невозможен. Введите другой номер
                       получателя.
-                    </p>
+                    </InlineAlert>
                   )}
                   {!otherRecipientSameAsDebit && otherRecipientLookupPending && (
                     <p className="transfer-page-recipient-check">Проверяем номер счёта…</p>
                   )}
                   {otherRecipientNotFound && (
-                    <p className="transfer-page-field-error" role="alert">
-                      Счёт с таким номером не найден. Проверьте номер.
-                    </p>
+                    <InlineAlert tone="plain">Счёт с таким номером не найден. Проверьте номер.</InlineAlert>
                   )}
                   {otherRecipientClosed && (
-                    <p className="transfer-page-field-error" role="alert">
-                      Счёт закрыт — перевод на него недоступен.
-                    </p>
+                    <InlineAlert tone="plain">Счёт закрыт — перевод на него недоступен.</InlineAlert>
                   )}
                   {otherRecipientLookupErrorMessage && (
-                    <p className="transfer-page-field-error" role="alert">
-                      {otherRecipientLookupErrorMessage}
-                    </p>
+                    <InlineAlert tone="plain">{otherRecipientLookupErrorMessage}</InlineAlert>
                   )}
                 </>
               )}
@@ -222,10 +215,10 @@ export const TransferPage = () => {
             />
 
             {amountStr !== '' && !amountValid && (
-              <p className="transfer-page-field-error">Минимальная сумма — 0,01</p>
+              <InlineAlert tone="plain">Минимальная сумма — 0,01</InlineAlert>
             )}
             {amountStr !== '' && amountValid && fromAccount && !withinBalance && (
-              <p className="transfer-page-field-error">Недостаточно средств на счёте списания</p>
+              <InlineAlert tone="plain">Недостаточно средств на счёте списания</InlineAlert>
             )}
 
             {previewRequest && (
@@ -238,9 +231,9 @@ export const TransferPage = () => {
                   </div>
                 )}
                 {transferPreviewQuery.isError && !transferPreviewQuery.isPending && (
-                  <p className="transfer-page-preview-error" role="alert">
+                  <InlineAlert tone="plain" className="transfer-page-preview-error">
                     {getApiErrorMessage(transferPreviewQuery.error)}
-                  </p>
+                  </InlineAlert>
                 )}
                 {transferPreviewQuery.isSuccess && transferPreviewQuery.data && (
                   <div className="transfer-page-preview-body">
@@ -269,7 +262,7 @@ export const TransferPage = () => {
               </div>
             )}
 
-            {errorMessage && <div className="transfer-page-error">{errorMessage}</div>}
+            {errorMessage && <InlineAlert>{errorMessage}</InlineAlert>}
 
             <div className="transfer-page-actions">
               <Button

@@ -1,20 +1,30 @@
 import { AxiosError, isAxiosError } from 'axios'
+import { z } from 'zod'
 
-type ErrorPayload = {
-  error?: string
-}
+const ApiErrorBodySchema = z
+  .object({
+    error: z.string().optional(),
+  })
+  .passthrough()
 
 export const getLoadDataErrorMessage = (what: string): string =>
   `Не удалось получить ${what}. Попробуйте позже.`
+
+const readApiErrorFromBody = (data: unknown): string | undefined => {
+  const parsed = ApiErrorBodySchema.safeParse(data)
+  if (!parsed.success) return undefined
+  const msg = parsed.data.error
+  return typeof msg === 'string' && msg.trim() !== '' ? msg : undefined
+}
 
 export const getApiErrorMessage = (
   error: unknown,
   fallback = 'Произошла ошибка. Попробуйте позже.'
 ): string => {
   if (error instanceof AxiosError) {
-    const data = error.response?.data as ErrorPayload | undefined
-    if (typeof data?.error === 'string' && data.error.trim() !== '') {
-      return data.error
+    const fromBody = error.response?.data !== undefined ? readApiErrorFromBody(error.response.data) : undefined
+    if (fromBody) {
+      return fromBody
     }
     if (error.response) {
       return fallback

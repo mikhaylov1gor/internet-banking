@@ -46,7 +46,7 @@ export const useAccountsPage = () => {
       return
     }
     createAccountMutation.mutate(
-      { client_id: clientId, currency },
+      { currency },
       {
         onSuccess: () => {
           handleCloseModal()

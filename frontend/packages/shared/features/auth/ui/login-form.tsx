@@ -1,5 +1,6 @@
 import type { ChangeEvent } from 'react'
 import { getApiErrorMessage } from '@shared/api'
+import { InlineAlert } from '@shared/ui/inline-alert'
 import { EmailInput } from '@shared/ui/email-input'
 import { PasswordInput } from '@shared/ui/password-input'
 import { Button } from '@shared/ui/button'
@@ -39,9 +40,9 @@ export const LoginForm = ({ loginFn }: LoginFormProps) => {
         required
       />
       {loginMutation.isError && (
-        <div className="login-form-error">
+        <InlineAlert>
           {getApiErrorMessage(loginMutation.error, 'Ошибка авторизации. Попробуйте позже.')}
-        </div>
+        </InlineAlert>
       )}
       <Button type="submit" disabled={!emailValid || !password || loginMutation.isPending}>
         {loginMutation.isPending ? 'Вход...' : 'Войти'}

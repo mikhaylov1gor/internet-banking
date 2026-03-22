@@ -5,6 +5,7 @@ import { login, refreshToken } from '@shared/api/endpoints/auth'
 import type { LoginResponse } from '@shared/api/endpoints/auth'
 import { ssoLoginWithPassword } from '@shared/api/endpoints/sso'
 import { tokenStorage } from '@shared/utils'
+import { inlineHandledMutationMeta } from '@shared/features/app/model/inline-handled-mutation-meta'
 
 const CLIENT_APP_URL = 'http://localhost:5174'
 const EMPLOYEE_APP_URL = 'http://localhost:5173'
@@ -89,6 +90,10 @@ const storeSession = (response: LoginResponse) => {
   })
 }
 
+type WindowWithReactNativeWebView = Window & {
+  ReactNativeWebView?: { postMessage: (msg: string) => void }
+}
+
 const sendTokensViaPostMessage = (tokenData: TokenData) => {
   const message = { type: 'auth_success', payload: tokenData }
   if (window.parent !== window) {
@@ -96,9 +101,7 @@ const sendTokensViaPostMessage = (tokenData: TokenData) => {
   } else {
     window.postMessage(message, '*')
   }
-  const rnWebView = (
-    window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }
-  ).ReactNativeWebView
+  const rnWebView = (window as WindowWithReactNativeWebView).ReactNativeWebView
   if (rnWebView) {
     rnWebView.postMessage(JSON.stringify(message))
   }
@@ -180,6 +183,7 @@ const useLegacyAuth = () => {
   }, [redirectUri, isWebView])
 
   const mutation = useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: login,
     onSuccess: (data) => {
       storeSession(data)
@@ -209,6 +213,7 @@ type SsoLoginParams = SsoParams & { email: string; password: string }
 
 const useSsoLogin = () =>
   useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: (params: SsoLoginParams) =>
       ssoLoginWithPassword({
         email: params.email,

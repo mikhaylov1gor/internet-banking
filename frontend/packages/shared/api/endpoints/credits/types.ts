@@ -90,3 +90,5 @@ export const CreditAvailabilitySchema = z.object({
   shortfall: z.number().optional(),
 })
 export type CreditAvailability = z.infer<typeof CreditAvailabilitySchema>
+
+export const CREDIT_AMOUNT_NOT_AVAILABLE_MESSAGE = 'Не можем оформить кредит на такую сумму'
