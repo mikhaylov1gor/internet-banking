@@ -22,15 +22,16 @@ const (
 )
 
 type Account struct {
-	ID        uuid.UUID     `gorm:"type:uuid;primaryKey"`
-	ClientID  uuid.UUID     `gorm:"type:uuid;not null;index"`
-	Balance   float64       `gorm:"not null;default:0"`
-	Currency  Currency      `gorm:"type:varchar(3);default:RUB"`
-	Status    AccountStatus `gorm:"type:varchar(20);not null"`
-	OpenedAt  time.Time     `gorm:"not null"`
-	ClosedAt  *time.Time    `gorm:""`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            uuid.UUID     `gorm:"type:uuid;primaryKey"`
+	AccountNumber string        `gorm:"type:varchar(20);uniqueIndex"`
+	ClientID      uuid.UUID     `gorm:"type:uuid;not null;index"`
+	Balance       float64       `gorm:"not null;default:0"`
+	Currency      Currency      `gorm:"type:varchar(3);default:RUB"`
+	Status        AccountStatus `gorm:"type:varchar(20);not null"`
+	OpenedAt      time.Time     `gorm:"not null"`
+	ClosedAt      *time.Time    `gorm:""`
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 func (Account) TableName() string { return "accounts" }

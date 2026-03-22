@@ -1,8 +1,11 @@
 package usecase
 
 import (
+	"crypto/rand"
 	"errors"
+	"fmt"
 	"math"
+	"math/big"
 	"time"
 
 	"internet-bank/internal/core/client"
@@ -23,6 +26,7 @@ var (
 type AccountRepository interface {
 	Create(acc *entity.Account) error
 	GetByID(id uuid.UUID) (*entity.Account, error)
+	GetByNumber(accountNumber string) (*entity.Account, error)
 	List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error)
 	Update(acc *entity.Account) error
 	DebitIfSufficient(accountID uuid.UUID, amount float64) (*entity.Account, error)
@@ -45,6 +49,17 @@ type AccountUseCase struct {
 	producer   OperationProducer
 }
 
+type TransferQuote struct {
+	FromAccountID   uuid.UUID       `json:"from_account_id"`
+	ToAccountID     uuid.UUID       `json:"to_account_id"`
+	ToAccountNumber string          `json:"to_account_number,omitempty"`
+	FromCurrency    entity.Currency `json:"from_currency"`
+	ToCurrency      entity.Currency `json:"to_currency"`
+	DebitAmount     float64         `json:"debit_amount"`
+	CreditAmount    float64         `json:"credit_amount"`
+	Rate            float64         `json:"rate"`
+}
+
 func NewAccountUseCase(accRepo AccountRepository, opRepo OperationRepository, fxProvider client.FXRateProvider, producer OperationProducer) *AccountUseCase {
 	return &AccountUseCase{accRepo: accRepo, opRepo: opRepo, fxProvider: fxProvider, producer: producer}
 }
@@ -53,13 +68,18 @@ func (uc *AccountUseCase) OpenAccount(clientID uuid.UUID, currency entity.Curren
 	if currency != entity.CurrencyRUB && currency != entity.CurrencyUSD && currency != entity.CurrencyEUR {
 		return nil, ErrInvalidCurrency
 	}
+	number, err := generateAccountNumber()
+	if err != nil {
+		return nil, err
+	}
 	acc := &entity.Account{
-		ID:       uuid.New(),
-		ClientID: clientID,
-		Balance:  0,
-		Currency: currency,
-		Status:   entity.AccountStatusActive,
-		OpenedAt: time.Now(),
+		ID:            uuid.New(),
+		AccountNumber: number,
+		ClientID:      clientID,
+		Balance:       0,
+		Currency:      currency,
+		Status:        entity.AccountStatusActive,
+		OpenedAt:      time.Now(),
 	}
 	if err := uc.accRepo.Create(acc); err != nil {
 		return nil, err
@@ -69,6 +89,10 @@ func (uc *AccountUseCase) OpenAccount(clientID uuid.UUID, currency entity.Curren
 
 func (uc *AccountUseCase) GetByID(id uuid.UUID) (*entity.Account, error) {
 	return uc.accRepo.GetByID(id)
+}
+
+func (uc *AccountUseCase) GetByNumber(accountNumber string) (*entity.Account, error) {
+	return uc.accRepo.GetByNumber(accountNumber)
 }
 
 func (uc *AccountUseCase) List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error) {
@@ -96,21 +120,11 @@ func (uc *AccountUseCase) Transfer(fromAccountID, toAccountID uuid.UUID, amount 
 	if fromAcc.Balance < amount {
 		return nil, nil, ErrInsufficientFunds
 	}
-	creditAmount := amount
-	if fromAcc.Currency != toAcc.Currency {
-		if uc.fxProvider == nil {
-			return nil, nil, errors.New("провайдер курсов валют не настроен")
-		}
-		rate, err := uc.fxProvider.Rate(fromAcc.Currency, toAcc.Currency)
-		if err != nil {
-			return nil, nil, err
-		}
-		creditAmount = roundMoney(amount * rate)
-		if creditAmount < 0.01 {
-			return nil, nil, errors.New("сумма после конвертации меньше минимально допустимой")
-		}
+	quote, err := uc.buildTransferQuote(fromAcc, toAcc, amount)
+	if err != nil {
+		return nil, nil, err
 	}
-	fromAcc, toAcc, err = uc.accRepo.TransferAtomic(fromAccountID, toAccountID, amount, creditAmount)
+	fromAcc, toAcc, err = uc.accRepo.TransferAtomic(fromAccountID, toAccountID, amount, quote.CreditAmount)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil, ErrInsufficientFunds
@@ -130,7 +144,7 @@ func (uc *AccountUseCase) Transfer(fromAccountID, toAccountID uuid.UUID, amount 
 		ID:           uuid.New(),
 		AccountID:    toAcc.ID,
 		Type:         entity.OpDeposit,
-		Amount:       creditAmount,
+		Amount:       quote.CreditAmount,
 		BalanceAfter: toAcc.Balance,
 		Description:  description,
 		CreatedAt:    time.Now(),
@@ -144,8 +158,69 @@ func (uc *AccountUseCase) Transfer(fromAccountID, toAccountID uuid.UUID, amount 
 	return outOp, inOp, nil
 }
 
+func (uc *AccountUseCase) PreviewTransfer(fromAccountID, toAccountID uuid.UUID, amount float64) (*TransferQuote, error) {
+	if amount < 0.01 {
+		return nil, ErrInvalidAmount
+	}
+	fromAcc, err := uc.accRepo.GetByID(fromAccountID)
+	if err != nil {
+		return nil, ErrAccountNotFound
+	}
+	toAcc, err := uc.accRepo.GetByID(toAccountID)
+	if err != nil {
+		return nil, ErrAccountNotFound
+	}
+	if fromAcc.Status != entity.AccountStatusActive || toAcc.Status != entity.AccountStatusActive {
+		return nil, ErrAccountClosed
+	}
+	return uc.buildTransferQuote(fromAcc, toAcc, amount)
+}
+
+func (uc *AccountUseCase) buildTransferQuote(fromAcc, toAcc *entity.Account, amount float64) (*TransferQuote, error) {
+	creditAmount := amount
+	rate := 1.0
+	if fromAcc.Currency != toAcc.Currency {
+		if uc.fxProvider == nil {
+			return nil, errors.New("провайдер курсов валют не настроен")
+		}
+		r, err := uc.fxProvider.Rate(fromAcc.Currency, toAcc.Currency)
+		if err != nil {
+			return nil, err
+		}
+		rate = r
+		creditAmount = roundMoney(amount * rate)
+		if creditAmount < 0.01 {
+			return nil, errors.New("сумма после конвертации меньше минимально допустимой")
+		}
+	}
+	return &TransferQuote{
+		FromAccountID:   fromAcc.ID,
+		ToAccountID:     toAcc.ID,
+		ToAccountNumber: toAcc.AccountNumber,
+		FromCurrency:    fromAcc.Currency,
+		ToCurrency:      toAcc.Currency,
+		DebitAmount:     roundMoney(amount),
+		CreditAmount:    creditAmount,
+		Rate:            rate,
+	}, nil
+}
+
 func roundMoney(v float64) float64 {
 	return math.Round(v*100) / 100
+}
+
+func generateAccountNumber() (string, error) {
+	const length = 16
+	digits := make([]byte, length)
+	for i := 0; i < length; i++ {
+		n, err := rand.Int(rand.Reader, big.NewInt(10))
+		if err != nil {
+			return "", err
+		}
+		digits[i] = byte('0' + n.Int64())
+	}
+	digits[0] = byte('1' + digits[0]%9)
+	return fmt.Sprintf("%s", digits), nil
 }
 
 func (uc *AccountUseCase) CloseAccount(accountID, clientID uuid.UUID) error {

@@ -25,6 +25,7 @@ type CreditUseCase interface {
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
 	Repay(creditID uuid.UUID, accountID uuid.UUID, amount float64, userID uuid.UUID, bearerToken string) (*entity.Credit, error)
 	GetOverdue(creditID uuid.UUID) (*usecase.CreditOverdue, error)
+	GetPayments(creditID uuid.UUID, page, pageSize int, onlyOverdue bool) (*usecase.CreditPaymentList, error)
 	GetClientRating(clientID uuid.UUID) (*usecase.CreditRating, error)
 }
 
@@ -80,6 +81,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Post("/credits", h.issueCredit)
 		r.Get("/credits/{creditId}", h.getCredit)
 		r.Get("/credits/{creditId}/overdue", h.getCreditOverdue)
+		r.Get("/credits/{creditId}/payments", h.getCreditPayments)
 		r.Get("/clients/{clientId}/credit-rating", h.getClientRating)
 		r.Post("/credits/{creditId}/repay", h.repayCredit)
 	})
@@ -178,6 +180,10 @@ func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 		}
 		if err == usecase.ErrAmountOutOfRange {
 			response.Err(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if err.Error() == "счёт не найден" {
+			response.Err(w, http.StatusNotFound, err.Error())
 			return
 		}
 		response.Err(w, http.StatusBadRequest, err.Error())
@@ -345,6 +351,50 @@ func (h *Handler) getCreditOverdue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.JSON(w, http.StatusOK, overdue)
+}
+
+func (h *Handler) getCreditPayments(w http.ResponseWriter, r *http.Request) {
+	userID, userType, _ := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	creditID, err := uuid.Parse(chi.URLParam(r, "creditId"))
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный creditId")
+		return
+	}
+	credit, err := h.creditUC.GetByID(creditID)
+	if err != nil {
+		response.Err(w, http.StatusNotFound, "кредит не найден")
+		return
+	}
+	if userType == auth.UserTypeClient && credit.ClientID != *userID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
+		return
+	}
+	page := 1
+	if p := r.URL.Query().Get("page"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			page = v
+		}
+	}
+	pageSize := 50
+	if p := r.URL.Query().Get("page_size"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+	onlyOverdue := false
+	if v := r.URL.Query().Get("only_overdue"); v == "1" || v == "true" {
+		onlyOverdue = true
+	}
+	out, err := h.creditUC.GetPayments(creditID, page, pageSize, onlyOverdue)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.JSON(w, http.StatusOK, out)
 }
 
 func (h *Handler) getClientRating(w http.ResponseWriter, r *http.Request) {

@@ -11,6 +11,7 @@ import (
 type AccountRepository interface {
 	Create(acc *entity.Account) error
 	GetByID(id uuid.UUID) (*entity.Account, error)
+	GetByNumber(accountNumber string) (*entity.Account, error)
 	List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error)
 	Update(acc *entity.Account) error
 	DebitIfSufficient(accountID uuid.UUID, amount float64) (*entity.Account, error)
@@ -32,6 +33,15 @@ func (r *accountRepo) Create(acc *entity.Account) error {
 func (r *accountRepo) GetByID(id uuid.UUID) (*entity.Account, error) {
 	var acc entity.Account
 	err := r.db.Where("id = ?", id).First(&acc).Error
+	if err != nil {
+		return nil, err
+	}
+	return &acc, nil
+}
+
+func (r *accountRepo) GetByNumber(accountNumber string) (*entity.Account, error) {
+	var acc entity.Account
+	err := r.db.Where("account_number = ?", accountNumber).First(&acc).Error
 	if err != nil {
 		return nil, err
 	}
