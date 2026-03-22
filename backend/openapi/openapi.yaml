@@ -1136,6 +1136,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Credit'
+        '400':
+          description: Неверное тело, тариф не найден, сумма вне диапазона, ошибка запроса к Core
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Недействительный access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Клиент не может выдать кредит другому client_id; счёт не принадлежит клиенту
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Счёт для выдачи не найден в Core
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Счёт закрыт или заблокирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Core недоступен или сетевая ошибка при обращении к Core
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       tags: [Credits]
       summary: Список кредитов клиента
@@ -1207,6 +1243,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Credit'
+        '400':
+          description: Неверное тело, недостаточно средств, сумма меньше 0.01, ошибка запроса к Core
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Недействительный access token (в т.ч. при проверке счёта в Core)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Нет доступа к кредиту; счёт не принадлежит пользователю; доступ к счёту в Core запрещён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Кредит не найден; счёт для списания не найден в Core
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Кредит не активен; счёт закрыт или заблокирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: Core недоступен или сетевая ошибка при обращении к Core
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /credits/{creditId}/overdue:
     get:
       tags: [Credits]

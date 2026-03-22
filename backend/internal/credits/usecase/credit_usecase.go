@@ -12,9 +12,15 @@ import (
 )
 
 var (
-	ErrCreditNotFound   = errors.New("кредит не найден")
-	ErrAmountOutOfRange = errors.New("сумма вне диапазона тарифа")
-	ErrCreditNotActive  = errors.New("кредит не активен")
+	ErrCreditNotFound      = errors.New("кредит не найден")
+	ErrAmountOutOfRange    = errors.New("сумма вне диапазона тарифа")
+	ErrCreditNotActive     = errors.New("кредит не активен")
+	ErrAccountWrongClient  = errors.New("счёт не принадлежит клиенту")
+	ErrAccountNotOwned     = errors.New("счёт не принадлежит пользователю")
+	ErrAccountInactive     = errors.New("счёт закрыт или заблокирован")
+	ErrRepayAmountTooSmall = errors.New("сумма погашения не менее 0.01")
+	ErrInsufficientFunds   = errors.New("недостаточно средств на счёте")
+	ErrInternalToken       = errors.New("внутренний токен не настроен")
 )
 
 type CreditRepository interface {
@@ -84,7 +90,7 @@ func NewCreditUseCase(
 
 func (uc *CreditUseCase) getInternalToken() (string, error) {
 	if uc.internalTokenFn == nil {
-		return "", errors.New("внутренний токен не настроен")
+		return "", ErrInternalToken
 	}
 	return uc.internalTokenFn()
 }
@@ -111,10 +117,10 @@ func (uc *CreditUseCase) Issue(clientID, accountID, tariffID uuid.UUID, amount f
 			return nil, err
 		}
 		if accInfo.ClientID != clientID {
-			return nil, errors.New("счёт не принадлежит клиенту")
+			return nil, ErrAccountWrongClient
 		}
 		if accInfo.Status != "active" {
-			return nil, errors.New("счёт закрыт или заблокирован")
+			return nil, ErrAccountInactive
 		}
 	}
 	daily := dailyPayment(amount, tariff.Rate)
@@ -157,7 +163,7 @@ func (uc *CreditUseCase) ListByClientID(clientID uuid.UUID, limit, offset int) (
 
 func (uc *CreditUseCase) Repay(creditID uuid.UUID, accountID uuid.UUID, amount float64, userID uuid.UUID, bearerToken string) (*entity.Credit, error) {
 	if amount < 0.01 {
-		return nil, errors.New("сумма погашения не менее 0.01")
+		return nil, ErrRepayAmountTooSmall
 	}
 	c, err := uc.creditRepo.GetByID(creditID)
 	if err != nil {
@@ -166,23 +172,20 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, accountID uuid.UUID, amount f
 	if c.Status != entity.CreditStatusActive {
 		return nil, ErrCreditNotActive
 	}
-	// Получить информацию о счете
 	accInfo, err := uc.coreClient.GetAccount(accountID, bearerToken)
 	if err != nil {
-		return nil, errors.New("счёт не найден")
+		return nil, err
 	}
-	// Проверить принадлежность счета пользователю
 	if accInfo.ClientID != userID {
-		return nil, errors.New("счёт не принадлежит пользователю")
+		return nil, ErrAccountNotOwned
 	}
-	// Проверить статус счета (не закрыт)
 	if accInfo.Status != "active" {
-		return nil, errors.New("счёт закрыт или заблокирован")
+		return nil, ErrAccountInactive
 	}
 	toRepay := math.Min(amount, c.Remaining)
 	// Проверить наличие денег
 	if accInfo.Balance < toRepay {
-		return nil, errors.New("недостаточно средств на счёте")
+		return nil, ErrInsufficientFunds
 	}
 	if uc.coreClient != nil {
 		internalToken, err := uc.getInternalToken()

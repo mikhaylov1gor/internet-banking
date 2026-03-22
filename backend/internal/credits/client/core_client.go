@@ -34,6 +34,19 @@ func NewCoreClient(baseURL string) CoreClient {
 	return &coreClient{baseURL: baseURL, client: &http.Client{}}
 }
 
+func parseJSONError(body []byte) string {
+	if len(body) == 0 {
+		return ""
+	}
+	var errBody struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(body, &errBody) == nil && errBody.Error != "" {
+		return errBody.Error
+	}
+	return strings.TrimSpace(string(body))
+}
+
 func (c *coreClient) GetAccount(accountID uuid.UUID, bearerToken string) (*AccountInfo, error) {
 	url := fmt.Sprintf("%s/accounts/%s", c.baseURL, accountID.String())
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -41,39 +54,32 @@ func (c *coreClient) GetAccount(accountID uuid.UUID, bearerToken string) (*Accou
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if bearerToken != "" {
-		authVal := bearerToken
-		if !strings.HasPrefix(bearerToken, "Bearer ") {
-			authVal = "Bearer " + bearerToken
-		}
-		req.Header.Set("Authorization", authVal)
-	}
+	setBearer(req, bearerToken)
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %v", ErrCoreUnavailable, err)
 	}
 	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		msg := string(body)
-		if len(body) > 0 {
-			var errBody struct {
-				Error string `json:"error"`
-			}
-			if json.Unmarshal(body, &errBody) == nil && errBody.Error != "" {
-				msg = errBody.Error
-			}
-		}
-		if msg == "" {
-			msg = fmt.Sprintf("сервис core вернул код %d", resp.StatusCode)
-		}
-		return nil, fmt.Errorf("%s", msg)
+		return nil, mapCoreHTTPError(resp.StatusCode, parseJSONError(body))
 	}
 	var acc AccountInfo
-	if err := json.NewDecoder(resp.Body).Decode(&acc); err != nil {
+	if err := json.Unmarshal(body, &acc); err != nil {
 		return nil, err
 	}
 	return &acc, nil
+}
+
+func setBearer(req *http.Request, bearerToken string) {
+	if bearerToken == "" {
+		return
+	}
+	authVal := bearerToken
+	if !strings.HasPrefix(bearerToken, "Bearer ") {
+		authVal = "Bearer " + bearerToken
+	}
+	req.Header.Set("Authorization", authVal)
 }
 
 func (c *coreClient) Deposit(accountID uuid.UUID, amount float64, bearerToken string) error {
@@ -96,33 +102,15 @@ func (c *coreClient) Transfer(fromAccountID, toAccountID uuid.UUID, amount float
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if bearerToken != "" {
-		authVal := bearerToken
-		if !strings.HasPrefix(bearerToken, "Bearer ") {
-			authVal = "Bearer " + bearerToken
-		}
-		req.Header.Set("Authorization", authVal)
-	}
+	setBearer(req, bearerToken)
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrCoreUnavailable, err)
 	}
 	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		msg := string(body)
-		if len(body) > 0 {
-			var errBody struct {
-				Error string `json:"error"`
-			}
-			if json.Unmarshal(body, &errBody) == nil && errBody.Error != "" {
-				msg = errBody.Error
-			}
-		}
-		if msg == "" {
-			msg = fmt.Sprintf("сервис core вернул код %d", resp.StatusCode)
-		}
-		return fmt.Errorf("%s", msg)
+		return mapCoreHTTPError(resp.StatusCode, parseJSONError(raw))
 	}
 	return nil
 }
@@ -135,33 +123,15 @@ func (c *coreClient) changeBalance(accountID uuid.UUID, amount float64, op strin
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if bearerToken != "" {
-		authVal := bearerToken
-		if !strings.HasPrefix(bearerToken, "Bearer ") {
-			authVal = "Bearer " + bearerToken
-		}
-		req.Header.Set("Authorization", authVal)
-	}
+	setBearer(req, bearerToken)
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %v", ErrCoreUnavailable, err)
 	}
 	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		msg := string(body)
-		if len(body) > 0 {
-			var errBody struct {
-				Error string `json:"error"`
-			}
-			if json.Unmarshal(body, &errBody) == nil && errBody.Error != "" {
-				msg = errBody.Error
-			}
-		}
-		if msg == "" {
-			msg = fmt.Sprintf("сервис core вернул код %d", resp.StatusCode)
-		}
-		return fmt.Errorf("%s", msg)
+		return mapCoreHTTPError(resp.StatusCode, parseJSONError(raw))
 	}
 	return nil
 }

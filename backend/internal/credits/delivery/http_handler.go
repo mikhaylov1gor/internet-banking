@@ -174,19 +174,7 @@ func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 	}
 	credit, err := h.creditUC.Issue(clientID, accountID, tariffID, body.Amount, bearer)
 	if err != nil {
-		if err == usecase.ErrTariffNotFound {
-			response.Err(w, http.StatusBadRequest, "тариф не найден")
-			return
-		}
-		if err == usecase.ErrAmountOutOfRange {
-			response.Err(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		if err.Error() == "счёт не найден" {
-			response.Err(w, http.StatusNotFound, err.Error())
-			return
-		}
-		response.Err(w, http.StatusBadRequest, err.Error())
+		writeIssueCreditError(w, err)
 		return
 	}
 	response.JSON(w, http.StatusCreated, toCreditResp(credit))
@@ -307,19 +295,7 @@ func (h *Handler) repayCredit(w http.ResponseWriter, r *http.Request) {
 	}
 	credit, err = h.creditUC.Repay(creditID, accountID, body.Amount, *userID, bearer)
 	if err != nil {
-		if err == usecase.ErrCreditNotFound || err == usecase.ErrCreditNotActive {
-			response.Err(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		if err.Error() == "счёт не найден" || err.Error() == "счёт не принадлежит пользователю" || err.Error() == "счёт закрыт или заблокирован" {
-			response.Err(w, http.StatusForbidden, err.Error())
-			return
-		}
-		if err.Error() == "недостаточно средств на счёте" {
-			response.Err(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		response.Err(w, http.StatusBadRequest, err.Error())
+		writeRepayCreditError(w, err)
 		return
 	}
 	response.JSON(w, http.StatusOK, toCreditResp(credit))
