@@ -13,16 +13,27 @@ struct AccountSummaryCard: View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Счёт \(account.id.prefix(8))...")
+                Text("Счёт \(account.displayAccountNumber)")
                     .font(.headline)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("\(account.balance.formattedAmount) \(account.currencySymbol)")
                     .font(.title2)
+                    .minimumScaleFactor(0.75)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(account.currency)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Text(account.statusDisplayTitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -69,7 +80,8 @@ private struct OptionalCardTapModifier: ViewModifier {
         balance: 15_420.50,
         currency: "RUB",
         openedAt: Date(),
-        status: "active")
+        status: "active",
+        accountNumber: "4081781000123456")
     AccountSummaryCard(
         account: account,
         showsVisibilityToggle: true,
@@ -86,7 +98,8 @@ private struct OptionalCardTapModifier: ViewModifier {
         balance: 100,
         currency: "USD",
         openedAt: Date(),
-        status: "active")
+        status: "active",
+        accountNumber: "4081781000999999")
     AccountSummaryCard(account: account)
         .padding()
 }

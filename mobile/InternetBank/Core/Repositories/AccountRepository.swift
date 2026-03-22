@@ -50,11 +50,23 @@ final class AccountRepository: AccountRepositoryProtocol {
             body: request)
     }
 
-    func transfer(fromAccountId: String, toAccountId: String, amount: Decimal) async throws {
-        let request = TransferRequest(
-            fromAccountId: fromAccountId,
-            toAccountId: toAccountId,
-            amount: NSDecimalNumber(decimal: amount).doubleValue)
+    func transfer(fromAccountId: String, to destination: AccountTransferDestination, amount: Decimal) async throws {
+        let value = NSDecimalNumber(decimal: amount).doubleValue
+        let request: TransferRequest
+        switch destination {
+            case let .accountId(id):
+                request = TransferRequest(
+                    fromAccountId: fromAccountId,
+                    amount: value,
+                    toAccountId: id,
+                    toAccountNumber: nil)
+            case let .accountNumber(number):
+                request = TransferRequest(
+                    fromAccountId: fromAccountId,
+                    amount: value,
+                    toAccountId: nil,
+                    toAccountNumber: number)
+        }
         let _: TransferAPIResponse = try await apiClient.request(
             path: AccountEndpoints.transfer,
             method: "POST",
@@ -68,13 +80,15 @@ final class AccountRepository: AccountRepositoryProtocol {
     }
 
     private func mapToAccount(_ dto: AccountResponse) -> Account {
-        Account(
+        let number = dto.accountNumber?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return Account(
             id: dto.id,
             clientId: dto.clientId,
             balance: Decimal(dto.balance),
             currency: dto.currency ?? "RUB",
             openedAt: ISO8601DateFormatter().date(from: dto.openedAt) ?? Date(),
-            status: dto.status)
+            status: dto.status,
+            accountNumber: number)
     }
 
 }

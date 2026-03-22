@@ -9,14 +9,19 @@ struct RepayCreditView: View {
             Form {
                 Picker("Счёт для списания", selection: $viewModel.selectedAccountId) {
                     ForEach(viewModel.accounts) { account in
-                        Text("\(account.id.prefix(8))... \(account.balance.formattedAmount) ₽").tag(account.id)
+                        Text("\(account.displayAccountNumber) · \(account.balance.formattedAmount) \(account.currencySymbol)")
+                            .tag(account.id)
                     }
                 }
+                .pickerStyle(.menu)
                 TextField("Сумма", text: $viewModel.amount)
                     .keyboardType(.decimalPad)
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .foregroundStyle(.red)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Button("Погасить") {
                     Task { await viewModel.repay() }

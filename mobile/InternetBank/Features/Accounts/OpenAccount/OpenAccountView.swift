@@ -10,6 +10,9 @@ struct OpenAccountView: View {
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .foregroundStyle(.red)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Picker("Валюта", selection: $viewModel.selectedCurrencyCode) {
                     ForEach(OpenAccountViewModel.currencyCodes, id: \.self) { code in

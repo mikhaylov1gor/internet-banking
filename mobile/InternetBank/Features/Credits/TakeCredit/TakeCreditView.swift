@@ -9,19 +9,26 @@ struct TakeCreditView: View {
             Form {
                 Picker("Тариф", selection: $viewModel.selectedTariffId) {
                     ForEach(viewModel.tariffs) { tariff in
-                        Text("\(tariff.name) - \(tariff.rate)%").tag(tariff.id)
+                        Text("\(tariff.name) — \(tariff.rate)%")
+                            .tag(tariff.id)
                     }
                 }
+                .pickerStyle(.navigationLink)
                 Picker("Счёт зачисления", selection: $viewModel.selectedAccountId) {
                     ForEach(viewModel.accounts) { account in
-                        Text("\(account.id.prefix(8))...").tag(account.id)
+                        Text("\(account.displayAccountNumber) · \(account.balance.formattedAmount) \(account.currencySymbol)")
+                            .tag(account.id)
                     }
                 }
+                .pickerStyle(.navigationLink)
                 TextField("Сумма", text: $viewModel.amount)
                     .keyboardType(.decimalPad)
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .foregroundStyle(.red)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Button("Оформить кредит") {
                     Task { await viewModel.takeCredit() }

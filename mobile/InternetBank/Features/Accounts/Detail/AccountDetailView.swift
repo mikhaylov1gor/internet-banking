@@ -23,12 +23,21 @@ struct AccountDetailView: View {
                     .listRowSeparator(.hidden, edges: .all)
             }
             Section {
-                CopyableTruncatedIdRow(title: "Счёт", uuid: viewModel.account.id)
+                CopyableValueRow(
+                    title: "Номер счёта",
+                    value: viewModel.account.displayAccountNumber,
+                    copyValue: viewModel.account.clipboardAccountReference)
                 LabeledContent("Статус") {
                     Text(viewModel.account.statusDisplayTitle)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Text("Открыт: \(viewModel.account.openedAt.formatted(date: .numeric, time: .omitted))")
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if viewModel.account.status == "active" {
                 Section {
@@ -66,7 +75,8 @@ struct AccountDetailView: View {
         balance: 1500.50,
         currency: "RUB",
         openedAt: Date(),
-        status: "active")
+        status: "active",
+        accountNumber: "4081781000123456")
     NavigationStack {
         AccountDetailView(
             viewModel: PreviewDependencies.factory.viewModelFactory.makeAccountDetailViewModel(

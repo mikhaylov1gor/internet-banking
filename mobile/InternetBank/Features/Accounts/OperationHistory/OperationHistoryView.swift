@@ -5,31 +5,40 @@ struct OperationHistoryView: View {
 
     var body: some View {
         List(viewModel.operations) { op in
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(op.displayTitle)
-                        .font(.headline)
-                    Spacer()
-                    Text(op.date, format: .dateTime.day().month(.twoDigits).year().hour().minute())
+            VStack(alignment: .leading, spacing: 8) {
+                Text(op.displayTitle)
+                    .font(.headline)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(op.date, format: .dateTime.day().month(.twoDigits).year().hour().minute())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("\(op.amount.formattedAmount) \(viewModel.currencySymbol)")
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let after = op.balanceAfter {
+                    Text("Баланс после: \(after.formattedAmount) \(viewModel.currencySymbol)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                }
-                HStack {
-                    Text("\(op.amount.formattedAmount) \(viewModel.currencySymbol)")
-                    Spacer()
-                    if let after = op.balanceAfter {
-                        Text("Баланс после: \(after.formattedAmount) \(viewModel.currencySymbol)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 if let desc = op.description, !desc.isEmpty, desc != "перевод между счетами" {
                     Text(desc)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         }
         .navigationTitle("История операций")
         .refreshable {
@@ -52,7 +61,8 @@ struct OperationHistoryView: View {
         balance: 0,
         currency: "RUB",
         openedAt: Date(),
-        status: "active")
+        status: "active",
+        accountNumber: "4081781000123456")
     NavigationStack {
         OperationHistoryView(
             viewModel: PreviewDependencies.factory.viewModelFactory.makeOperationHistoryViewModel(

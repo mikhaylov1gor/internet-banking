@@ -168,20 +168,25 @@ final class StandaloneTransferViewModel {
             errorMessage = "Недостаточно средств"
             return
         }
-        let toId: String
+        let destination: AccountTransferDestination
         switch recipientMode {
             case .own:
                 guard let to = toAccount, from.id != to.id else {
                     errorMessage = "Выберите счёт зачисления"
                     return
                 }
-                toId = to.id
+                destination = .accountId(to.id)
             case .other:
                 guard otherRecipientValid else {
-                    errorMessage = "Укажите корректный UUID счёта получателя"
+                    errorMessage = "Укажите номер счёта или UUID получателя"
                     return
                 }
-                toId = trimmedOtherAccountId
+                let t = trimmedOtherAccountId
+                if UUID(uuidString: t) != nil {
+                    destination = .accountId(t)
+                } else {
+                    destination = .accountNumber(t)
+                }
         }
         isSubmitting = true
         errorMessage = nil
@@ -189,7 +194,7 @@ final class StandaloneTransferViewModel {
         do {
             try await accountRepository.transfer(
                 fromAccountId: from.id,
-                toAccountId: toId,
+                to: destination,
                 amount: value)
             didSucceed = true
             amount = ""

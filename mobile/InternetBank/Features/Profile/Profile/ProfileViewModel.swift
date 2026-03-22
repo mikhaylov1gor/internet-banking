@@ -5,14 +5,14 @@ import Foundation
 final class ProfileViewModel {
     var isLoading = false
     var errorMessage: String?
-    var theme: String = "light"
+    var theme: String
 
     private let authRepository: AuthRepositoryProtocol
     private let appSettingsRepository: AppSettingsRepositoryProtocol
     private let clientAppSettings: ClientAppSettings
     private let onAppSettingsChanged: () -> Void
 
-    private var lastSyncedTheme: String = "light"
+    private var lastSyncedTheme: String
     private var lastSyncedHidden: Set<String> = []
 
     init(
@@ -25,6 +25,17 @@ final class ProfileViewModel {
         self.appSettingsRepository = appSettingsRepository
         self.clientAppSettings = clientAppSettings
         self.onAppSettingsChanged = onAppSettingsChanged
+        let initial = Self.normalizedTheme(clientAppSettings.themeRaw)
+        theme = initial
+        lastSyncedTheme = initial
+    }
+
+    private static func normalizedTheme(_ raw: String) -> String {
+        switch raw.lowercased() {
+            case "dark": return "dark"
+            case "light": return "light"
+            default: return "light"
+        }
     }
 
     func load() async {
@@ -33,11 +44,12 @@ final class ProfileViewModel {
         defer { isLoading = false }
         do {
             let settings = try await appSettingsRepository.getSettings(appType: "client")
-            lastSyncedTheme = settings.theme
+            let t = Self.normalizedTheme(settings.theme)
+            lastSyncedTheme = t
             lastSyncedHidden = Set(settings.hiddenAccountIds)
-            theme = settings.theme
+            theme = t
             clientAppSettings.apply(
-                theme: settings.theme,
+                theme: t,
                 hiddenAccountIds: settings.hiddenAccountIds)
             onAppSettingsChanged()
         } catch {

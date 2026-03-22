@@ -34,6 +34,9 @@ struct AccountsListView: View {
             if let error = viewModel.errorMessage {
                 Text(error)
                     .foregroundStyle(.red)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal)
             }
 
@@ -71,8 +74,16 @@ struct AccountsListView: View {
         }
         .navigationTitle("Мои счета")
         .toolbar {
-            Button("Открыть счёт") {
-                onOpenAccount()
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    onOpenAccount()
+                } label: {
+                    HStack {
+                        Text("Открыть счет")
+                        Image(systemName: "plus.rectangle.on.rectangle")
+                    }
+                }
+                .accessibilityLabel("Открыть счёт")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

@@ -1,5 +1,10 @@
 import Foundation
 
+enum AccountTransferDestination: Sendable {
+    case accountId(String)
+    case accountNumber(String)
+}
+
 protocol AccountRepositoryProtocol: AnyObject {
     func getAccounts(clientId: String) async throws -> [Account]
     func getAccount(id: String) async throws -> Account?
@@ -7,6 +12,6 @@ protocol AccountRepositoryProtocol: AnyObject {
     func closeAccount(id: String, clientId: String) async throws
     func deposit(accountId: String, amount: Decimal) async throws
     func withdraw(accountId: String, amount: Decimal) async throws
-    func transfer(fromAccountId: String, toAccountId: String, amount: Decimal) async throws
+    func transfer(fromAccountId: String, to destination: AccountTransferDestination, amount: Decimal) async throws
     func getOperations(accountId: String) async throws -> [AccountOperation]
 }

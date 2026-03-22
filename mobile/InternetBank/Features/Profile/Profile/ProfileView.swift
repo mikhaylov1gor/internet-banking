@@ -9,6 +9,9 @@ struct ProfileView: View {
             if let error = viewModel.errorMessage {
                 Text(error)
                     .foregroundStyle(.red)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Section("Оформление") {
                 Picker("Тема", selection: $viewModel.theme) {

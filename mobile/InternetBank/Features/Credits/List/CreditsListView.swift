@@ -19,28 +19,45 @@ struct CreditsListView: View {
                 Button {
                     onCreditTap(credit)
                 } label: {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(credit.tariffName ?? "Кредит")
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text("Остаток: \(credit.remainingAmount.formattedAmount) ₽")
                             .font(.caption)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
                         Text(credit.statusDisplayTitle)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
         }
         .navigationTitle("Мои кредиты")
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("Мой кредитный рейтинг") {
+                Button {
                     auxiliarySheet = .creditRating
+                } label: {
+                    Image(systemName: "chart.bar.doc.horizontal")
                 }
+                .accessibilityLabel("Рейтинг")
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Взять кредит") {
+                Button {
                     onTakeCredit()
+                } label: {
+                    Image(systemName: "plus.circle.fill")
                 }
+                .accessibilityLabel("Взять кредит")
             }
         }
         .refreshable {
@@ -78,23 +95,38 @@ private struct CreditRatingSheetContent: View {
             if let ratingError = viewModel.ratingError {
                 Text(ratingError)
                     .foregroundStyle(.red)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if let r = viewModel.creditRating {
-                LabeledContent("Балл") {
-                    Text("\(r.score)")
-                }
-                LabeledContent("Уровень риска") {
-                    Text(r.riskLevel)
-                }
-                LabeledContent("Количество просрочек") {
-                    Text("\(r.overdueCount)")
-                }
-                LabeledContent("Сумма просрочек") {
-                    Text("\(Decimal(r.overdueAmount).formattedAmount) ₽")
+                Section {
+                    LabeledContent("Балл") {
+                        Text("\(r.score)")
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    LabeledContent("Уровень риска") {
+                        Text(r.riskLevel)
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    LabeledContent("Количество просрочек") {
+                        Text("\(r.overdueCount)")
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    LabeledContent("Сумма просрочек") {
+                        Text("\(Decimal(r.overdueAmount).formattedAmount) ₽")
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
-        .navigationTitle("Мой кредитный рейтинг")
+        .navigationTitle("Рейтинг")
         .task {
             await viewModel.loadCreditRating()
         }

@@ -12,6 +12,9 @@ struct DepositView: View {
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .foregroundStyle(.red)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Button("Внести") {
                     Task { await viewModel.deposit() }

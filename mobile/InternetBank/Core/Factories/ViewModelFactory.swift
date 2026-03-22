@@ -95,6 +95,7 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
     func makeCreditDetailViewModel(credit: Credit, clientId _: String) -> CreditDetailViewModel {
         CreditDetailViewModel(
             creditRepository: creditRepository,
+            accountRepository: accountRepository,
             credit: credit)
     }
 

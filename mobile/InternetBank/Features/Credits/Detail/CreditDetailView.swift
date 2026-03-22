@@ -15,6 +15,9 @@ struct CreditDetailView: View {
                 Section {
                     Text(error)
                         .foregroundStyle(.red)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Section {
@@ -23,24 +26,42 @@ struct CreditDetailView: View {
             Section {
                 LabeledContent("Сумма") {
                     Text("\(viewModel.credit.amount.formattedAmount) ₽")
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 if isActiveCredit {
                     LabeledContent("Остаток") {
                         Text("\(viewModel.credit.remainingAmount.formattedAmount) ₽")
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 if let rate = viewModel.credit.rate {
                     LabeledContent("Процентная ставка") {
                         Text("\(rate.formattedAmount)%")
+                            .multilineTextAlignment(.trailing)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 LabeledContent("Статус") {
                     Text(viewModel.credit.statusDisplayTitle)
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 LabeledContent("Выдан") {
                     Text(viewModel.credit.issuedAt.formatted(date: .numeric, time: .omitted))
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                CopyableTruncatedIdRow(title: "Счёт", uuid: viewModel.credit.accountId)
+                CopyableValueRow(
+                    title: "Номер счёта",
+                    value: viewModel.linkedAccountDisplayValue,
+                    copyValue: viewModel.linkedAccountCopyValue)
                 Button("Открыть счёт") {
                     onOpenLinkedAccount(viewModel.credit.accountId)
                 }

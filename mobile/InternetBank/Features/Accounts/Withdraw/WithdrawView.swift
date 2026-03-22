@@ -12,6 +12,9 @@ struct WithdrawView: View {
                 if let error = viewModel.errorMessage {
                     Text(error)
                         .foregroundStyle(.red)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Button("Снять") {
                     Task { await viewModel.withdraw() }
