@@ -540,6 +540,7 @@ components:
           type: number
           format: double
           minimum: 0.01
+          description: Сумма погашения в валюте кредита (по умолчанию RUB). Если счёт списания в другой валюте, сумма дебета будет автоматически сконвертирована.
         account_id:
           type: string
           format: uuid

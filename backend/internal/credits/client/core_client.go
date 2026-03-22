@@ -16,6 +16,7 @@ type CoreClient interface {
 	Deposit(accountID uuid.UUID, amount float64, bearerToken string) error
 	Withdraw(accountID uuid.UUID, amount float64, bearerToken string) error
 	Transfer(fromAccountID, toAccountID uuid.UUID, amount float64, bearerToken string) error
+	PreviewTransfer(fromAccountID, toAccountID uuid.UUID, amount float64, bearerToken string) (*TransferQuote, error)
 }
 
 type AccountInfo struct {
@@ -24,6 +25,16 @@ type AccountInfo struct {
 	Balance  float64   `json:"balance"`
 	Currency string    `json:"currency"`
 	Status   string    `json:"status"`
+}
+
+type TransferQuote struct {
+	FromAccountID uuid.UUID `json:"from_account_id"`
+	ToAccountID   uuid.UUID `json:"to_account_id"`
+	FromCurrency  string    `json:"from_currency"`
+	ToCurrency    string    `json:"to_currency"`
+	DebitAmount   float64   `json:"debit_amount"`
+	CreditAmount  float64   `json:"credit_amount"`
+	Rate          float64   `json:"rate"`
 }
 
 type coreClient struct {
@@ -114,6 +125,35 @@ func (c *coreClient) Transfer(fromAccountID, toAccountID uuid.UUID, amount float
 		return mapCoreHTTPError(resp.StatusCode, parseJSONError(raw))
 	}
 	return nil
+}
+
+func (c *coreClient) PreviewTransfer(fromAccountID, toAccountID uuid.UUID, amount float64, bearerToken string) (*TransferQuote, error) {
+	body, _ := json.Marshal(map[string]any{
+		"from_account_id": fromAccountID.String(),
+		"to_account_id":   toAccountID.String(),
+		"amount":          amount,
+	})
+	url := fmt.Sprintf("%s/accounts/transfer/preview", c.baseURL)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	setBearer(req, bearerToken)
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrCoreUnavailable, err)
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, mapCoreHTTPError(resp.StatusCode, parseJSONError(raw))
+	}
+	var quote TransferQuote
+	if err := json.Unmarshal(raw, &quote); err != nil {
+		return nil, err
+	}
+	return &quote, nil
 }
 
 func (c *coreClient) changeBalance(accountID uuid.UUID, amount float64, op string, bearerToken string) error {

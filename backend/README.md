@@ -127,8 +127,6 @@ docker compose up -d --build
 
 - Спеки:
   - `openapi/openapi.yaml` — HTTP API через gateway
-  - `openapi/swagger.yaml` — облегченная версия для Swagger UI
-  - `asyncapi/asyncapi.yaml` — WS + RabbitMQ
   - пагинация списков в HTTP: `page` и `page_size`
 
 Защищённые эндпоинты: заголовок `Authorization: Bearer <access_token>`.

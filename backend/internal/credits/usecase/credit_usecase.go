@@ -281,20 +281,38 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, accountID uuid.UUID, amount f
 		return nil, ErrAccountInactive
 	}
 	toRepay := math.Min(amount, c.Remaining)
-	// Проверить наличие денег
-	if accInfo.Balance < toRepay {
-		return nil, ErrInsufficientFunds
-	}
+	debitAmount := toRepay
+	appliedRepay := toRepay
 	if uc.coreClient != nil {
 		internalToken, err := uc.getInternalToken()
 		if err != nil {
 			return nil, err
 		}
-		if err := uc.coreClient.Transfer(accountID, uc.masterAccountID, toRepay, internalToken); err != nil {
+		masterAcc, err := uc.coreClient.GetAccount(uc.masterAccountID, internalToken)
+		if err != nil {
 			return nil, err
 		}
+		// Сумма погашения задаётся в валюте кредита (мастер-счёта, по умолчанию RUB).
+		// Если счёт плательщика в другой валюте, подбираем дебет так, чтобы в мастер-счёт пришло нужное значение.
+		if accInfo.Currency != masterAcc.Currency {
+			debitAmount, appliedRepay, err = uc.resolveDebitForTargetCredit(accountID, uc.masterAccountID, toRepay, internalToken)
+			if err != nil {
+				return nil, err
+			}
+			if appliedRepay > c.Remaining {
+				appliedRepay = c.Remaining
+			}
+		}
+		if accInfo.Balance < debitAmount {
+			return nil, ErrInsufficientFunds
+		}
+		if err := uc.coreClient.Transfer(accountID, uc.masterAccountID, debitAmount, internalToken); err != nil {
+			return nil, err
+		}
+	} else if accInfo.Balance < debitAmount {
+		return nil, ErrInsufficientFunds
 	}
-	c.Remaining -= toRepay
+	c.Remaining -= appliedRepay
 	if c.Remaining <= 0 || c.Remaining < 0.01 {
 		c.Remaining = 0
 		c.Status = entity.CreditStatusPaid
@@ -307,6 +325,58 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, accountID uuid.UUID, amount f
 		return nil, err
 	}
 	return c, nil
+}
+
+// resolveDebitForTargetCredit подбирает минимальную сумму списания (в валюте счёта fromAccountID),
+// чтобы после конвертации в toAccountID зачислилась targetCredit (или чуть больше из-за округления).
+func (uc *CreditUseCase) resolveDebitForTargetCredit(fromAccountID, toAccountID uuid.UUID, targetCredit float64, bearerToken string) (debitAmount float64, creditAmount float64, err error) {
+	targetCredit = round2(targetCredit)
+	if targetCredit < 0.01 {
+		return 0, 0, ErrRepayAmountTooSmall
+	}
+	highCents := int64(math.Ceil(targetCredit * 100))
+	if highCents < 1 {
+		highCents = 1
+	}
+	// Сначала расширяем верхнюю границу.
+	var quote *client.TransferQuote
+	for i := 0; i < 24; i++ {
+		amt := float64(highCents) / 100.0
+		quote, err = uc.coreClient.PreviewTransfer(fromAccountID, toAccountID, amt, bearerToken)
+		if err != nil {
+			return 0, 0, err
+		}
+		if quote.CreditAmount+1e-6 >= targetCredit {
+			break
+		}
+		highCents *= 2
+	}
+	if quote == nil || quote.CreditAmount+1e-6 < targetCredit {
+		return 0, 0, ErrInsufficientFunds
+	}
+
+	lowCents := int64(1)
+	for lowCents < highCents {
+		mid := (lowCents + highCents) / 2
+		midAmt := float64(mid) / 100.0
+		midQuote, qErr := uc.coreClient.PreviewTransfer(fromAccountID, toAccountID, midAmt, bearerToken)
+		if qErr != nil {
+			return 0, 0, qErr
+		}
+		if midQuote.CreditAmount+1e-6 >= targetCredit {
+			highCents = mid
+			quote = midQuote
+		} else {
+			lowCents = mid + 1
+		}
+	}
+	// Финальная проверка для найденной суммы.
+	finalAmt := float64(lowCents) / 100.0
+	finalQuote, qErr := uc.coreClient.PreviewTransfer(fromAccountID, toAccountID, finalAmt, bearerToken)
+	if qErr != nil {
+		return 0, 0, qErr
+	}
+	return round2(finalAmt), round2(finalQuote.CreditAmount), nil
 }
 
 func (uc *CreditUseCase) AccrueInterest() error {
