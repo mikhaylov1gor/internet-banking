@@ -40,12 +40,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("BANK_SERVICE_USER_ID: %v", err)
 	}
-	internalAuthToken, err := auth.NewAccessToken(bankServiceUserID, auth.UserTypeEmployee, cfg.JWTSecret, cfg.InternalTokenTTLMin)
-	if err != nil {
-		log.Fatalf("internal token: %v", err)
+	internalTokenFn := func() (string, error) {
+		return auth.NewAccessToken(bankServiceUserID, auth.UserTypeEmployee, cfg.JWTSecret, cfg.InternalTokenTTLMin)
 	}
 	tariffUC := usecase.NewTariffUseCase(tariffRepo)
-	creditUC := usecase.NewCreditUseCase(tariffRepo, creditRepo, coreClient, masterAccountID, internalAuthToken)
+	creditUC := usecase.NewCreditUseCase(tariffRepo, creditRepo, coreClient, masterAccountID, internalTokenFn)
 	handler := delivery.NewHandler(tariffUC, creditUC, cfg.JWTSecret)
 
 	r := chi.NewRouter()

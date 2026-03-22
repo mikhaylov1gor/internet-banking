@@ -27,11 +27,11 @@ type CreditRepository interface {
 }
 
 type CreditUseCase struct {
-	tariffRepo        TariffRepository
-	creditRepo        CreditRepository
-	coreClient        client.CoreClient
-	masterAccountID   uuid.UUID
-	internalAuthToken string
+	tariffRepo      TariffRepository
+	creditRepo      CreditRepository
+	coreClient      client.CoreClient
+	masterAccountID uuid.UUID
+	internalTokenFn func() (string, error)
 }
 
 type CreditOverdue struct {
@@ -66,14 +66,27 @@ type CreditPaymentList struct {
 	PageQuantity int             `json:"pageQuantity"`
 }
 
-func NewCreditUseCase(tariffRepo TariffRepository, creditRepo CreditRepository, coreClient client.CoreClient, masterAccountID uuid.UUID, internalAuthToken string) *CreditUseCase {
+func NewCreditUseCase(
+	tariffRepo TariffRepository,
+	creditRepo CreditRepository,
+	coreClient client.CoreClient,
+	masterAccountID uuid.UUID,
+	internalTokenFn func() (string, error),
+) *CreditUseCase {
 	return &CreditUseCase{
-		tariffRepo:        tariffRepo,
-		creditRepo:        creditRepo,
-		coreClient:        coreClient,
-		masterAccountID:   masterAccountID,
-		internalAuthToken: internalAuthToken,
+		tariffRepo:      tariffRepo,
+		creditRepo:      creditRepo,
+		coreClient:      coreClient,
+		masterAccountID: masterAccountID,
+		internalTokenFn: internalTokenFn,
 	}
+}
+
+func (uc *CreditUseCase) getInternalToken() (string, error) {
+	if uc.internalTokenFn == nil {
+		return "", errors.New("внутренний токен не настроен")
+	}
+	return uc.internalTokenFn()
 }
 
 func dailyPayment(amount, annualRate float64) float64 {
@@ -89,7 +102,11 @@ func (uc *CreditUseCase) Issue(clientID, accountID, tariffID uuid.UUID, amount f
 		return nil, ErrAmountOutOfRange
 	}
 	if uc.coreClient != nil {
-		accInfo, err := uc.coreClient.GetAccount(accountID, uc.internalAuthToken)
+		internalToken, err := uc.getInternalToken()
+		if err != nil {
+			return nil, err
+		}
+		accInfo, err := uc.coreClient.GetAccount(accountID, internalToken)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +135,11 @@ func (uc *CreditUseCase) Issue(clientID, accountID, tariffID uuid.UUID, amount f
 		return nil, err
 	}
 	if uc.coreClient != nil {
-		if err := uc.coreClient.Transfer(uc.masterAccountID, accountID, amount, uc.internalAuthToken); err != nil {
+		internalToken, err := uc.getInternalToken()
+		if err != nil {
+			return nil, err
+		}
+		if err := uc.coreClient.Transfer(uc.masterAccountID, accountID, amount, internalToken); err != nil {
 			_ = uc.creditRepo.Update(c)
 			return nil, err
 		}
@@ -164,7 +185,11 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, accountID uuid.UUID, amount f
 		return nil, errors.New("недостаточно средств на счёте")
 	}
 	if uc.coreClient != nil {
-		if err := uc.coreClient.Transfer(accountID, uc.masterAccountID, toRepay, uc.internalAuthToken); err != nil {
+		internalToken, err := uc.getInternalToken()
+		if err != nil {
+			return nil, err
+		}
+		if err := uc.coreClient.Transfer(accountID, uc.masterAccountID, toRepay, internalToken); err != nil {
 			return nil, err
 		}
 	}
