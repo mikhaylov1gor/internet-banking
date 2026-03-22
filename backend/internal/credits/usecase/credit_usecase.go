@@ -288,20 +288,15 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, accountID uuid.UUID, amount f
 		if err != nil {
 			return nil, err
 		}
-		masterAcc, err := uc.coreClient.GetAccount(uc.masterAccountID, internalToken)
+		// Всегда рассчитываем списание через preview в Core:
+		// amount в repay трактуется как сумма к зачислению в мастер-счёт (валюта кредита),
+		// а debitAmount — сколько нужно списать с выбранного счёта (с конвертацией при необходимости).
+		debitAmount, appliedRepay, err = uc.resolveDebitForTargetCredit(accountID, uc.masterAccountID, toRepay, internalToken)
 		if err != nil {
 			return nil, err
 		}
-		// Сумма погашения задаётся в валюте кредита (мастер-счёта, по умолчанию RUB).
-		// Если счёт плательщика в другой валюте, подбираем дебет так, чтобы в мастер-счёт пришло нужное значение.
-		if accInfo.Currency != masterAcc.Currency {
-			debitAmount, appliedRepay, err = uc.resolveDebitForTargetCredit(accountID, uc.masterAccountID, toRepay, internalToken)
-			if err != nil {
-				return nil, err
-			}
-			if appliedRepay > c.Remaining {
-				appliedRepay = c.Remaining
-			}
+		if appliedRepay > c.Remaining {
+			appliedRepay = c.Remaining
 		}
 		if accInfo.Balance < debitAmount {
 			return nil, ErrInsufficientFunds
