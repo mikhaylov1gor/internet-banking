@@ -82,7 +82,7 @@ func LoadUsers() (Config, UsersAuth) {
 	}
 	ssoClients := os.Getenv("SSO_CLIENTS")
 	if ssoClients == "" {
-		ssoClients = "client-app|client|http://localhost:3000/callback,employee-app|employee|http://localhost:3001/callback"
+		ssoClients = "client-app|any|http://localhost:3000/callback,employee-app|any|http://localhost:3001/callback"
 	}
 	forceSecureSSO := false
 	if raw := os.Getenv("SSO_FORCE_SECURE_COOKIE"); raw != "" {

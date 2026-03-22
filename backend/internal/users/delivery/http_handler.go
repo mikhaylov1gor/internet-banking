@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -52,8 +53,9 @@ type Handler struct {
 }
 
 type ssoClientConfig struct {
-	Role         auth.UserType
-	RedirectURIs map[string]struct{}
+	PreferredRole auth.UserType
+	AllowedRoles  map[auth.UserType]struct{}
+	RedirectURIs  map[string]struct{}
 }
 
 func NewHandler(authUC AuthUseCase, userUC UserUseCase, jwtSecret string, ssoClientsRaw string, forceSecureSSO bool) *Handler {
@@ -373,20 +375,34 @@ func parseSSOClients(raw string) map[string]ssoClientConfig {
 			continue
 		}
 		clientID := strings.TrimSpace(parts[0])
-		role := auth.UserType(strings.TrimSpace(parts[1]))
+		roleRaw := strings.ToLower(strings.TrimSpace(parts[1]))
 		redirectURI := strings.TrimSpace(parts[2])
 		if clientID == "" || redirectURI == "" {
-			continue
-		}
-		if role != auth.UserTypeClient && role != auth.UserTypeEmployee {
 			continue
 		}
 		cfg, ok := out[clientID]
 		if !ok {
 			cfg = ssoClientConfig{
-				Role:         role,
+				AllowedRoles: map[auth.UserType]struct{}{},
 				RedirectURIs: map[string]struct{}{},
 			}
+		}
+		switch roleRaw {
+		case "client":
+			cfg.AllowedRoles[auth.UserTypeClient] = struct{}{}
+			if cfg.PreferredRole == "" {
+				cfg.PreferredRole = auth.UserTypeClient
+			}
+		case "employee":
+			cfg.AllowedRoles[auth.UserTypeEmployee] = struct{}{}
+			if cfg.PreferredRole == "" {
+				cfg.PreferredRole = auth.UserTypeEmployee
+			}
+		case "any", "both", "*":
+			cfg.AllowedRoles[auth.UserTypeClient] = struct{}{}
+			cfg.AllowedRoles[auth.UserTypeEmployee] = struct{}{}
+		default:
+			continue
 		}
 		cfg.RedirectURIs[redirectURI] = struct{}{}
 		out[clientID] = cfg
@@ -572,7 +588,13 @@ func (h *Handler) ssoToken(w http.ResponseWriter, r *http.Request) {
 		response.Err(w, http.StatusUnauthorized, "пользователь не найден")
 		return
 	}
-	access, refresh, err := h.authUC.IssueTokensForRole(user, clientCfg.Role)
+	requestedRole := auth.UserType(strings.ToLower(strings.TrimSpace(r.FormValue("role"))))
+	roleToIssue, err := selectSSORole(user, clientCfg, requestedRole)
+	if err != nil {
+		response.Err(w, http.StatusForbidden, err.Error())
+		return
+	}
+	access, refresh, err := h.authUC.IssueTokensForRole(user, roleToIssue)
 	if err != nil {
 		response.Err(w, http.StatusInternalServerError, "не удалось выпустить токены")
 		return
@@ -584,8 +606,31 @@ func (h *Handler) ssoToken(w http.ResponseWriter, r *http.Request) {
 		"refresh_token": refresh,
 		"expires_in":    60 * 15,
 		"user_id":       user.ID.String(),
-		"type":          string(clientCfg.Role),
+		"type":          string(roleToIssue),
 	})
+}
+
+func selectSSORole(user *entity.User, clientCfg ssoClientConfig, requested auth.UserType) (auth.UserType, error) {
+	if requested != "" {
+		if _, ok := clientCfg.AllowedRoles[requested]; !ok {
+			return "", errors.New("запрошенная роль не разрешена для клиента")
+		}
+		if user.HasRole(entity.UserType(requested)) {
+			return requested, nil
+		}
+		return "", errors.New("у пользователя нет запрошенной роли")
+	}
+	if clientCfg.PreferredRole != "" {
+		if _, ok := clientCfg.AllowedRoles[clientCfg.PreferredRole]; ok && user.HasRole(entity.UserType(clientCfg.PreferredRole)) {
+			return clientCfg.PreferredRole, nil
+		}
+	}
+	for _, role := range []auth.UserType{auth.UserTypeClient, auth.UserTypeEmployee} {
+		if _, ok := clientCfg.AllowedRoles[role]; ok && user.HasRole(entity.UserType(role)) {
+			return role, nil
+		}
+	}
+	return "", errors.New("нет доступной роли для входа в это приложение")
 }
 
 func (h *Handler) sessionUserID(r *http.Request) (uuid.UUID, bool) {

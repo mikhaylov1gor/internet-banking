@@ -104,7 +104,7 @@ docker compose up -d --build
 | `RABBITMQ_QUEUE` | Очередь операций Core | core.operations |
 | `USERS_PORT` | Порт Users | 8002 |
 | `USERS_DSN` | DSN для Users | ... dbname=users ... |
-| `SSO_CLIENTS` | Реестр OAuth-клиентов в формате `client_id|role|redirect_uri` через запятую | client-app\|client\|http://localhost:3000/callback,employee-app\|employee\|http://localhost:3001/callback |
+| `SSO_CLIENTS` | Реестр OAuth-клиентов в формате `client_id|role|redirect_uri` через запятую (`role`: `client`, `employee`, `any`) | client-app\|any\|http://localhost:3000/callback,employee-app\|any\|http://localhost:3001/callback |
 | `SSO_FORCE_SECURE_COOKIE` | Принудительно выставлять `Secure` для SSO-cookie | false |
 | `CREDITS_PORT` | Порт Credits | 8003 |
 | `CREDITS_DSN` | DSN для Credits | ... dbname=credits ... |

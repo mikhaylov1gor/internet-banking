@@ -158,11 +158,11 @@ func (uc *CreditUseCase) Repay(creditID uuid.UUID, accountID uuid.UUID, amount f
 	if accInfo.Status != "active" {
 		return nil, errors.New("счёт закрыт или заблокирован")
 	}
+	toRepay := math.Min(amount, c.Remaining)
 	// Проверить наличие денег
-	if accInfo.Balance < amount {
+	if accInfo.Balance < toRepay {
 		return nil, errors.New("недостаточно средств на счёте")
 	}
-	toRepay := math.Min(amount, c.Remaining)
 	if uc.coreClient != nil {
 		if err := uc.coreClient.Transfer(accountID, uc.masterAccountID, toRepay, uc.internalAuthToken); err != nil {
 			return nil, err
