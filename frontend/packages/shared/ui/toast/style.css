@@ -1,3 +1,9 @@
+.shared-toast.shared-toast--warning {
+  --toast-bg: rgba(180, 85, 25, 0.96);
+  --toast-fg: #fff8f0;
+  --toast-border: rgba(255, 200, 120, 0.45);
+}
+
 .shared-toast {
   position: fixed;
   bottom: 1.5rem;

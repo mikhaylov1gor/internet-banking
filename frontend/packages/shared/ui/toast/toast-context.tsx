@@ -1,9 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { USER_NOTIFY_EVENT, type UserNotifyDetail } from '@shared/utils'
+import { USER_NOTIFY_EVENT, type UserNotifyDetail, type UserNotifyVariant } from '@shared/utils'
 import './style.css'
 
 type ToastContextValue = {
-  show: (message: string) => void
+  show: (message: string, variant?: UserNotifyVariant) => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -11,16 +11,16 @@ const ToastContext = createContext<ToastContextValue | null>(null)
 const fallbackToast: ToastContextValue = { show: () => {} }
 
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
-  const [message, setMessage] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string; variant: UserNotifyVariant } | null>(null)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const show = useCallback((text: string) => {
+  const show = useCallback((text: string, variant: UserNotifyVariant = 'default') => {
     if (hideTimer.current) {
       clearTimeout(hideTimer.current)
     }
-    setMessage(text)
+    setToast({ message: text, variant })
     hideTimer.current = setTimeout(() => {
-      setMessage(null)
+      setToast(null)
       hideTimer.current = null
     }, 2800)
   }, [])
@@ -31,7 +31,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
     const onNotify = (e: Event) => {
       const detail = (e as CustomEvent<UserNotifyDetail>).detail
       if (detail?.message) {
-        show(detail.message)
+        show(detail.message, detail.variant ?? 'default')
       }
     }
     window.addEventListener(USER_NOTIFY_EVENT, onNotify)
@@ -41,9 +41,17 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {message !== null && (
-        <div className="shared-toast" role="status" aria-live="polite">
-          {message}
+      {toast !== null && (
+        <div
+          className={
+            toast.variant === 'warning'
+              ? 'shared-toast shared-toast--warning'
+              : 'shared-toast'
+          }
+          role="status"
+          aria-live="polite"
+        >
+          {toast.message}
         </div>
       )}
     </ToastContext.Provider>

@@ -40,7 +40,7 @@ export const DesktopLoginPage = () => {
         />
         {loginMutation.isError && (
           <div className="login-form-error">
-            {getApiErrorMessage(loginMutation.error, 'Ошибка авторизации')}
+            {getApiErrorMessage(loginMutation.error, 'Ошибка авторизации. Попробуйте позже.')}
           </div>
         )}
         <Button type="submit" disabled={!emailValid || !password || loginMutation.isPending}>

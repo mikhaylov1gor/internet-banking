@@ -185,7 +185,7 @@ export const CreditsPage = () => {
           </div>
           {issueCreditMutation.isError && (
             <div className="error">
-              {getApiErrorMessage(issueCreditMutation.error, 'Ошибка оформления кредита')}
+              {getApiErrorMessage(issueCreditMutation.error, 'Ошибка оформления кредита. Попробуйте позже.')}
             </div>
           )}
           <div className="modalActions">

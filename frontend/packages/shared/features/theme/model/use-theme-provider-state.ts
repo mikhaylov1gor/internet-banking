@@ -5,6 +5,7 @@ import {
   syncEmployeeHideAccountsFeatureFromSearch,
   readPersistedTheme,
   writePersistedTheme,
+  notifyUser,
 } from '@shared/utils'
 import type { Theme } from '@shared/utils'
 import {
@@ -138,8 +139,25 @@ export const useThemeProviderState = (appType: AppType): ThemeContextValue => {
 
   const toggleTheme = useCallback(() => {
     const next: Theme = themeRef.current === 'light' ? 'dark' : 'light'
-    void syncToServer(next, hiddenAccountIdsRef.current)
-  }, [syncToServer])
+    setTheme(next)
+    const uid = tokenStorage.getUserId()
+    if (uid) {
+      writePersistedTheme(appType, uid, next)
+    }
+    const persistHidden =
+      appType === 'client' ||
+      (appType === 'employee' && hideAccountsFeatureEnabledRef.current)
+    void updateAppSettings(appType, {
+      theme: next,
+      hidden_account_ids: persistHidden ? hiddenAccountIdsRef.current : [],
+    })
+      .then((settings) => {
+        applySettingsFromResponse(settings)
+      })
+      .catch(() => {
+        notifyUser('Ошибка синхронизации', 'warning')
+      })
+  }, [appType, applySettingsFromResponse])
 
   const toggleHiddenAccount = useCallback(
     (accountId: string) => {

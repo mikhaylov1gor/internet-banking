@@ -63,7 +63,7 @@ const parseLegacyParams = () => {
 
 const getErrorMessage = (error: unknown): string | null => {
   if (error == null) return null
-  return getApiErrorMessage(error, 'Ошибка авторизации')
+  return getApiErrorMessage(error, 'Ошибка авторизации. Попробуйте позже.')
 }
 
 type TokenData = {
