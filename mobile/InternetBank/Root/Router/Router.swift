@@ -5,9 +5,14 @@ enum Route: Hashable {
     case operationHistory(Account)
 }
 
+enum CreditsRoute: Hashable {
+    case detail(Credit)
+}
+
 enum SheetItem: Identifiable {
     case deposit(Account)
     case withdraw(Account)
+    case transfer(Account)
     case openAccount(String)
     case closeAccount(Account)
     case takeCredit(String)
@@ -17,6 +22,7 @@ enum SheetItem: Identifiable {
         switch self {
             case let .deposit(account): "deposit-\(account.id)"
             case let .withdraw(account): "withdraw-\(account.id)"
+            case let .transfer(account): "transfer-\(account.id)"
             case let .openAccount(clientId): "openAccount-\(clientId)"
             case let .closeAccount(account): "closeAccount-\(account.id)"
             case let .takeCredit(clientId): "takeCredit-\(clientId)"

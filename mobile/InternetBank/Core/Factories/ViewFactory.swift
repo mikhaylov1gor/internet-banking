@@ -16,12 +16,17 @@ final class ViewFactory: ViewFactoryProtocol {
     func makeAccountsListView(
         clientId: String,
         refreshTrigger: Int,
+        settingsReady: Bool,
+        onAppSettingsChanged: @escaping () -> Void,
         onAccountTap: @escaping (Account) -> Void,
         onOpenAccount: @escaping () -> Void) -> AccountsListView
     {
         AccountsListView(
-            viewModel: viewModelFactory.makeAccountsListViewModel(clientId: clientId),
+            viewModel: viewModelFactory.makeAccountsListViewModel(
+                clientId: clientId,
+                onAppSettingsChanged: onAppSettingsChanged),
             refreshTrigger: refreshTrigger,
+            settingsReady: settingsReady,
             onAccountTap: onAccountTap,
             onOpenAccount: onOpenAccount)
     }
@@ -31,6 +36,7 @@ final class ViewFactory: ViewFactoryProtocol {
         refreshTrigger: Int,
         onDeposit: @escaping () -> Void,
         onWithdraw: @escaping () -> Void,
+        onTransfer: @escaping () -> Void,
         onHistory: @escaping () -> Void,
         onCloseAccount: @escaping () -> Void) -> AccountDetailView
     {
@@ -39,6 +45,7 @@ final class ViewFactory: ViewFactoryProtocol {
             refreshTrigger: refreshTrigger,
             onDeposit: onDeposit,
             onWithdraw: onWithdraw,
+            onTransfer: onTransfer,
             onHistory: onHistory,
             onCloseAccount: onCloseAccount)
     }
@@ -53,6 +60,12 @@ final class ViewFactory: ViewFactoryProtocol {
         let viewModel = viewModelFactory.makeWithdrawViewModel(account: account)
         viewModel.onSuccess = onDismiss
         return WithdrawView(viewModel: viewModel, onDismiss: onDismiss)
+    }
+
+    func makeTransferView(account: Account, clientId: String, onDismiss: @escaping () -> Void) -> TransferView {
+        let viewModel = viewModelFactory.makeTransferViewModel(account: account, clientId: clientId)
+        viewModel.onSuccess = onDismiss
+        return TransferView(viewModel: viewModel, onDismiss: onDismiss)
     }
 
     func makeOperationHistoryView(account: Account) -> OperationHistoryView {
@@ -96,7 +109,23 @@ final class ViewFactory: ViewFactoryProtocol {
         return RepayCreditView(viewModel: viewModel, onDismiss: onDismiss)
     }
 
-    func makeProfileView(clientId: String, onLogout: @escaping () -> Void) -> ProfileView {
-        ProfileView(viewModel: viewModelFactory.makeProfileViewModel(clientId: clientId), onLogout: onLogout)
+    func makeCreditDetailView(
+        credit: Credit,
+        clientId: String,
+        onRepay: @escaping () -> Void) -> CreditDetailView
+    {
+        CreditDetailView(
+            viewModel: viewModelFactory.makeCreditDetailViewModel(credit: credit, clientId: clientId),
+            onRepay: onRepay)
+    }
+
+    func makeProfileView(
+        onLogout: @escaping () -> Void,
+        onAppSettingsChanged: @escaping () -> Void) -> ProfileView
+    {
+        ProfileView(
+            viewModel: viewModelFactory.makeProfileViewModel(
+                onAppSettingsChanged: onAppSettingsChanged),
+            onLogout: onLogout)
     }
 }

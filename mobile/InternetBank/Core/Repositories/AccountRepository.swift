@@ -19,8 +19,8 @@ final class AccountRepository: AccountRepositoryProtocol {
         return mapToAccount(response)
     }
 
-    func openAccount(clientId: String) async throws -> Account {
-        let request = OpenAccountRequest(clientId: clientId)
+    func openAccount(clientId: String, currency: String) async throws -> Account {
+        let request = OpenAccountRequest(clientId: clientId, currency: currency)
         let response: AccountResponse = try await apiClient.request(
             path: AccountEndpoints.openAccount,
             method: "POST",
@@ -50,10 +50,21 @@ final class AccountRepository: AccountRepositoryProtocol {
             body: request)
     }
 
+    func transfer(fromAccountId: String, toAccountId: String, amount: Decimal) async throws {
+        let request = TransferRequest(
+            fromAccountId: fromAccountId,
+            toAccountId: toAccountId,
+            amount: NSDecimalNumber(decimal: amount).doubleValue)
+        let _: TransferAPIResponse = try await apiClient.request(
+            path: AccountEndpoints.transfer,
+            method: "POST",
+            body: request)
+    }
+
     func getOperations(accountId: String) async throws -> [AccountOperation] {
         let response: OperationListResponse = try await apiClient.request(
             path: AccountEndpoints.operations(accountId: accountId))
-        return response.operations.compactMap { mapToOperation($0) }
+        return response.operations.compactMap { AccountOperationMapping.from(dto: $0) }
     }
 
     private func mapToAccount(_ dto: AccountResponse) -> Account {
@@ -61,17 +72,9 @@ final class AccountRepository: AccountRepositoryProtocol {
             id: dto.id,
             clientId: dto.clientId,
             balance: Decimal(dto.balance),
+            currency: dto.currency ?? "RUB",
             openedAt: ISO8601DateFormatter().date(from: dto.openedAt) ?? Date(),
             status: dto.status)
     }
 
-    private func mapToOperation(_ dto: OperationResponse) -> AccountOperation? {
-        guard let type = AccountOperation.OperationType(rawValue: dto.type) else { return nil }
-        return AccountOperation(
-            id: dto.id,
-            accountId: dto.accountId,
-            type: type,
-            amount: Decimal(dto.amount),
-            date: ISO8601DateFormatter().date(from: dto.createdAt) ?? Date())
-    }
 }

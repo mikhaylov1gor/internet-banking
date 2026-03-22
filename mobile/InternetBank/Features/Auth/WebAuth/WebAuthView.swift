@@ -80,7 +80,6 @@ private struct WebAuthWebViewRepresentable: UIViewRepresentable {
 
 #Preview {
     WebAuthView(
-        authRepository: MockAuthRepository(authService: AuthService(keychain: KeychainStorage())),
-        onSuccess: {}
-    )
+        authRepository: RepositoryAssembly().authRepository,
+        onSuccess: {})
 }

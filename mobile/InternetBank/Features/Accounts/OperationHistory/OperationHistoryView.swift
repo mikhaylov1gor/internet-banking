@@ -8,7 +8,7 @@ struct OperationHistoryView: View {
             HStack {
                 Text(op.type.displayName)
                 Spacer()
-                Text("\(op.amount.formattedAmount) ₽")
+                Text("\(op.amount.formattedAmount) \(viewModel.currencySymbol)")
                 Text(op.date, style: .date)
             }
         }
@@ -18,6 +18,25 @@ struct OperationHistoryView: View {
         }
         .task {
             await viewModel.load()
+            viewModel.startRealtimeUpdates()
         }
+        .onDisappear {
+            viewModel.stopRealtimeUpdates()
+        }
+    }
+}
+
+#Preview {
+    let account = Account(
+        id: "00000000-0000-0000-0000-000000000001",
+        clientId: "00000000-0000-0000-0000-000000000002",
+        balance: 0,
+        currency: "RUB",
+        openedAt: Date(),
+        status: "active")
+    NavigationStack {
+        OperationHistoryView(
+            viewModel: PreviewDependencies.factory.viewModelFactory.makeOperationHistoryViewModel(
+                account: account))
     }
 }

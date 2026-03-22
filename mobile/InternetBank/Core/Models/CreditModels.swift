@@ -44,3 +44,21 @@ struct RepayCreditRequest: Encodable {
     let amount: Double
     let accountId: String
 }
+
+struct CreditOverdueDTO: Decodable {
+    let creditId: String
+    let clientId: String
+    let expectedPaid: Double
+    let actualPaid: Double
+    let overdueAmount: Double
+    let overduePayments: Int
+    let minutePayment: Double
+}
+
+struct CreditRatingDTO: Decodable {
+    let clientId: String
+    let score: Int
+    let riskLevel: String
+    let overdueAmount: Double
+    let overdueCount: Int
+}

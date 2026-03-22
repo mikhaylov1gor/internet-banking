@@ -15,7 +15,6 @@ struct LoginView: View {
 
 #Preview {
     LoginView(
-        authRepository: MockAuthRepository(authService: AuthService(keychain: KeychainStorage())),
-        onLoginSuccess: {}
-    )
+        authRepository: RepositoryAssembly().authRepository,
+        onLoginSuccess: {})
 }

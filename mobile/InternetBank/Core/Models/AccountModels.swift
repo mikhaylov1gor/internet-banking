@@ -35,6 +35,18 @@ struct OperationResponse: Decodable {
 
 struct OpenAccountRequest: Encodable {
     let clientId: String
+    let currency: String
+}
+
+struct TransferRequest: Encodable {
+    let fromAccountId: String
+    let toAccountId: String
+    let amount: Double
+}
+
+struct TransferAPIResponse: Decodable {
+    let debitOperation: OperationResponse?
+    let creditOperation: OperationResponse?
 }
 
 struct ChangeBalanceRequest: Encodable {

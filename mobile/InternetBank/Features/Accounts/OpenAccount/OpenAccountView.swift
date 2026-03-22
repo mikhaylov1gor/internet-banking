@@ -11,6 +11,11 @@ struct OpenAccountView: View {
                     Text(error)
                         .foregroundStyle(.red)
                 }
+                Picker("Валюта", selection: $viewModel.selectedCurrencyCode) {
+                    ForEach(OpenAccountViewModel.currencyCodes, id: \.self) { code in
+                        Text(code).tag(code)
+                    }
+                }
                 Button("Открыть счёт") {
                     Task { await viewModel.openAccount() }
                 }
@@ -24,4 +29,11 @@ struct OpenAccountView: View {
             }
         }
     }
+}
+
+#Preview {
+    OpenAccountView(
+        viewModel: PreviewDependencies.factory.viewModelFactory.makeOpenAccountViewModel(
+            clientId: "00000000-0000-0000-0000-000000000002"),
+        onDismiss: {})
 }

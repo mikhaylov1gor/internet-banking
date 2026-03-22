@@ -3,6 +3,7 @@ import SwiftUI
 struct CreditsCoordinatorView: View {
     let viewFactory: ViewFactoryProtocol
     let clientId: String
+    @Binding var path: NavigationPath
     @Binding var sheetItem: SheetItem?
     let creditsRefreshTrigger: Int
 
@@ -11,10 +12,21 @@ struct CreditsCoordinatorView: View {
             clientId: clientId,
             refreshTrigger: creditsRefreshTrigger,
             onCreditTap: { credit in
-                sheetItem = .repayCredit(credit)
+                path.append(CreditsRoute.detail(credit))
             },
             onTakeCredit: {
                 sheetItem = .takeCredit(clientId)
             })
+            .navigationDestination(for: CreditsRoute.self) { route in
+                switch route {
+                    case let .detail(credit):
+                        viewFactory.makeCreditDetailView(
+                            credit: credit,
+                            clientId: clientId,
+                            onRepay: {
+                                sheetItem = .repayCredit(credit)
+                            })
+                }
+            }
     }
 }

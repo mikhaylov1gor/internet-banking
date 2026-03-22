@@ -6,11 +6,15 @@ struct AccountsCoordinatorView: View {
     @Binding var path: NavigationPath
     @Binding var sheetItem: SheetItem?
     let accountsRefreshTrigger: Int
+    let settingsReady: Bool
+    let onAppSettingsChanged: () -> Void
 
     var body: some View {
         viewFactory.makeAccountsListView(
             clientId: clientId,
             refreshTrigger: accountsRefreshTrigger,
+            settingsReady: settingsReady,
+            onAppSettingsChanged: onAppSettingsChanged,
             onAccountTap: { account in
                 path.append(Route.accountDetail(account))
             },
@@ -25,6 +29,7 @@ struct AccountsCoordinatorView: View {
                             refreshTrigger: accountsRefreshTrigger,
                             onDeposit: { sheetItem = .deposit(account) },
                             onWithdraw: { sheetItem = .withdraw(account) },
+                            onTransfer: { sheetItem = .transfer(account) },
                             onHistory: { path.append(Route.operationHistory(account)) },
                             onCloseAccount: { sheetItem = .closeAccount(account) })
                     case let .operationHistory(account):

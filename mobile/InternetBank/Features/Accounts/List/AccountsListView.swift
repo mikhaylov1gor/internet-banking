@@ -1,34 +1,71 @@
 import SwiftUI
 
 struct AccountsListView: View {
-    @State private var viewModel: AccountsListViewModel
+    @Bindable var viewModel: AccountsListViewModel
     var refreshTrigger: Int
+    var settingsReady: Bool
     var onAccountTap: (Account) -> Void
     var onOpenAccount: () -> Void
 
     init(
         viewModel: AccountsListViewModel,
         refreshTrigger: Int,
+        settingsReady: Bool,
         onAccountTap: @escaping (Account) -> Void,
         onOpenAccount: @escaping () -> Void)
     {
-        _viewModel = State(initialValue: viewModel)
+        self.viewModel = viewModel
         self.refreshTrigger = refreshTrigger
+        self.settingsReady = settingsReady
         self.onAccountTap = onAccountTap
         self.onOpenAccount = onOpenAccount
     }
 
     var body: some View {
-        List {
-            ForEach(viewModel.accounts) { account in
-                Button {
-                    onAccountTap(account)
-                } label: {
-                    HStack {
-                        Text("Счёт \(account.id.prefix(8))...")
-                        Spacer()
-                        Text("\(account.balance.formattedAmount) ₽")
+        VStack(alignment: .leading, spacing: 16) {
+            Picker("Видимость", selection: $viewModel.selectedTab) {
+                ForEach(AccountsListViewModel.VisibilityTab.allCases, id: \.self) { tab in
+                    Text(tab.title).tag(tab)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+
+            if let error = viewModel.errorMessage {
+                Text(error)
+                    .foregroundStyle(.red)
+                    .padding(.horizontal)
+            }
+
+            if viewModel.displayedAccounts.isEmpty {
+                ContentUnavailableView(
+                    "Нет счетов",
+                    systemImage: "creditcard",
+                    description: Text(
+                        viewModel.selectedTab == .hidden
+                            ? "Скрытых счетов пока нет"
+                            : "Откройте счёт или проверьте вкладку «Скрытые»"))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView(.vertical, showsIndicators: false) {
+                    LazyVStack(spacing: 12) {
+                        ForEach(viewModel.displayedAccounts) { account in
+                            AccountSummaryCard(
+                                account: account,
+                                showsVisibilityToggle: true,
+                                visibilityToggleShowsEyeForReveal: viewModel.selectedTab == .hidden,
+                                onTap: { onAccountTap(account) },
+                                onToggleVisibility: {
+                                    Task {
+                                        await viewModel.setAccountHidden(
+                                            accountId: account.id,
+                                            hidden: viewModel.selectedTab == .regular)
+                                    }
+                                })
+                        }
                     }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
                 }
             }
         }
@@ -38,16 +75,35 @@ struct AccountsListView: View {
                 onOpenAccount()
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .overlay {
             if viewModel.isLoading {
                 ProgressView()
             }
         }
         .refreshable {
+            guard settingsReady else { return }
             await viewModel.loadAccounts()
         }
-        .task(id: refreshTrigger) {
+        .task(id: "\(refreshTrigger)-\(settingsReady)") {
+            guard settingsReady else { return }
             await viewModel.loadAccounts()
         }
+    }
+}
+
+#Preview {
+    let ra = RepositoryAssembly()
+    let fa = FactoryAssembly(repositoryAssembly: ra)
+    let vm = fa.viewModelFactory.makeAccountsListViewModel(
+        clientId: "00000000-0000-0000-0000-000000000002",
+        onAppSettingsChanged: {})
+    NavigationStack {
+        AccountsListView(
+            viewModel: vm,
+            refreshTrigger: 0,
+            settingsReady: true,
+            onAccountTap: { _ in },
+            onOpenAccount: {})
     }
 }

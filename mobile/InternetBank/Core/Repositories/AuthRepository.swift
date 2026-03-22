@@ -18,18 +18,21 @@ final class AuthRepository: AuthRepositoryProtocol {
             method: "POST",
             body: request,
             requiresAuth: false)
-        authService.saveToken(response.token)
-        if let refresh = response.refreshToken {
+        authService.saveToken(response.token.trimmingCharacters(in: .whitespacesAndNewlines))
+        if let refresh = response.refreshToken?.trimmingCharacters(in: .whitespacesAndNewlines), !refresh.isEmpty {
             authService.saveRefreshToken(refresh)
         }
-        authService.saveUserId(response.userId)
+        authService.saveUserId(response.userId.trimmingCharacters(in: .whitespacesAndNewlines))
         return AuthResult(userId: response.userId, token: response.token)
     }
 
     func completeWebAuth(accessToken: String, refreshToken: String, userId: String) {
-        authService.saveToken(accessToken)
-        authService.saveRefreshToken(refreshToken)
-        authService.saveUserId(userId)
+        let access = accessToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        let refresh = refreshToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        let uid = userId.trimmingCharacters(in: .whitespacesAndNewlines)
+        authService.saveToken(access)
+        authService.saveRefreshToken(refresh)
+        authService.saveUserId(uid)
     }
 
     func logout() {

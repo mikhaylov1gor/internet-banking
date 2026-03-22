@@ -49,6 +49,14 @@ final class CreditRepository: CreditRepositoryProtocol {
             body: request)
     }
 
+    func getCreditOverdue(creditId: String) async throws -> CreditOverdueDTO {
+        try await apiClient.request(path: CreditEndpoints.creditOverdue(creditId: creditId))
+    }
+
+    func getClientCreditRating(clientId: String) async throws -> CreditRatingDTO {
+        try await apiClient.request(path: CreditEndpoints.clientCreditRating(clientId: clientId))
+    }
+
     private func mapToCredit(_ dto: CreditResponse) -> Credit {
         Credit(
             id: dto.id,

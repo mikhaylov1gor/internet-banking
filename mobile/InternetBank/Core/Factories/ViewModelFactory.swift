@@ -4,27 +4,44 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
     private let accountRepository: AccountRepositoryProtocol
     private let creditRepository: CreditRepositoryProtocol
     private let authRepository: AuthRepositoryProtocol
+    private let appSettingsRepository: AppSettingsRepositoryProtocol
+    private let clientAppSettings: ClientAppSettings
+    private let makeAccountOperationsWebSocket: () -> AccountOperationsWebSocketProtocol
 
     init(
         accountRepository: AccountRepositoryProtocol,
         creditRepository: CreditRepositoryProtocol,
-        authRepository: AuthRepositoryProtocol)
+        authRepository: AuthRepositoryProtocol,
+        appSettingsRepository: AppSettingsRepositoryProtocol,
+        clientAppSettings: ClientAppSettings,
+        makeAccountOperationsWebSocket: @escaping () -> AccountOperationsWebSocketProtocol)
     {
         self.accountRepository = accountRepository
         self.creditRepository = creditRepository
         self.authRepository = authRepository
+        self.appSettingsRepository = appSettingsRepository
+        self.clientAppSettings = clientAppSettings
+        self.makeAccountOperationsWebSocket = makeAccountOperationsWebSocket
     }
 
     func makeLoginViewModel() -> LoginViewModel {
         LoginViewModel(authRepository: authRepository)
     }
 
-    func makeAccountsListViewModel(clientId: String) -> AccountsListViewModel {
-        AccountsListViewModel(accountRepository: accountRepository, clientId: clientId)
+    func makeAccountsListViewModel(clientId: String, onAppSettingsChanged: @escaping () -> Void) -> AccountsListViewModel {
+        AccountsListViewModel(
+            accountRepository: accountRepository,
+            appSettingsRepository: appSettingsRepository,
+            clientAppSettings: clientAppSettings,
+            clientId: clientId,
+            onAppSettingsChanged: onAppSettingsChanged)
     }
 
     func makeAccountDetailViewModel(account: Account) -> AccountDetailViewModel {
-        AccountDetailViewModel(accountRepository: accountRepository, account: account)
+        AccountDetailViewModel(
+            accountRepository: accountRepository,
+            accountOperationsWebSocket: makeAccountOperationsWebSocket(),
+            account: account)
     }
 
     func makeDepositViewModel(account: Account) -> DepositViewModel {
@@ -35,8 +52,18 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
         WithdrawViewModel(accountRepository: accountRepository, account: account)
     }
 
+    func makeTransferViewModel(account: Account, clientId: String) -> TransferViewModel {
+        TransferViewModel(
+            accountRepository: accountRepository,
+            sourceAccount: account,
+            clientId: clientId)
+    }
+
     func makeOperationHistoryViewModel(account: Account) -> OperationHistoryViewModel {
-        OperationHistoryViewModel(accountRepository: accountRepository, account: account)
+        OperationHistoryViewModel(
+            accountRepository: accountRepository,
+            accountOperationsWebSocket: makeAccountOperationsWebSocket(),
+            account: account)
     }
 
     func makeOpenAccountViewModel(clientId: String) -> OpenAccountViewModel {
@@ -65,7 +92,18 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
             credit: credit)
     }
 
-    func makeProfileViewModel(clientId: String) -> ProfileViewModel {
-        ProfileViewModel(authRepository: authRepository, clientId: clientId)
+    func makeCreditDetailViewModel(credit: Credit, clientId: String) -> CreditDetailViewModel {
+        CreditDetailViewModel(
+            creditRepository: creditRepository,
+            credit: credit,
+            clientId: clientId)
+    }
+
+    func makeProfileViewModel(onAppSettingsChanged: @escaping () -> Void) -> ProfileViewModel {
+        ProfileViewModel(
+            authRepository: authRepository,
+            appSettingsRepository: appSettingsRepository,
+            clientAppSettings: clientAppSettings,
+            onAppSettingsChanged: onAppSettingsChanged)
     }
 }
