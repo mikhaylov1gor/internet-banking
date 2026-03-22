@@ -3,6 +3,7 @@ package broker
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"internet-bank/internal/core/entity"
 
@@ -16,8 +17,16 @@ type OperationsBroker struct {
 }
 
 func NewOperationsBroker(url, queue string) (*OperationsBroker, error) {
-	conn, err := amqp.Dial(url)
-	if err != nil {
+	var conn *amqp.Connection
+	var err error
+	for attempt := 0; attempt < 45; attempt++ {
+		conn, err = amqp.Dial(url)
+		if err == nil {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	if conn == nil {
 		return nil, err
 	}
 	ch, err := conn.Channel()
