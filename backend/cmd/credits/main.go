@@ -62,12 +62,22 @@ func main() {
 	handler.Mount(r)
 
 	go func() {
-		ticker := time.NewTicker(1 * time.Minute)
+		runAutoRepay := func() {
+			res, err := creditUC.RunDailyAutoRepay()
+			if err != nil {
+				log.Printf("daily auto-repay: %v", err)
+				return
+			}
+			log.Printf(
+				"daily auto-repay done: checked=%d charged=%d skipped=%d failed=%d total=%.2f",
+				res.CheckedCredits, res.ChargedCredits, res.SkippedCredits, res.FailedCredits, res.TotalRepayAmount,
+			)
+		}
+		runAutoRepay()
+		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			if err := creditUC.AccrueInterest(); err != nil {
-				log.Printf("accrue interest: %v", err)
-			}
+			runAutoRepay()
 		}
 	}()
 
