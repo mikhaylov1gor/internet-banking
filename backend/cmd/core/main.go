@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"time"
 
 	"internet-bank/internal/core/bootstrap"
 	"internet-bank/internal/core/broker"
@@ -17,11 +19,21 @@ import (
 	"github.com/go-chi/chi/v5"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func main() {
 	cfg := config.LoadCore()
-	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{})
+	gormLog := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			LogLevel:                  logger.Warn,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  false,
+		},
+	)
+	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{Logger: gormLog})
 	if err != nil {
 		log.Fatalf("db: %v", err)
 	}

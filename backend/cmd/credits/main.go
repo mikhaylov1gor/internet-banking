@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -42,6 +43,16 @@ func main() {
 	}
 	internalTokenFn := func() (string, error) {
 		return auth.NewAccessToken(bankServiceUserID, auth.UserTypeEmployee, cfg.JWTSecret, cfg.InternalTokenTTLMin)
+	}
+	tok, err := internalTokenFn()
+	if err != nil {
+		log.Fatalf("внутренний JWT: %v", err)
+	}
+	if _, err := coreClient.GetAccount(masterAccountID, tok); err != nil {
+		if errors.Is(err, client.ErrAccountNotFound) {
+			log.Fatalf("мастер-счёт %s не найден в Core. Проверьте CORE_URL и JWT_SECRET (как у Core), что Core пересобран с bootstrap (логи: master account created/ok). Команда: docker compose up -d --build core", masterAccountID)
+		}
+		log.Fatalf("мастер-счёт недоступен в Core: %v", err)
 	}
 	tariffUC := usecase.NewTariffUseCase(tariffRepo)
 	creditUC := usecase.NewCreditUseCase(tariffRepo, creditRepo, coreClient, masterAccountID, internalTokenFn)

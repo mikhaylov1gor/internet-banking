@@ -151,7 +151,7 @@ docker compose up -d --build
 ## Мастер-счёт для кредитов
 
 - При старте **Core** при необходимости создаётся счёт с `MASTER_ACCOUNT_ID` (номер `9999999999999999`), баланс — `MASTER_ACCOUNT_INITIAL_BALANCE`.
-- Сервис **Credits** должен использовать те же `MASTER_ACCOUNT_ID` и `BANK_SERVICE_USER_ID`, что и Core (см. `docker-compose.yml`).
+- Сервис **Credits** должен использовать те же `MASTER_ACCOUNT_ID` и `BANK_SERVICE_USER_ID`, что и Core (см. `docker-compose.yml`). При старте Credits проверяет наличие мастер-счёта в Core; при отсутствии процесс завершится с понятным сообщением (частая причина — разный `JWT_SECRET` у Core и Credits или старый Core без bootstrap).
 - При выдаче кредита деньги переводятся с мастер-счёта на счёт клиента; при погашении — обратно.
 - Перевод идёт через `/accounts/transfer`, баланс мастер-счёта не уходит в минус.
 
@@ -171,4 +171,14 @@ curl -X POST http://localhost:8080/auth/login \
 ```
 
 В ответе — `token`, `refresh_token`, `user_id`, `type`. Дальше все запросы с заголовком `Authorization: Bearer <token>`.
+
+### Проверочный сценарий: тариф → счёт → кредит → погашение
+
+При поднятом stack (`docker compose up -d`) из каталога `backend`:
+
+```powershell
+.\scripts\e2e-credit-flow.ps1
+```
+
+Скрипт: логин сотрудника → создание тарифа → новый клиент → счёт → выдача кредита 1000 → проверка баланса → полное погашение → баланс 0. Базовый URL: `http://localhost:8080` или переменная `API_BASE`.
 

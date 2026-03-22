@@ -10,6 +10,7 @@ import (
 
 	"internet-bank/internal/core/client"
 	"internet-bank/internal/core/entity"
+	"internet-bank/pkg/bankconstants"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -68,7 +69,7 @@ func (uc *AccountUseCase) OpenAccount(clientID uuid.UUID, currency entity.Curren
 	if currency != entity.CurrencyRUB && currency != entity.CurrencyUSD && currency != entity.CurrencyEUR {
 		return nil, ErrInvalidCurrency
 	}
-	number, err := generateAccountNumber()
+	number, err := generateUniqueAccountNumber()
 	if err != nil {
 		return nil, err
 	}
@@ -207,6 +208,19 @@ func (uc *AccountUseCase) buildTransferQuote(fromAcc, toAcc *entity.Account, amo
 
 func roundMoney(v float64) float64 {
 	return math.Round(v*100) / 100
+}
+
+func generateUniqueAccountNumber() (string, error) {
+	for i := 0; i < 20; i++ {
+		s, err := generateAccountNumber()
+		if err != nil {
+			return "", err
+		}
+		if s != bankconstants.MasterAccountNumber {
+			return s, nil
+		}
+	}
+	return "", errors.New("не удалось сгенерировать номер счёта")
 }
 
 func generateAccountNumber() (string, error) {
