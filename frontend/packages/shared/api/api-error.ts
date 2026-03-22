@@ -4,6 +4,9 @@ type ErrorPayload = {
   error?: string
 }
 
+export const getLoadDataErrorMessage = (what: string): string =>
+  `Не удалось получить ${what}. Попробуйте позже.`
+
 export const getApiErrorMessage = (
   error: unknown,
   fallback = 'Произошла ошибка. Попробуйте позже.'
@@ -40,4 +43,19 @@ export const formatUserCreateErrorMessage = (error: unknown): string => {
     return 'Email уже занят'
   }
   return msg
+}
+
+export const ISSUE_CREDIT_AMOUNT_UNAVAILABLE_MESSAGE =
+  'Сейчас не можем выдать кредит на такую сумму.'
+
+export const getIssueCreditErrorMessage = (error: unknown): string => {
+  const raw = getApiErrorMessage(error, ISSUE_CREDIT_AMOUNT_UNAVAILABLE_MESSAGE)
+  const lower = raw.toLowerCase()
+  if (
+    lower.includes('недостаточно средств') ||
+    lower.includes('insufficient funds')
+  ) {
+    return ISSUE_CREDIT_AMOUNT_UNAVAILABLE_MESSAGE
+  }
+  return raw
 }

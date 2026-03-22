@@ -21,7 +21,7 @@ export const useAccountsPage = () => {
     page_size: pageSize,
   }
 
-  const { data: accountsResponse, isLoading } = useAccounts(params)
+  const { data: accountsResponse, isLoading, isError: accountsLoadError } = useAccounts(params)
   const allAccounts = accountsResponse?.accounts ?? []
   const totalPages = accountsResponse?.pageQuantity || 1
   const createAccountMutation = useCreateAccount()
@@ -64,6 +64,7 @@ export const useAccountsPage = () => {
     accounts: visibleAccounts,
     allAccounts,
     isLoading,
+    accountsLoadError,
     showModal,
     handleOpenModal,
     handleCloseModal,

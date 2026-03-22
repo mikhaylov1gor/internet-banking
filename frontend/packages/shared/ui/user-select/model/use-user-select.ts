@@ -5,7 +5,13 @@ import type { User } from '@shared/api/endpoints/users'
 
 const PAGE_SIZE = 20
 
-export const useUserSelect = (value: string, onChange: (userId: string) => void) => {
+export type UserSelectUserKind = 'client' | 'all'
+
+export const useUserSelect = (
+  value: string,
+  onChange: (userId: string) => void,
+  userKind: UserSelectUserKind = 'client'
+) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [page, setPage] = useState(1)
@@ -14,9 +20,14 @@ export const useUserSelect = (value: string, onChange: (userId: string) => void)
   const containerRef = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
+  const usersQueryParams =
+    userKind === 'all'
+      ? { status: 'active' as const, page, page_size: PAGE_SIZE }
+      : { type: 'client' as const, status: 'active' as const, page, page_size: PAGE_SIZE }
+
   const { data: usersResponse, isLoading, isFetching } = useQuery({
-    queryKey: ['users', { type: 'client', status: 'active', page, page_size: PAGE_SIZE }],
-    queryFn: () => getUsers({ type: 'client', status: 'active', page, page_size: PAGE_SIZE }),
+    queryKey: ['users', { userKind, ...usersQueryParams }],
+    queryFn: () => getUsers(usersQueryParams),
   })
 
   const users = usersResponse?.users || []

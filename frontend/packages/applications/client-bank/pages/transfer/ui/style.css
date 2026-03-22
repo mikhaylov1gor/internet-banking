@@ -103,21 +103,70 @@
   line-height: 1.4;
 }
 
-.transfer-page-fx-hint {
-  margin: 0;
+.transfer-page-recipient-check {
+  margin: 0.5rem 0 0 0;
   font-size: 0.8125rem;
   color: var(--text-muted);
-  padding: 0.65rem 0.75rem;
+  line-height: 1.4;
+}
+
+.transfer-page-preview {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
   background: var(--bg-surface);
-  border-radius: 8px;
-  border: 1px dashed var(--border-default);
+}
+
+.transfer-page-preview-title {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.transfer-page-preview-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.transfer-page-preview-error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--error-color);
+  line-height: 1.4;
+}
+
+.transfer-page-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.transfer-page-preview-line {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.transfer-page-preview-rate {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
   line-height: 1.4;
 }
 
 .transfer-page-field-error {
-  margin: -0.35rem 0 0 0;
+  margin: 0.5rem 0 0 0;
   font-size: 0.8125rem;
   color: var(--error-color);
+  line-height: 1.4;
 }
 
 .transfer-page-error {

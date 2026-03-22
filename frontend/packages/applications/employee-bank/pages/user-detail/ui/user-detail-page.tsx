@@ -5,8 +5,10 @@ import { Modal } from '@shared/ui/modal'
 import { MobilePagination, DesktopPagination } from '@shared/ui/pagination'
 import { CreditCard } from '@shared/ui/credit-card'
 import { CreditRatingGauge } from '@shared/ui/credit-rating-gauge'
-import { isNotFoundError } from '@shared/api'
+import { getLoadDataErrorMessage, isNotFoundError } from '@shared/api'
 import { getCurrentUserId } from '@shared/features/auth'
+import { CopyableId } from '@shared/ui/copyable-id'
+import { formatShortId } from '@shared/utils/format-short-id'
 import { isMobileDevice } from '@shared/utils'
 import { useUserDetailPage } from '../model/use-user-detail-page'
 import './style.css'
@@ -20,6 +22,7 @@ export const UserDetailPage = () => {
     userError,
     credits,
     creditsLoading,
+    creditsLoadError,
     page,
     setPage,
     limit,
@@ -53,7 +56,7 @@ export const UserDetailPage = () => {
         message={
           notFound
             ? 'Пользователь с указанным ID не существует'
-            : 'Произошла ошибка при загрузке пользователя'
+            : getLoadDataErrorMessage('данные пользователя')
         }
         onGoBack={() => navigate(returnTo || '/users')}
         goBackLabel="Назад"
@@ -79,6 +82,17 @@ export const UserDetailPage = () => {
           <div className="user-detail-page-detail-item">
             <span className="user-detail-page-label">Email:</span>
             <span>{user.email}</span>
+          </div>
+          <div className="user-detail-page-detail-item">
+            <span className="user-detail-page-label">ID:</span>
+            <CopyableId
+              copyText={user.id}
+              toastOk="ID скопирован"
+              title="Скопировать полный ID"
+              className="user-detail-page-id-copy"
+            >
+              {formatShortId(user.id)}
+            </CopyableId>
           </div>
           <div className="user-detail-page-detail-item">
             <span className="user-detail-page-label">Тип:</span>
@@ -144,10 +158,13 @@ export const UserDetailPage = () => {
               <Spinner />
             </div>
           )}
-          {credits && credits.length === 0 && (
+          {!creditsLoading && creditsLoadError && (
+            <div className="user-detail-page-empty">{getLoadDataErrorMessage('кредиты клиента')}</div>
+          )}
+          {!creditsLoading && !creditsLoadError && credits.length === 0 && (
             <div className="user-detail-page-empty">Кредиты не найдены</div>
           )}
-          {credits && credits.length > 0 && (
+          {!creditsLoadError && credits.length > 0 && (
             <>
               <div className="user-detail-page-credits-list">
                 {credits.map((credit) => (
@@ -157,7 +174,6 @@ export const UserDetailPage = () => {
                     onClick={() =>
                       navigate(`/credits/${credit.id}`, { state: { returnTo: `/users/${user.id}` } })
                     }
-                    shortenId={false}
                   />
                 ))}
               </div>

@@ -18,7 +18,9 @@ export const useCreditsPage = () => {
     page_size: pageSize,
   }
 
-  const { data: creditsResponse, isLoading } = useCredits(params)
+  const { data: creditsResponse, isLoading, isError: creditsLoadError } = useCredits(params, {
+    enabled: !!selectedUserId,
+  })
   const credits = creditsResponse?.credits
   const totalPages = creditsResponse?.pageQuantity || 1
 
@@ -66,6 +68,7 @@ export const useCreditsPage = () => {
     handleSearch,
     credits,
     isLoading,
+    creditsLoadError,
     selectedUserId,
     setSelectedUserId: handleUserIdChange,
     page,

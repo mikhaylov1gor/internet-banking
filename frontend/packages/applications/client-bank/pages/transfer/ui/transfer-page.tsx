@@ -3,6 +3,7 @@ import { Button } from '@shared/ui/button'
 import { Input } from '@shared/ui/input'
 import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
+import { getApiErrorMessage, getLoadDataErrorMessage } from '@shared/api'
 import { useTransferPage } from '../model/use-transfer-page'
 import './style.css'
 
@@ -10,6 +11,7 @@ export const TransferPage = () => {
   const {
     navigate,
     isLoading,
+    accountsLoadError,
     fromAccountId,
     setFromAccountId,
     fromOptions,
@@ -19,7 +21,7 @@ export const TransferPage = () => {
     toOwnAccountId,
     setToOwnAccountId,
     toOtherAccountId,
-    setToOtherAccountId,
+    setToOtherAccountMasked,
     toOwnOptions,
     amountStr,
     setAmountStr,
@@ -29,18 +31,38 @@ export const TransferPage = () => {
     handleSubmit,
     transferMutation,
     errorMessage,
-    showFxHint,
-    otherRecipientHint,
     entryFromTopUpFlow,
     successCreditAccountId,
     successDebitAccountId,
     handleNewTransfer,
+    previewRequest,
+    transferPreviewQuery,
+    otherRecipientSameAsDebit,
+    otherRecipientNotFound,
+    otherRecipientClosed,
+    otherRecipientLookupErrorMessage,
+    otherRecipientLookupPending,
   } = useTransferPage()
 
   if (isLoading) {
     return (
       <div className="transfer-page-loading">
         <Spinner size="large" />
+      </div>
+    )
+  }
+
+  if (accountsLoadError) {
+    return (
+      <div className="transfer-page-container">
+        <Button variant="secondary" onClick={() => navigate(-1)} className="transfer-page-back">
+          Назад
+        </Button>
+        <div className="transfer-page-card">
+          <div className="transfer-page-error" role="alert">
+            {getLoadDataErrorMessage('счета')}
+          </div>
+        </div>
       </div>
     )
   }
@@ -75,7 +97,7 @@ export const TransferPage = () => {
                   size="small"
                   onClick={() => navigate(`/accounts/${successDebitAccountId || fromAccountId}`)}
                 >
-                  История списания
+                  Обратно к счёту
                 </Button>
               )}
               <Button size="small" onClick={handleNewTransfer}>
@@ -154,24 +176,44 @@ export const TransferPage = () => {
                   <Input
                     label="Номер счёта получателя"
                     value={toOtherAccountId}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setToOtherAccountId(e.target.value)}
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setToOtherAccountMasked(e.target.value)
+                    }
+                    placeholder="0000-0000-0000-0000"
+                    inputMode="numeric"
                     autoComplete="off"
                     spellCheck={false}
                   />
-                  {otherRecipientHint && <p className="transfer-page-muted">{otherRecipientHint}</p>}
+                  {otherRecipientSameAsDebit && (
+                    <p className="transfer-page-field-error" role="alert">
+                      Указан тот же счёт, что и для списания — перевод на свой же счёт невозможен. Введите другой номер
+                      получателя.
+                    </p>
+                  )}
+                  {!otherRecipientSameAsDebit && otherRecipientLookupPending && (
+                    <p className="transfer-page-recipient-check">Проверяем номер счёта…</p>
+                  )}
+                  {otherRecipientNotFound && (
+                    <p className="transfer-page-field-error" role="alert">
+                      Счёт с таким номером не найден. Проверьте номер.
+                    </p>
+                  )}
+                  {otherRecipientClosed && (
+                    <p className="transfer-page-field-error" role="alert">
+                      Счёт закрыт — перевод на него недоступен.
+                    </p>
+                  )}
+                  {otherRecipientLookupErrorMessage && (
+                    <p className="transfer-page-field-error" role="alert">
+                      {otherRecipientLookupErrorMessage}
+                    </p>
+                  )}
                 </>
               )}
             </fieldset>
 
-            {showFxHint && (
-              <p className="transfer-page-fx-hint">
-                Если валюты счетов различаются, сумма к зачислению рассчитывается по курсу банка на момент операции.
-              </p>
-            )}
-
             <Input
-              label="Сумма списания"
+              label="Сумма перевода"
               type="text"
               inputMode="decimal"
               value={amountStr}
@@ -184,6 +226,47 @@ export const TransferPage = () => {
             )}
             {amountStr !== '' && amountValid && fromAccount && !withinBalance && (
               <p className="transfer-page-field-error">Недостаточно средств на счёте списания</p>
+            )}
+
+            {previewRequest && (
+              <div className="transfer-page-preview" aria-live="polite">
+                <p className="transfer-page-preview-title">Предварительный расчёт</p>
+                {transferPreviewQuery.isPending && (
+                  <div className="transfer-page-preview-loading">
+                    <Spinner size="small" />
+                    <span>Запрашиваем расчёт…</span>
+                  </div>
+                )}
+                {transferPreviewQuery.isError && !transferPreviewQuery.isPending && (
+                  <p className="transfer-page-preview-error" role="alert">
+                    {getApiErrorMessage(transferPreviewQuery.error)}
+                  </p>
+                )}
+                {transferPreviewQuery.isSuccess && transferPreviewQuery.data && (
+                  <div className="transfer-page-preview-body">
+                    <p className="transfer-page-preview-line">
+                      К зачислению:{' '}
+                      <strong>
+                        {transferPreviewQuery.data.credit_amount.toLocaleString('ru-RU', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        {transferPreviewQuery.data.to_currency}
+                      </strong>
+                    </p>
+                    {transferPreviewQuery.data.from_currency !== transferPreviewQuery.data.to_currency && (
+                      <p className="transfer-page-preview-rate">
+                        Курс: 1 {transferPreviewQuery.data.from_currency} ={' '}
+                        {transferPreviewQuery.data.rate.toLocaleString('ru-RU', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 6,
+                        })}{' '}
+                        {transferPreviewQuery.data.to_currency}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
             {errorMessage && <div className="transfer-page-error">{errorMessage}</div>}

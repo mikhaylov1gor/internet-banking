@@ -6,6 +6,7 @@ import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
 import { DesktopPagination } from '@shared/ui/pagination'
 import { AccountCard } from '@shared/ui/account-card'
+import { getLoadDataErrorMessage } from '@shared/api'
 import { useAccountsPage } from '../model/use-accounts-page'
 import { UserSelect } from '@shared/ui/user-select'
 import './style.css'
@@ -16,7 +17,6 @@ export const DesktopAccountsPage = () => {
     accountId,
     setAccountId,
     error,
-    setError,
     handleSearch,
     accounts,
     isLoading,
@@ -35,6 +35,7 @@ export const DesktopAccountsPage = () => {
     showHidden,
     setShowHidden,
     hiddenCount,
+    accountsLoadError,
   } = useAccountsPage()
 
   return (
@@ -45,12 +46,10 @@ export const DesktopAccountsPage = () => {
         <div className="accounts-page-search-section">
           <div className="accounts-page-search-box">
             <Input
-              placeholder="Введите ID счёта"
+              placeholder="0000-0000-0000-0000"
               value={accountId}
-              onChange={(e) => {
-                setAccountId(e.target.value)
-                setError('')
-              }}
+              onChange={(e) => setAccountId(e.target.value)}
+              inputMode="numeric"
               onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearch()}
               error={error || undefined}
             />
@@ -60,10 +59,11 @@ export const DesktopAccountsPage = () => {
 
         <div className="accounts-page-filters">
           <UserSelect
-              label="Пользователь"
-              value={selectedUserId}
-              onChange={setSelectedUserId}
-              className="accounts-page-user-select"
+            label="Пользователь"
+            value={selectedUserId}
+            onChange={setSelectedUserId}
+            className="accounts-page-user-select"
+            userKind="all"
           />
           <Select
             label="Статус"
@@ -93,9 +93,15 @@ export const DesktopAccountsPage = () => {
         </div>
       )}
 
-      {!isLoading && accounts && accounts.length === 0 && <div className="empty">Счета не найдены</div>}
+      {!isLoading && accountsLoadError && (
+        <div className="empty error">{getLoadDataErrorMessage('счета')}</div>
+      )}
 
-      {!isLoading && accounts && accounts.length > 0 && (
+      {!isLoading && !accountsLoadError && accounts && accounts.length === 0 && (
+        <div className="empty">Счета не найдены</div>
+      )}
+
+      {!isLoading && !accountsLoadError && accounts && accounts.length > 0 && (
         <>
           <div className="list desktop-list">
             {accounts.map((account) => (
@@ -105,7 +111,6 @@ export const DesktopAccountsPage = () => {
                 isHidden={hideAccountsFeatureEnabled && hiddenAccountIds.includes(account.id)}
                 onToggleHidden={hideAccountsFeatureEnabled ? toggleHiddenAccount : undefined}
                 onClick={() => navigate(`/accounts/${account.id}`)}
-                shortenId={false}
               />
             ))}
           </div>

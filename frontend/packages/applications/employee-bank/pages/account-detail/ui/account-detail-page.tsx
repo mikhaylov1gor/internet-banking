@@ -4,6 +4,9 @@ import { ErrorFallback } from '@shared/ui/error-fallback'
 import { OperationCard } from '@shared/ui/operation-card'
 import { useTheme } from '@shared/features/theme'
 import { CopyableId } from '@shared/ui/copyable-id'
+import { getLoadDataErrorMessage, isNotFoundError } from '@shared/api'
+import { formatAccountNumberMasked, digitsOnlyAccountNumber } from '@shared/utils/account-number'
+import { formatShortId } from '@shared/utils/format-short-id'
 import { useAccountDetailPage } from '../model/use-account-detail-page'
 import './style.css'
 
@@ -16,7 +19,6 @@ export const AccountDetailPage = () => {
     operations,
     operationsLoading,
     operationsError,
-    operationsFetchError,
     operationsPage,
     operationsTotalPages,
     goPrevOperationsPage,
@@ -34,11 +36,21 @@ export const AccountDetailPage = () => {
     )
   }
 
-  if (accountError || !account) {
+  if (accountError && isNotFoundError(accountError)) {
     return (
       <ErrorFallback
         title="Счёт не найден"
-        message="Счёт с указанным ID не найден или у вас нет доступа к нему"
+        message="Счёт с указанным номером не найден или у вас нет доступа к нему"
+        onGoBack={() => navigate('/accounts')}
+      />
+    )
+  }
+
+  if (accountError || !account) {
+    return (
+      <ErrorFallback
+        title="Ошибка загрузки"
+        message={getLoadDataErrorMessage('данные счёта')}
         onGoBack={() => navigate('/accounts')}
       />
     )
@@ -56,11 +68,11 @@ export const AccountDetailPage = () => {
             <span className="account-detail-page-title-gradient">Счёт</span>
             <CopyableId
               className="account-detail-page-title-gradient account-detail-page-title-id"
-              copyText={account.id}
+              copyText={digitsOnlyAccountNumber(account.account_number)}
               toastOk="Номер счёта скопирован"
-              title="Скопировать полный номер счёта"
+              title="Скопировать номер счёта"
             >
-              {` #${account.id}`}
+              {` ${formatAccountNumberMasked(account.account_number)}`}
             </CopyableId>
           </h1>
           {hideAccountsFeatureEnabled && (
@@ -115,8 +127,9 @@ export const AccountDetailPage = () => {
             <span
               onClick={() => navigate(`/users/${account.client_id}`, { state: { returnTo: `/accounts/${account.id}` } })}
               style={{ cursor: 'pointer', color: '#007bff', textDecoration: 'underline' }}
+              title={account.client_id}
             >
-              {account.client_id}
+              {formatShortId(account.client_id)}
             </span>
           </div>
           <div className="account-detail-page-detail-item">
@@ -145,9 +158,7 @@ export const AccountDetailPage = () => {
 
         {operationsError && (
           <div className="error" style={{ marginBottom: '12px' }}>
-            {operationsFetchError instanceof Error
-              ? operationsFetchError.message
-              : 'Не удалось загрузить операции'}
+            {getLoadDataErrorMessage('операции')}
           </div>
         )}
 

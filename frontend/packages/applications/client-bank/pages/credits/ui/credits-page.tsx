@@ -7,7 +7,12 @@ import { Select } from '@shared/ui/select'
 import { DesktopPagination, MobilePagination } from '@shared/ui/pagination'
 import { CreditCard } from '@shared/ui/credit-card'
 import { CreditRatingGauge } from '@shared/ui/credit-rating-gauge'
-import { getApiErrorMessage } from '@shared/api'
+import { RubDepositPreview } from '@shared/ui/rub-deposit-preview'
+import {
+  getApiErrorMessage,
+  getIssueCreditErrorMessage,
+  getLoadDataErrorMessage,
+} from '@shared/api'
 import { useCreditsPage } from '../model/use-credits-page'
 import { isMobile } from '../../../main'
 import './style.css'
@@ -17,6 +22,11 @@ export const CreditsPage = () => {
   const {
     credits,
     isLoading,
+    creditsLoadError,
+    accountsLoadError,
+    tariffsLoadError,
+    takeCreditDisabledByTariffs,
+    takeCreditTariffsHint,
     showModal,
     handleOpenModal,
     handleCloseModal,
@@ -24,10 +34,16 @@ export const CreditsPage = () => {
     setSelectedTariff,
     selectedAccount,
     setSelectedAccount,
+    selectedAccountCurrency,
     amount,
     setAmount,
     amountBlurred,
-    setAmountBlurred,
+    termMonths,
+    setTermMonths,
+    maxTermMonths,
+    termValidationIssue,
+    checkAvailabilityMutation,
+    handleAmountBlur,
     issueCreditMutation,
     handleIssueCredit,
     noAccountsError,
@@ -47,7 +63,14 @@ export const CreditsPage = () => {
     issueCreditSubmitDisabled,
     tariffSelectOptions,
     accountSelectOptions,
+    issueCreditPreviewPlan,
+    issueCreditTransferPreviewQuery,
+    issueCreditFxQuoteActive,
+    issueCreditFxQuoteQuery,
   } = useCreditsPage()
+
+  const hideIssueCreditPrecalc =
+    checkAvailabilityMutation.isSuccess && checkAvailabilityMutation.data?.allowed === false
 
   const Pagination = isMobile ? MobilePagination : DesktopPagination
 
@@ -59,9 +82,24 @@ export const CreditsPage = () => {
           <Button type="button" variant="secondary" onClick={openRatingModal}>
             Мой кредитный рейтинг
           </Button>
-          <Button type="button" onClick={handleOpenModal}>
-            Взять кредит
-          </Button>
+          <div className="credits-page-take-credit-block">
+            {takeCreditTariffsHint ? (
+              <p
+                className="credits-page-take-credit-unavailable"
+                role="status"
+              >
+                {takeCreditTariffsHint}
+              </p>
+            ) : (
+              <Button
+                type="button"
+                onClick={handleOpenModal}
+                disabled={takeCreditDisabledByTariffs}
+              >
+                Взять кредит
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -91,11 +129,15 @@ export const CreditsPage = () => {
         </div>
       )}
 
-      {credits && credits.length === 0 && (
+      {!isLoading && creditsLoadError && (
+        <div className="empty error-message">{getLoadDataErrorMessage('кредиты')}</div>
+      )}
+
+      {!isLoading && !creditsLoadError && credits.length === 0 && (
         <div className="empty">У вас пока нет кредитов. Оформите первый кредит!</div>
       )}
 
-      {credits && credits.length > 0 && (
+      {!isLoading && !creditsLoadError && credits.length > 0 && (
         <>
           <div className="list">
             {credits.map((credit) => (
@@ -103,7 +145,6 @@ export const CreditsPage = () => {
                 key={credit.id}
                 credit={credit}
                 onClick={() => navigate(`/credits/${credit.id}`)}
-                shortenId={true}
               />
             ))}
           </div>
@@ -122,6 +163,8 @@ export const CreditsPage = () => {
 
       <Modal isOpen={showModal} onClose={handleCloseModal} title="Взять кредит">
         <div className="issue-credit-form">
+          {tariffsLoadError && <div className="error">{getLoadDataErrorMessage('тарифы')}</div>}
+          {accountsLoadError && <div className="error">{getLoadDataErrorMessage('счета')}</div>}
           <div className="form-group">
             <label>Тариф</label>
             <Select
@@ -150,6 +193,26 @@ export const CreditsPage = () => {
             )}
           </div>
           <div className="form-group">
+            <Input
+              label="Срок кредита, мес."
+              type="number"
+              min={1}
+              max={maxTermMonths}
+              step={1}
+              value={String(termMonths)}
+              onChange={(e) => setTermMonths(parseInt(e.target.value, 10) || 0)}
+              placeholder="Например, 12"
+            />
+            <div className="tariff-hint">
+              Допустимый срок на стороне банка: до {maxTermMonths} мес. (не более 3650 дней по графику).
+            </div>
+            {termValidationIssue && (
+              <div className="error" style={{ marginTop: '8px' }}>
+                {termValidationIssue}
+              </div>
+            )}
+          </div>
+          <div className="form-group">
             <label>Счет для получения</label>
             <Select
               value={selectedAccount}
@@ -159,13 +222,13 @@ export const CreditsPage = () => {
           </div>
           <div className="form-group">
             <Input
-              label="Сумма"
+              label="Сумма кредита, ₽"
               type="number"
               min="0.01"
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              onBlur={() => setAmountBlurred(true)}
+              onBlur={handleAmountBlur}
               placeholder="Введите сумму"
             />
             {amountValidationIssue && (
@@ -182,10 +245,38 @@ export const CreditsPage = () => {
                 )}
               </div>
             )}
+
+            {checkAvailabilityMutation.isPending && amountBlurred && parseFloat(amount.replace(/\s/g, '').replace(',', '.')) >= 0.01 && (
+              <p className="issue-credit-availability-loading" aria-live="polite">
+                Проверяем возможность выдачи…
+              </p>
+            )}
+            {checkAvailabilityMutation.isError && amountBlurred && (
+              <p className="issue-credit-preview-error" role="alert">
+                {getApiErrorMessage(checkAvailabilityMutation.error)}
+              </p>
+            )}
+
+            <RubDepositPreview
+              variant="credit"
+              plan={issueCreditPreviewPlan}
+              selectedAccountCurrency={selectedAccountCurrency}
+              preview={issueCreditTransferPreviewQuery}
+              fxQuoteActive={issueCreditFxQuoteActive}
+              fxQuote={{
+                isPending: issueCreditFxQuoteQuery.isPending,
+                isFetching: issueCreditFxQuoteQuery.isFetching,
+                isError: issueCreditFxQuoteQuery.isError,
+                isSuccess: issueCreditFxQuoteQuery.isSuccess,
+                error: issueCreditFxQuoteQuery.error,
+                data: issueCreditFxQuoteQuery.data,
+              }}
+              hidden={hideIssueCreditPrecalc}
+            />
           </div>
           {issueCreditMutation.isError && (
             <div className="error">
-              {getApiErrorMessage(issueCreditMutation.error, 'Ошибка оформления кредита. Попробуйте позже.')}
+              {getIssueCreditErrorMessage(issueCreditMutation.error)}
             </div>
           )}
           <div className="modalActions">

@@ -2,20 +2,24 @@ import { apiClient } from '../../client'
 import { parseApiResponse } from '../../parse-response'
 import {
   AccountSchema,
+  AccountBasicSchema,
   AccountListResponseSchema,
   OperationListResponseSchema,
   OperationSchema,
   TransferResponseSchema,
+  TransferPreviewResponseSchema,
   type GetAccountsParams,
   type GetOperationsParams,
   type CreateAccountRequest,
   type ChangeBalanceRequest,
   type Account,
+  type AccountBasic,
   type AccountListResponse,
   type OperationListResponse,
   type Operation,
   type TransferRequest,
   type TransferResponse,
+  type TransferPreviewResponse,
 } from './types'
 
 export const getAccounts = async (params?: GetAccountsParams): Promise<AccountListResponse> => {
@@ -26,6 +30,11 @@ export const getAccounts = async (params?: GetAccountsParams): Promise<AccountLi
 export const getAccountById = async (accountId: string): Promise<Account> => {
   const response = await apiClient.get(`/accounts/${accountId}`)
   return parseApiResponse(AccountSchema, response.data)
+}
+
+export const getAccountBasicByNumber = async (accountNumberDigits: string): Promise<AccountBasic> => {
+  const response = await apiClient.get(`/accounts/by-number/${encodeURIComponent(accountNumberDigits)}`)
+  return parseApiResponse(AccountBasicSchema, response.data)
 }
 
 export const createAccount = async (data: CreateAccountRequest): Promise<Account> => {
@@ -58,6 +67,31 @@ export const withdrawFromAccount = async (accountId: string, data: ChangeBalance
 }
 
 export const transferBetweenAccounts = async (data: TransferRequest): Promise<TransferResponse> => {
-  const response = await apiClient.post('/accounts/transfer', data)
+  const body: Record<string, string | number> = {
+    from_account_id: data.from_account_id,
+    amount: data.amount,
+  }
+  if (data.to_account_id) {
+    body.to_account_id = data.to_account_id
+  }
+  if (data.to_account_number) {
+    body.to_account_number = data.to_account_number
+  }
+  const response = await apiClient.post('/accounts/transfer', body)
   return parseApiResponse(TransferResponseSchema, response.data)
+}
+
+export const previewTransferBetweenAccounts = async (data: TransferRequest): Promise<TransferPreviewResponse> => {
+  const body: Record<string, string | number> = {
+    from_account_id: data.from_account_id,
+    amount: data.amount,
+  }
+  if (data.to_account_id) {
+    body.to_account_id = data.to_account_id
+  }
+  if (data.to_account_number) {
+    body.to_account_number = data.to_account_number
+  }
+  const response = await apiClient.post('/accounts/transfer/preview', body)
+  return parseApiResponse(TransferPreviewResponseSchema, response.data)
 }

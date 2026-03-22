@@ -9,8 +9,10 @@ import { Modal } from '@shared/ui/modal'
 import { EmailInput } from '@shared/ui/email-input'
 import { PhoneInput } from '@shared/ui/phone-input'
 import { PasswordInput } from '@shared/ui/password-input'
-import { formatUserCreateErrorMessage } from '@shared/api'
+import { formatUserCreateErrorMessage, getLoadDataErrorMessage } from '@shared/api'
 import { getCurrentUserId } from '@shared/features/auth'
+import { CopyableId } from '@shared/ui/copyable-id'
+import { formatShortId } from '@shared/utils/format-short-id'
 import { useUsersPage } from '../model/use-users-page'
 import './style.css'
 
@@ -126,7 +128,7 @@ export const MobileUsersPage = () => {
         <ErrorFallback
           variant="embedded"
           title="Ошибка загрузки"
-          message="Не удалось загрузить список пользователей"
+          message={getLoadDataErrorMessage('список пользователей')}
           onRetry={() => window.location.reload()}
         />
       )}
@@ -147,6 +149,15 @@ export const MobileUsersPage = () => {
                 <div className="users-page-user-info">
                   <div className="users-page-user-name">{user.full_name || user.email}</div>
                   <div className="users-page-user-details">
+                    <CopyableId
+                      copyText={user.id}
+                      toastOk="ID скопирован"
+                      title="Скопировать ID"
+                      stopPropagation
+                      className="users-page-user-id-copy"
+                    >
+                      ID: {formatShortId(user.id)}
+                    </CopyableId>
                     <span>Email: {user.email}</span>
                     <span>Тип: {user.type === 'client' ? 'Клиент' : 'Сотрудник'}</span>
                     <span className={user.status === 'active' ? 'users-page-status-active' : 'users-page-status-blocked'}>

@@ -9,7 +9,7 @@ export const CreditRatingSchema = z.object({
 })
 export type CreditRating = z.infer<typeof CreditRatingSchema>
 
-const CreditStatusSchema = z.enum(['active', 'paid'])
+const CreditStatusSchema = z.enum(['active', 'paid', 'overdue'])
 
 export const CreditSchema = z.object({
   id: z.string(),
@@ -19,7 +19,10 @@ export const CreditSchema = z.object({
   amount: z.number(),
   remaining: z.number(),
   rate: z.number(),
+  term_days: z.number().optional().default(0),
+  total_due: z.number().optional().default(0),
   daily_payment: z.number(),
+  maturity_at: z.string().nullish(),
   status: CreditStatusSchema,
   issued_at: z.string(),
   paid_at: z.string().nullish(),
@@ -44,9 +47,46 @@ export type IssueCreditRequest = {
   tariff_id: string
   account_id: string
   amount: number
+  term_days?: number
+  term_months?: number
 }
 
 export type RepayCreditRequest = {
   amount: number
   account_id: string
 }
+
+export const CreditPaymentSchema = z.object({
+  day: z.number().optional(),
+  index: z.number(),
+  due_at: z.string(),
+  amount_due: z.number().optional(),
+  amount_paid: z.number().optional(),
+  amount_remaining: z.number().optional(),
+  expected_total: z.number(),
+  paid_now_total: z.number(),
+  status: z.enum(['pending', 'paid', 'partial', 'overdue']),
+})
+export type CreditPayment = z.infer<typeof CreditPaymentSchema>
+
+export const CreditPaymentListResponseSchema = z.object({
+  items: z.array(CreditPaymentSchema),
+  pageNumber: z.number(),
+  pageQuantity: z.number(),
+})
+export type CreditPaymentListResponse = z.infer<typeof CreditPaymentListResponseSchema>
+
+export type GetCreditPaymentsParams = {
+  page?: number
+  page_size?: number
+  only_overdue?: boolean
+}
+
+export const CreditAvailabilitySchema = z.object({
+  allowed: z.boolean(),
+  requested_amount: z.number(),
+  master_balance: z.number(),
+  master_currency: z.string(),
+  shortfall: z.number().optional(),
+})
+export type CreditAvailability = z.infer<typeof CreditAvailabilitySchema>

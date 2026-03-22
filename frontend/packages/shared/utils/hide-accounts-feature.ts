@@ -1,4 +1,4 @@
-export const HIDE_ACCOUNTS_FEATURE_QUERY_PARAM = 'HideAcctounsFeature'
+export const HIDE_ACCOUNTS_FEATURE_QUERY_PARAM = 'HideAccountsFeature'
 
 const STORAGE_KEY = 'employee_hide_accounts_feature'
 

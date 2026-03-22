@@ -4,12 +4,17 @@ import {
   CreditRatingSchema,
   CreditSchema,
   CreditListResponseSchema,
+  CreditPaymentListResponseSchema,
+  CreditAvailabilitySchema,
   type CreditRating,
   type Credit,
   type GetCreditsParams,
   type CreditListResponse,
   type IssueCreditRequest,
   type RepayCreditRequest,
+  type GetCreditPaymentsParams,
+  type CreditPaymentListResponse,
+  type CreditAvailability,
 } from './types'
 
 export const getClientCreditRating = async (clientId: string): Promise<CreditRating> => {
@@ -32,7 +37,26 @@ export const issueCredit = async (data: IssueCreditRequest): Promise<Credit> => 
   return parseApiResponse(CreditSchema, body)
 }
 
+export const checkCreditAvailability = async (amount: number): Promise<CreditAvailability> => {
+  const { data } = await apiClient.post('/credits/availability', { amount })
+  return parseApiResponse(CreditAvailabilitySchema, data)
+}
+
 export const repayCredit = async (creditId: string, data: RepayCreditRequest): Promise<Credit> => {
   const { data: body } = await apiClient.post(`/credits/${creditId}/repay`, data)
   return parseApiResponse(CreditSchema, body)
+}
+
+export const getCreditPayments = async (
+  creditId: string,
+  params?: GetCreditPaymentsParams
+): Promise<CreditPaymentListResponse> => {
+  const { data } = await apiClient.get(`/credits/${creditId}/payments`, {
+    params: {
+      page: params?.page,
+      page_size: params?.page_size,
+      ...(params?.only_overdue ? { only_overdue: true } : {}),
+    },
+  })
+  return parseApiResponse(CreditPaymentListResponseSchema, data)
 }

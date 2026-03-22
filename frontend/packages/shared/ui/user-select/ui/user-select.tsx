@@ -1,5 +1,5 @@
 import { Spinner } from '@shared/ui/spinner'
-import { useUserSelect } from '../model/use-user-select'
+import { useUserSelect, type UserSelectUserKind } from '../model/use-user-select'
 import '../style.css'
 
 export type UserSelectProps = {
@@ -7,9 +7,10 @@ export type UserSelectProps = {
   onChange: (userId: string) => void
   label?: string
   className?: string
+  userKind?: UserSelectUserKind
 }
 
-export const UserSelect = ({ value, onChange, label, className }: UserSelectProps) => {
+export const UserSelect = ({ value, onChange, label, className, userKind = 'client' }: UserSelectProps) => {
   const {
     searchQuery,
     setSearchQuery,
@@ -24,7 +25,7 @@ export const UserSelect = ({ value, onChange, label, className }: UserSelectProp
     handleToggle,
     clearSelection,
     page,
-  } = useUserSelect(value, onChange)
+  } = useUserSelect(value, onChange, userKind)
 
   return (
     <div className={`user-select-container ${className || ''}`} ref={containerRef}>

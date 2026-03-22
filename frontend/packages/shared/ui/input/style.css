@@ -41,3 +41,49 @@
   border-color: var(--error-color);
   box-shadow: var(--error-focus-shadow);
 }
+
+.input-suffix-wrap {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.input-suffix-wrap .input-input {
+  flex: 1;
+  min-width: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.input-suffix-wrap .input-input:focus {
+  z-index: 1;
+}
+
+.input-suffix {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 14px;
+  border: 1px solid var(--border-medium);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  background-color: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.input-suffix-wrap:focus-within .input-suffix {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.input-suffix-wrap .input-input.input-error + .input-suffix {
+  border-color: var(--error-color);
+}
+
+.input-suffix-wrap .input-input.input-error:focus + .input-suffix {
+  border-color: var(--error-color);
+  box-shadow: var(--error-focus-shadow);
+}

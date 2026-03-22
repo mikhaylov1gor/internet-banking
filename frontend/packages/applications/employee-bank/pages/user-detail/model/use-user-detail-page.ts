@@ -14,7 +14,7 @@ export const useUserDetailPage = () => {
   const [showRatingModal, setShowRatingModal] = useState(false)
 
   const { data: user, isLoading: userLoading, error: userError } = useUser(userId || null)
-  const { data: creditsResponse, isLoading: creditsLoading } = useCredits(
+  const { data: creditsResponse, isLoading: creditsLoading, isError: creditsLoadError } = useCredits(
     {
       client_id: user?.id || '',
       page,
@@ -51,6 +51,7 @@ export const useUserDetailPage = () => {
     userError,
     credits,
     creditsLoading,
+    creditsLoadError,
     page,
     setPage,
     limit,

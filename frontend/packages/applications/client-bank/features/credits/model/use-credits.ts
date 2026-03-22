@@ -2,10 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getCredits,
   getCreditById,
+  getCreditPayments,
   getClientCreditRating,
   issueCredit,
   repayCredit,
+  checkCreditAvailability,
   type GetCreditsParams,
+  type GetCreditPaymentsParams,
   type IssueCreditRequest,
   type RepayCreditRequest,
 } from '@shared/api/endpoints/credits'
@@ -43,6 +46,21 @@ export const useCredit = (creditId: string | null) => {
   })
 }
 
+export const useCreditPayments = (
+  creditId: string | null,
+  params: GetCreditPaymentsParams,
+  options?: { enabled?: boolean }
+) => {
+  return useQuery({
+    queryKey: ['credit-payments', creditId, params],
+    queryFn: () => {
+      if (!creditId) throw new Error('Credit ID is required')
+      return getCreditPayments(creditId, params)
+    },
+    enabled: !!creditId && options?.enabled !== false,
+  })
+}
+
 export const useIssueCredit = () => {
   const queryClient = useQueryClient()
 
@@ -64,9 +82,15 @@ export const useRepayCredit = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['credits'] })
       queryClient.invalidateQueries({ queryKey: ['credit', variables.creditId] })
+      queryClient.invalidateQueries({ queryKey: ['credit-payments', variables.creditId] })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })
 }
+
+export const useCheckCreditAvailability = () =>
+  useMutation({
+    mutationFn: (amount: number) => checkCreditAvailability(amount),
+  })
 
 

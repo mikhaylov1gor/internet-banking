@@ -5,6 +5,7 @@ import { Modal } from '@shared/ui/modal'
 import { Select } from '@shared/ui/select'
 import { DesktopPagination } from '@shared/ui/pagination'
 import { AccountCard } from '@shared/ui/account-card'
+import { getLoadDataErrorMessage } from '@shared/api'
 import { useAccountsPage } from '../model/use-accounts-page'
 import './style.css'
 
@@ -32,6 +33,7 @@ export const DesktopAccountsPage = () => {
     showHidden,
     setShowHidden,
     hiddenCount,
+    accountsLoadError,
   } = useAccountsPage()
 
   return (
@@ -71,11 +73,15 @@ export const DesktopAccountsPage = () => {
         </div>
       )}
 
-      {!isLoading && accounts && accounts.length === 0 && !showHidden && (
+      {!isLoading && accountsLoadError && (
+        <div className="empty error">{getLoadDataErrorMessage('счета')}</div>
+      )}
+
+      {!isLoading && !accountsLoadError && accounts && accounts.length === 0 && !showHidden && (
         <div className="empty">У вас пока нет счетов. Откройте первый счет!</div>
       )}
 
-      {!isLoading && accounts && accounts.length > 0 && (
+      {!isLoading && !accountsLoadError && accounts && accounts.length > 0 && (
         <>
           <div className="list desktop-list">
             {accounts.map((account) => (
@@ -85,7 +91,6 @@ export const DesktopAccountsPage = () => {
                 isHidden={hiddenAccountIds.includes(account.id)}
                 onToggleHidden={toggleHiddenAccount}
                 onClick={() => navigate(`/accounts/${account.id}`)}
-                shortenId={true}
               />
             ))}
           </div>

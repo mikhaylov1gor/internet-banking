@@ -2,8 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import {
   getCredits,
   getCreditById,
+  getCreditPayments,
   getClientCreditRating,
   type GetCreditsParams,
+  type GetCreditPaymentsParams,
 } from '@shared/api/endpoints/credits'
 
 export const useCredits = (params?: GetCreditsParams, options?: { enabled?: boolean }) => {
@@ -22,6 +24,21 @@ export const useCredit = (creditId: string | null) => {
       return getCreditById(creditId)
     },
     enabled: !!creditId,
+  })
+}
+
+export const useCreditPayments = (
+  creditId: string | null,
+  params: GetCreditPaymentsParams,
+  options?: { enabled?: boolean }
+) => {
+  return useQuery({
+    queryKey: ['credit-payments', creditId, params],
+    queryFn: () => {
+      if (!creditId) throw new Error('Credit ID is required')
+      return getCreditPayments(creditId, params)
+    },
+    enabled: !!creditId && options?.enabled !== false,
   })
 }
 

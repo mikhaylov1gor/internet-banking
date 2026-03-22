@@ -1,0 +1,50 @@
+.rub-deposit-preview {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-light);
+}
+
+.rub-deposit-preview__title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.rub-deposit-preview__loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.rub-deposit-preview__error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--error-color);
+}
+
+.rub-deposit-preview__body {
+  font-size: 0.875rem;
+  color: var(--text-default);
+}
+
+.rub-deposit-preview__line {
+  margin: 0 0 0.35rem 0;
+  line-height: 1.45;
+}
+
+.rub-deposit-preview__rate {
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.rub-deposit-preview__muted {
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}

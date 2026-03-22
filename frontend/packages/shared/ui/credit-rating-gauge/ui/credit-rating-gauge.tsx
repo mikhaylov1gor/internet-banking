@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import type { CreditRating } from '@shared/api/endpoints/credits'
+import { getLoadDataErrorMessage } from '@shared/api'
 import { Spinner } from '../../spinner'
 import {
   GAUGE_CX,
@@ -48,7 +49,7 @@ export const CreditRatingGauge = ({
   if (isError || !rating) {
     return (
       <div className={`credit-rating-gauge credit-rating-gauge--error ${className}`}>
-        <p className="credit-rating-gauge__error-text">Не удалось загрузить кредитный рейтинг</p>
+        <p className="credit-rating-gauge__error-text">{getLoadDataErrorMessage('кредитный рейтинг')}</p>
       </div>
     )
   }

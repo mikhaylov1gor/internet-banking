@@ -95,6 +95,30 @@
   gap: 0.5rem;
 }
 
+.account-card-sensitive-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  margin-bottom: 0.25rem;
+}
+
+.account-card-sensitive-header-row .account-card-id-line {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.account-card-id-line--in-sensitive {
+  margin-bottom: 0;
+}
+
+.account-card-sensitive-number {
+  min-width: 0;
+  transition: filter 0.25s ease;
+}
+
 .account-card-hide-btn {
   display: flex;
   align-items: center;

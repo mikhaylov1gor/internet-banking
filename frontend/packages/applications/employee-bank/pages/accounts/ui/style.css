@@ -1,6 +1,6 @@
 .accounts-page-container {
   padding: 1.5rem;
-  max-width: 1200px;
+  max-width: 56.25rem;
   margin: 0 auto;
   background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
   min-height: calc(100vh - 80px);
@@ -134,7 +134,7 @@
 
 .desktop-accounts-page {
   padding: 1.5rem;
-  max-width: 1200px;
+  max-width: 56.25rem;
   margin: 0 auto;
 }
 

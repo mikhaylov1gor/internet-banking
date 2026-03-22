@@ -5,6 +5,7 @@ const AccountStatusSchema = z.enum(['active', 'closed'])
 
 export const AccountSchema = z.object({
   id: z.string(),
+  account_number: z.string(),
   client_id: z.string(),
   balance: z.number(),
   currency: CurrencySchema.nullish(),
@@ -13,6 +14,14 @@ export const AccountSchema = z.object({
   closed_at: z.string().nullish(),
 })
 export type Account = z.infer<typeof AccountSchema>
+
+export const AccountBasicSchema = z.object({
+  id: z.string(),
+  account_number: z.string(),
+  currency: z.string(),
+  status: z.string(),
+})
+export type AccountBasic = z.infer<typeof AccountBasicSchema>
 
 export const OperationSchema = z.object({
   id: z.string(),
@@ -63,7 +72,8 @@ export type ChangeBalanceRequest = {
 
 export type TransferRequest = {
   from_account_id: string
-  to_account_id: string
+  to_account_id?: string
+  to_account_number?: string
   amount: number
 }
 
@@ -72,3 +82,15 @@ export const TransferResponseSchema = z.object({
   credit_operation: OperationSchema,
 })
 export type TransferResponse = z.infer<typeof TransferResponseSchema>
+
+export const TransferPreviewResponseSchema = z.object({
+  from_account_id: z.string(),
+  to_account_id: z.string(),
+  to_account_number: z.string().optional(),
+  from_currency: CurrencySchema,
+  to_currency: CurrencySchema,
+  debit_amount: z.number(),
+  credit_amount: z.number(),
+  rate: z.number(),
+})
+export type TransferPreviewResponse = z.infer<typeof TransferPreviewResponseSchema>

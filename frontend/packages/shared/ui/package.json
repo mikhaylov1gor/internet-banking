@@ -14,6 +14,7 @@
     "./input": "./input/index.ts",
     "./modal": "./modal/index.ts",
     "./pagination": "./pagination/index.ts",
+    "./rub-deposit-preview": "./rub-deposit-preview/index.ts",
     "./password-input": "./password-input/index.ts",
     "./phone-input": "./phone-input/index.ts",
     "./select": "./select/index.ts",

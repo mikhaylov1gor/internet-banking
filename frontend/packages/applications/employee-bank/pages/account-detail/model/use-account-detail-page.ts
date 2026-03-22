@@ -22,7 +22,6 @@ export const useAccountDetailPage = () => {
     data: operationsData,
     isLoading: operationsLoading,
     isError: operationsError,
-    error: operationsFetchError,
   } = useAccountOperations(accountId || null, {
     page: operationsPage,
     page_size: OPERATIONS_PAGE_SIZE,
@@ -42,7 +41,6 @@ export const useAccountDetailPage = () => {
     operations,
     operationsLoading,
     operationsError,
-    operationsFetchError,
     operationsPage,
     operationsTotalPages,
     goPrevOperationsPage,

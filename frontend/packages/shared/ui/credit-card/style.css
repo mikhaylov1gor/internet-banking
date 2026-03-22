@@ -76,6 +76,10 @@
   color: var(--status-paid-secondary);
 }
 
+.credit-card-status.overdue {
+  color: var(--status-error, #c62828);
+}
+
 .credit-card-details {
   display: flex;
   flex-direction: column;

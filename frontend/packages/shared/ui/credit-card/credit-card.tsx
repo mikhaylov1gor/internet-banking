@@ -1,4 +1,5 @@
 import type { Credit } from '@shared/api/endpoints/credits'
+import { formatShortId } from '@shared/utils/format-short-id'
 import { CopyableId } from '../copyable-id'
 import './style.css'
 
@@ -12,10 +13,10 @@ export type CreditCardProps = {
 export const CreditCard = ({
   credit,
   onClick,
-  shortenId = false,
+  shortenId = true,
   className = '',
 }: CreditCardProps) => {
-  const displayId = shortenId ? `${credit.id.slice(0, 8)}...` : credit.id
+  const displayId = shortenId ? formatShortId(credit.id) : credit.id
 
   return (
     <div
@@ -36,16 +37,36 @@ export const CreditCard = ({
           </CopyableId>
         </div>
         <div className="credit-card-details">
-          <span>Сумма: {credit.amount.toLocaleString()} ₽</span>
+          <span>
+            Сумма:{' '}
+            {credit.amount.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ₽
+          </span>
           {credit.status === 'active' && (
             <>
-              <span>Остаток: {Number(credit.remaining).toFixed(2)} ₽</span>
-              <span>Ежедневный платеж: {Math.round(credit.daily_payment).toLocaleString()} ₽</span>
+              <span>
+                Остаток:{' '}
+                {Number(credit.remaining).toLocaleString('ru-RU', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{' '}
+                ₽
+              </span>
+              <span>
+                Ежедневный платеж:{' '}
+                {Math.round(credit.daily_payment).toLocaleString('ru-RU', {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}{' '}
+                ₽
+              </span>
             </>
           )}
           <span>Ставка: {(credit.rate * 100).toFixed(2)}%</span>
-          <span className={`credit-card-status ${credit.status === 'active' ? 'active' : 'paid'}`}>
-            Статус: {credit.status === 'active' ? 'Активен' : 'Погашен'}
+          <span
+            className={`credit-card-status ${credit.status === 'active' ? 'active' : credit.status === 'overdue' ? 'overdue' : 'paid'}`}
+          >
+            Статус:{' '}
+            {credit.status === 'active' ? 'Активен' : credit.status === 'overdue' ? 'Просрочен' : 'Погашен'}
           </span>
         </div>
       </div>

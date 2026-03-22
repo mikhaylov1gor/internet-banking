@@ -1,6 +1,6 @@
 .credits-page-container {
   padding: 2rem 1.5rem 1.5rem 1.5rem;
-  max-width: 1200px;
+  max-width: 56.25rem;
   margin: 0 auto;
   background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
   min-height: calc(100vh - 80px);
@@ -18,8 +18,31 @@
 .credits-page-header-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
+}
+
+.credits-page-take-credit-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: min(100%, 20rem);
+}
+
+.credits-page-take-credit-unavailable {
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface-alt);
+  box-sizing: border-box;
 }
 
 .credits-rating-modal-body {
@@ -163,4 +186,76 @@
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+.issue-credit-currency-note {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.issue-credit-preview {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-light);
+}
+
+.issue-credit-preview-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.issue-credit-preview-fx-notice {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.issue-credit-preview-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.issue-credit-preview-error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--error-color);
+}
+
+.issue-credit-preview-body {
+  font-size: 0.875rem;
+  color: var(--text-default);
+}
+
+.issue-credit-preview-line {
+  margin: 0 0 0.35rem 0;
+  line-height: 1.45;
+}
+
+.issue-credit-preview-rate {
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.issue-credit-preview-disclaimer {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.issue-credit-availability-loading {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
