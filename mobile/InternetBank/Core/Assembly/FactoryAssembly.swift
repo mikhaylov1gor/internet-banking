@@ -25,6 +25,7 @@ final class FactoryAssembly {
         CoordinatorFactory(
             viewFactory: viewFactory,
             appSettingsRepository: repositoryAssembly.appSettingsRepository,
-            clientAppSettings: repositoryAssembly.clientAppSettings)
+            clientAppSettings: repositoryAssembly.clientAppSettings,
+            accountRepository: repositoryAssembly.accountRepository)
     }
 }

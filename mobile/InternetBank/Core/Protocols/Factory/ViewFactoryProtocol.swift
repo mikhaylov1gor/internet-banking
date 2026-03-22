@@ -13,13 +13,16 @@ protocol ViewFactoryProtocol: AnyObject {
         account: Account,
         refreshTrigger: Int,
         onDeposit: @escaping () -> Void,
+        onTopUpFromOtherAccount: @escaping () -> Void,
         onWithdraw: @escaping () -> Void,
-        onTransfer: @escaping () -> Void,
+        onOpenTransferTabFromHere: @escaping () -> Void,
         onHistory: @escaping () -> Void,
         onCloseAccount: @escaping () -> Void) -> AccountDetailView
     func makeDepositView(account: Account, onDismiss: @escaping () -> Void) -> DepositView
     func makeWithdrawView(account: Account, onDismiss: @escaping () -> Void) -> WithdrawView
-    func makeTransferView(account: Account, clientId: String, onDismiss: @escaping () -> Void) -> TransferView
+    func makeStandaloneTransferViewModel(
+        clientId: String,
+        prefillStore: TransferPrefillStore) -> StandaloneTransferViewModel
     func makeOperationHistoryView(account: Account) -> OperationHistoryView
     func makeOpenAccountView(clientId: String, onDismiss: @escaping () -> Void) -> OpenAccountView
     func makeCloseAccountView(account: Account, onDismiss: @escaping () -> Void) -> CloseAccountView
@@ -33,7 +36,8 @@ protocol ViewFactoryProtocol: AnyObject {
     func makeCreditDetailView(
         credit: Credit,
         clientId: String,
-        onRepay: @escaping () -> Void) -> CreditDetailView
+        onRepay: @escaping () -> Void,
+        onOpenLinkedAccount: @escaping (String) -> Void) -> CreditDetailView
     func makeProfileView(
         onLogout: @escaping () -> Void,
         onAppSettingsChanged: @escaping () -> Void) -> ProfileView

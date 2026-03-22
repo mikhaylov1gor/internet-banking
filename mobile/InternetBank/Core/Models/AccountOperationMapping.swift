@@ -8,6 +8,8 @@ enum AccountOperationMapping {
             accountId: dto.accountId,
             type: type,
             amount: Decimal(dto.amount),
-            date: ISO8601DateFormatter().date(from: dto.createdAt) ?? Date())
+            date: ISO8601DateFormatter().date(from: dto.createdAt) ?? Date(),
+            balanceAfter: dto.balanceAfter.map { Decimal($0) },
+            description: dto.description)
     }
 }

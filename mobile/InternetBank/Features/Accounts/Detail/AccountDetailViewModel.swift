@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class AccountDetailViewModel {
     var account: Account
+    var otherActiveAccounts: [Account] = []
     var isLoading = false
     var errorMessage: String?
 
@@ -62,9 +63,18 @@ final class AccountDetailViewModel {
             if let updated = try await accountRepository.getAccount(id: account.id) {
                 account = updated
             }
+            await refreshOtherActiveAccounts()
             errorMessage = nil
         } catch {
             errorMessage = error.displayMessage
         }
+    }
+
+    private func refreshOtherActiveAccounts() async {
+        guard let all = try? await accountRepository.getAccounts(clientId: account.clientId) else {
+            otherActiveAccounts = []
+            return
+        }
+        otherActiveAccounts = all.filter { $0.id != account.id && $0.status == "active" }
     }
 }

@@ -11,6 +11,16 @@ struct Credit: Identifiable, Hashable {
     let tariffName: String?
     let rate: Decimal?
     let status: String?
+
+    var statusDisplayTitle: String {
+        switch (status ?? "").lowercased() {
+            case "active": return "Активен"
+            case "paid": return "Погашен"
+            case "overdue": return "Просрочен"
+            case "": return "—"
+            default: return status ?? "—"
+        }
+    }
 }
 
 struct CreditTariff: Identifiable, Hashable {

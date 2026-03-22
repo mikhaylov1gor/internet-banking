@@ -15,4 +15,12 @@ struct Account: Identifiable, Hashable {
             default: return "₽"
         }
     }
+
+    var statusDisplayTitle: String {
+        switch status.lowercased() {
+            case "active": return "Активен"
+            case "closed": return "Закрыт"
+            default: return status
+        }
+    }
 }

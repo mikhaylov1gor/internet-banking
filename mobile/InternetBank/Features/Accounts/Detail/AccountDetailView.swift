@@ -4,10 +4,15 @@ struct AccountDetailView: View {
     @Bindable var viewModel: AccountDetailViewModel
     var refreshTrigger: Int
     var onDeposit: () -> Void
+    var onTopUpFromOtherAccount: () -> Void
     var onWithdraw: () -> Void
-    var onTransfer: () -> Void
+    var onOpenTransferTabFromHere: () -> Void
     var onHistory: () -> Void
     var onCloseAccount: () -> Void
+
+    private var canCloseAccount: Bool {
+        viewModel.account.balance == 0 && viewModel.account.status == "active"
+    }
 
     var body: some View {
         List {
@@ -18,11 +23,26 @@ struct AccountDetailView: View {
                     .listRowSeparator(.hidden, edges: .all)
             }
             Section {
-                Button("Внести деньги") { onDeposit() }
-                Button("Снять деньги") { onWithdraw() }
-                Button("Перевод на другой счёт") { onTransfer() }
-                Button("История операций") { onHistory() }
-                Button("Закрыть счёт", role: .destructive) { onCloseAccount() }
+                CopyableTruncatedIdRow(title: "Счёт", uuid: viewModel.account.id)
+                LabeledContent("Статус") {
+                    Text(viewModel.account.statusDisplayTitle)
+                }
+                Text("Открыт: \(viewModel.account.openedAt.formatted(date: .numeric, time: .omitted))")
+                    .foregroundStyle(.secondary)
+            }
+            if viewModel.account.status == "active" {
+                Section {
+                    Button("Пополнить счёт", action: onDeposit)
+                    Button("Пополнить с другого счёта", action: onTopUpFromOtherAccount)
+                        .disabled(viewModel.otherActiveAccounts.isEmpty)
+                    Button("Снять средства", action: onWithdraw)
+                    Button("Перевести", action: onOpenTransferTabFromHere)
+                    Button("Закрыть счёт", role: .destructive, action: onCloseAccount)
+                        .disabled(!canCloseAccount)
+                }
+            }
+            Section {
+                Button("История операций", action: onHistory)
             }
         }
         .navigationTitle("Счёт")
@@ -53,8 +73,9 @@ struct AccountDetailView: View {
                 account: account),
             refreshTrigger: 0,
             onDeposit: {},
+            onTopUpFromOtherAccount: {},
             onWithdraw: {},
-            onTransfer: {},
+            onOpenTransferTabFromHere: {},
             onHistory: {},
             onCloseAccount: {})
     }

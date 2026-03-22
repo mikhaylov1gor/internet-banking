@@ -6,7 +6,7 @@ protocol ViewModelFactoryProtocol: AnyObject {
     func makeAccountDetailViewModel(account: Account) -> AccountDetailViewModel
     func makeDepositViewModel(account: Account) -> DepositViewModel
     func makeWithdrawViewModel(account: Account) -> WithdrawViewModel
-    func makeTransferViewModel(account: Account, clientId: String) -> TransferViewModel
+    func makeStandaloneTransferViewModel(clientId: String, prefillStore: TransferPrefillStore) -> StandaloneTransferViewModel
     func makeOperationHistoryViewModel(account: Account) -> OperationHistoryViewModel
     func makeOpenAccountViewModel(clientId: String) -> OpenAccountViewModel
     func makeCloseAccountViewModel(account: Account) -> CloseAccountViewModel

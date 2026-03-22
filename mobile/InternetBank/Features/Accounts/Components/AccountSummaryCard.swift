@@ -20,6 +20,9 @@ struct AccountSummaryCard: View {
                 Text(account.currency)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                Text(account.statusDisplayTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 

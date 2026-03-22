@@ -6,6 +6,10 @@ final class CreditsListViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    var creditRating: CreditRatingDTO?
+    var isLoadingRating = false
+    var ratingError: String?
+
     private let creditRepository: CreditRepositoryProtocol
     private let clientId: String
 
@@ -22,5 +26,17 @@ final class CreditsListViewModel {
             errorMessage = error.displayMessage
         }
         isLoading = false
+    }
+
+    func loadCreditRating() async {
+        isLoadingRating = true
+        ratingError = nil
+        defer { isLoadingRating = false }
+        do {
+            creditRating = try await creditRepository.getClientCreditRating(clientId: clientId)
+        } catch {
+            ratingError = error.displayMessage
+            creditRating = nil
+        }
     }
 }

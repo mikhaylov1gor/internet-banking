@@ -6,6 +6,7 @@ struct CreditsCoordinatorView: View {
     @Binding var path: NavigationPath
     @Binding var sheetItem: SheetItem?
     let creditsRefreshTrigger: Int
+    let onOpenLinkedAccount: (String) -> Void
 
     var body: some View {
         viewFactory.makeCreditsListView(
@@ -25,7 +26,8 @@ struct CreditsCoordinatorView: View {
                             clientId: clientId,
                             onRepay: {
                                 sheetItem = .repayCredit(credit)
-                            })
+                            },
+                            onOpenLinkedAccount: onOpenLinkedAccount)
                 }
             }
     }

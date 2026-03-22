@@ -3,65 +3,53 @@ import SwiftUI
 struct CreditDetailView: View {
     @Bindable var viewModel: CreditDetailViewModel
     var onRepay: () -> Void
+    var onOpenLinkedAccount: (String) -> Void
+
+    private var isActiveCredit: Bool {
+        (viewModel.credit.status ?? "active") == "active"
+    }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
-                if let error = viewModel.errorMessage {
+        List {
+            if let error = viewModel.errorMessage {
+                Section {
                     Text(error)
                         .foregroundStyle(.red)
                 }
-                Group {
-                    Text("Сумма: \(viewModel.credit.amount.formattedAmount) ₽")
-                    Text("Остаток: \(viewModel.credit.remainingAmount.formattedAmount) ₽")
-                    if let rate = viewModel.credit.rate {
-                        Text("Ставка: \(rate.formattedAmount)% годовых")
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                if viewModel.isLoadingRating {
-                    ProgressView()
-                } else if let r = viewModel.rating {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Кредитный рейтинг")
-                            .font(.headline)
-                        Text("Балл: \(r.score)")
-                        Text("Риск: \(r.riskLevel)")
-                        Text("Просрочки: \(r.overdueCount), на сумму \(Decimal(r.overdueAmount).formattedAmount) ₽")
-                    }
-                    if let status = viewModel.credit.status {
-                        Text("Статус: \(status)")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                Button("Загрузить рейтинг") {
-                    Task { await viewModel.loadRating() }
-                }
-
-                if viewModel.isLoadingOverdue {
-                    ProgressView()
-                } else if let o = viewModel.overdue {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Просрочка")
-                            .font(.headline)
-                        Text("Сумма просрочки: \(Decimal(o.overdueAmount).formattedAmount) ₽")
-                        Text("Платежей с просрочкой: \(o.overduePayments)")
-                        Text("Ожидалось: \(Decimal(o.expectedPaid).formattedAmount) ₽")
-                        Text("Фактически: \(Decimal(o.actualPaid).formattedAmount) ₽")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                Button("Проверить просрочку по кредиту") {
-                    Task { await viewModel.loadOverdue() }
-                }
-
-                Button("Погасить кредит", action: onRepay)
-                    .buttonStyle(.borderedProminent)
             }
-            .padding()
+            Section {
+                CopyableTruncatedIdRow(title: "Кредит", uuid: viewModel.credit.id)
+            }
+            Section {
+                LabeledContent("Сумма") {
+                    Text("\(viewModel.credit.amount.formattedAmount) ₽")
+                }
+                if isActiveCredit {
+                    LabeledContent("Остаток") {
+                        Text("\(viewModel.credit.remainingAmount.formattedAmount) ₽")
+                    }
+                }
+                if let rate = viewModel.credit.rate {
+                    LabeledContent("Процентная ставка") {
+                        Text("\(rate.formattedAmount)%")
+                    }
+                }
+                LabeledContent("Статус") {
+                    Text(viewModel.credit.statusDisplayTitle)
+                }
+                LabeledContent("Выдан") {
+                    Text(viewModel.credit.issuedAt.formatted(date: .numeric, time: .omitted))
+                }
+                CopyableTruncatedIdRow(title: "Счёт", uuid: viewModel.credit.accountId)
+                Button("Открыть счёт") {
+                    onOpenLinkedAccount(viewModel.credit.accountId)
+                }
+            }
+            if isActiveCredit {
+                Section {
+                    Button("Погасить кредит", action: onRepay)
+                }
+            }
         }
         .navigationTitle("Кредит")
         .refreshable {
@@ -90,6 +78,7 @@ struct CreditDetailView: View {
             viewModel: PreviewDependencies.factory.viewModelFactory.makeCreditDetailViewModel(
                 credit: credit,
                 clientId: "00000000-0000-0000-0000-000000000002"),
-            onRepay: {})
+            onRepay: {},
+            onOpenLinkedAccount: { _ in })
     }
 }

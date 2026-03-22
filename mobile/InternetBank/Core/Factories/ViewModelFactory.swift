@@ -52,11 +52,11 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
         WithdrawViewModel(accountRepository: accountRepository, account: account)
     }
 
-    func makeTransferViewModel(account: Account, clientId: String) -> TransferViewModel {
-        TransferViewModel(
+    func makeStandaloneTransferViewModel(clientId: String, prefillStore: TransferPrefillStore) -> StandaloneTransferViewModel {
+        StandaloneTransferViewModel(
             accountRepository: accountRepository,
-            sourceAccount: account,
-            clientId: clientId)
+            clientId: clientId,
+            prefillStore: prefillStore)
     }
 
     func makeOperationHistoryViewModel(account: Account) -> OperationHistoryViewModel {
@@ -92,11 +92,10 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
             credit: credit)
     }
 
-    func makeCreditDetailViewModel(credit: Credit, clientId: String) -> CreditDetailViewModel {
+    func makeCreditDetailViewModel(credit: Credit, clientId _: String) -> CreditDetailViewModel {
         CreditDetailViewModel(
             creditRepository: creditRepository,
-            credit: credit,
-            clientId: clientId)
+            credit: credit)
     }
 
     func makeProfileViewModel(onAppSettingsChanged: @escaping () -> Void) -> ProfileViewModel {
