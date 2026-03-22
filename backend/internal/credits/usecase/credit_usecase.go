@@ -30,6 +30,7 @@ type CreditRepository interface {
 	Create(c *entity.Credit) error
 	GetByID(id uuid.UUID) (*entity.Credit, error)
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
+	ListActive() ([]*entity.Credit, error)
 	Update(c *entity.Credit) error
 	Delete(id uuid.UUID) error
 	AccrueInterest() error
@@ -87,6 +88,14 @@ type CreditAvailability struct {
 	MasterBalance   float64 `json:"master_balance"`
 	MasterCurrency  string  `json:"master_currency"`
 	Shortfall       float64 `json:"shortfall,omitempty"`
+}
+
+type AutoRepayResult struct {
+	CheckedCredits   int
+	ChargedCredits   int
+	SkippedCredits   int
+	FailedCredits    int
+	TotalRepayAmount float64
 }
 
 func NewCreditUseCase(
@@ -376,6 +385,50 @@ func (uc *CreditUseCase) resolveDebitForTargetCredit(fromAccountID, toAccountID 
 
 func (uc *CreditUseCase) AccrueInterest() error {
 	return uc.creditRepo.AccrueInterest()
+}
+
+// RunDailyAutoRepay запускает автосписание по активным кредитам на сумму обязательных платежей к текущей дате.
+func (uc *CreditUseCase) RunDailyAutoRepay() (*AutoRepayResult, error) {
+	result := &AutoRepayResult{}
+	credits, err := uc.creditRepo.ListActive()
+	if err != nil {
+		return nil, err
+	}
+	result.CheckedCredits = len(credits)
+	if len(credits) == 0 {
+		return result, nil
+	}
+	internalToken, err := uc.getInternalToken()
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range credits {
+		if c == nil || c.TermDays <= 0 {
+			result.SkippedCredits++
+			continue
+		}
+		od, odErr := uc.getOverdueDaily(c)
+		if odErr != nil {
+			result.FailedCredits++
+			continue
+		}
+		toRepay := round2(od.OverdueAmount)
+		if toRepay < 0.01 {
+			result.SkippedCredits++
+			continue
+		}
+		if _, repErr := uc.Repay(c.ID, c.AccountID, toRepay, c.ClientID, internalToken); repErr != nil {
+			if errors.Is(repErr, ErrInsufficientFunds) || errors.Is(repErr, ErrAccountInactive) {
+				result.SkippedCredits++
+				continue
+			}
+			result.FailedCredits++
+			continue
+		}
+		result.ChargedCredits++
+		result.TotalRepayAmount = round2(result.TotalRepayAmount + toRepay)
+	}
+	return result, nil
 }
 
 func (uc *CreditUseCase) GetOverdue(creditID uuid.UUID) (*CreditOverdue, error) {
