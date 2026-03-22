@@ -34,6 +34,10 @@ services:
       FX_BASE_URL: "${FX_BASE_URL:-https://open.er-api.com/v6/latest}"
       RABBITMQ_URL: "${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}"
       RABBITMQ_QUEUE: "${RABBITMQ_QUEUE:-core.operations}"
+      MASTER_ACCOUNT_ID: "${MASTER_ACCOUNT_ID:-00000000-0000-0000-0000-000000000001}"
+      BANK_SERVICE_USER_ID: "${BANK_SERVICE_USER_ID:-11111111-1111-1111-1111-111111111111}"
+      MASTER_ACCOUNT_INITIAL_BALANCE: "${MASTER_ACCOUNT_INITIAL_BALANCE:-1000000000}"
+      MASTER_ACCOUNT_CURRENCY: "${MASTER_ACCOUNT_CURRENCY:-RUB}"
     depends_on:
       postgres:
         condition: service_healthy

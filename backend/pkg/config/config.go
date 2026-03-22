@@ -12,10 +12,14 @@ type Config struct {
 
 type CoreConfig struct {
 	Config
-	JWTSecret   string
-	FXBaseURL   string
-	RabbitURL   string
-	RabbitQueue string
+	JWTSecret            string
+	FXBaseURL            string
+	RabbitURL            string
+	RabbitQueue          string
+	MasterAccountID      string
+	BankServiceUserID    string
+	MasterInitialBalance float64
+	MasterCurrency       string
 }
 
 func LoadCore() CoreConfig {
@@ -43,15 +47,37 @@ func LoadCore() CoreConfig {
 	if rabbitQueue == "" {
 		rabbitQueue = "core.operations"
 	}
+	masterAccountID := os.Getenv("MASTER_ACCOUNT_ID")
+	if masterAccountID == "" {
+		masterAccountID = "00000000-0000-0000-0000-000000000001"
+	}
+	bankServiceUserID := os.Getenv("BANK_SERVICE_USER_ID")
+	if bankServiceUserID == "" {
+		bankServiceUserID = "11111111-1111-1111-1111-111111111111"
+	}
+	masterInitialBalance := 1_000_000_000.0
+	if s := os.Getenv("MASTER_ACCOUNT_INITIAL_BALANCE"); s != "" {
+		if v, err := strconv.ParseFloat(s, 64); err == nil {
+			masterInitialBalance = v
+		}
+	}
+	masterCurrency := os.Getenv("MASTER_ACCOUNT_CURRENCY")
+	if masterCurrency == "" {
+		masterCurrency = "RUB"
+	}
 	return CoreConfig{
 		Config: Config{
 			Port: port,
 			DSN:  dsn,
 		},
-		JWTSecret:   jwtSecret,
-		FXBaseURL:   fxBaseURL,
-		RabbitURL:   rabbitURL,
-		RabbitQueue: rabbitQueue,
+		JWTSecret:            jwtSecret,
+		FXBaseURL:            fxBaseURL,
+		RabbitURL:            rabbitURL,
+		RabbitQueue:          rabbitQueue,
+		MasterAccountID:      masterAccountID,
+		BankServiceUserID:    bankServiceUserID,
+		MasterInitialBalance: masterInitialBalance,
+		MasterCurrency:       masterCurrency,
 	}
 }
 
@@ -131,6 +157,9 @@ func LoadCredits() CreditsConfig {
 		coreURL = "http://localhost:8001"
 	}
 	masterAccountID := os.Getenv("MASTER_ACCOUNT_ID")
+	if masterAccountID == "" {
+		masterAccountID = "00000000-0000-0000-0000-000000000001"
+	}
 	bankServiceUserID := os.Getenv("BANK_SERVICE_USER_ID")
 	if bankServiceUserID == "" {
 		bankServiceUserID = "11111111-1111-1111-1111-111111111111"

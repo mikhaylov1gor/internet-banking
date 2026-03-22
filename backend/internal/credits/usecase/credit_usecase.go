@@ -140,13 +140,15 @@ func (uc *CreditUseCase) Issue(clientID, accountID, tariffID uuid.UUID, amount f
 	if err := uc.creditRepo.Create(c); err != nil {
 		return nil, err
 	}
+	rollbackCredit := func() { _ = uc.creditRepo.Delete(c.ID) }
 	if uc.coreClient != nil {
 		internalToken, err := uc.getInternalToken()
 		if err != nil {
+			rollbackCredit()
 			return nil, err
 		}
 		if err := uc.coreClient.Transfer(uc.masterAccountID, accountID, amount, internalToken); err != nil {
-			_ = uc.creditRepo.Update(c)
+			rollbackCredit()
 			return nil, err
 		}
 	}

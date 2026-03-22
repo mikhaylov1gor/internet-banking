@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"internet-bank/internal/core/bootstrap"
 	"internet-bank/internal/core/broker"
 	"internet-bank/internal/core/client"
 	"internet-bank/internal/core/delivery"
@@ -26,6 +27,9 @@ func main() {
 	}
 	if err := db.AutoMigrate(&entity.Account{}, &entity.Operation{}); err != nil {
 		log.Fatalf("migrate: %v", err)
+	}
+	if err := bootstrap.EnsureMasterAccount(db, cfg); err != nil {
+		log.Fatalf("master account: %v", err)
 	}
 
 	accRepo := repository.NewAccountRepository(db)

@@ -102,14 +102,18 @@ docker compose up -d --build
 | `FX_BASE_URL` | Базовый URL API курсов валют | https://api.frankfurter.app |
 | `RABBITMQ_URL` | URL брокера RabbitMQ | amqp://guest:guest@rabbitmq:5672/ |
 | `RABBITMQ_QUEUE` | Очередь операций Core | core.operations |
+| `MASTER_ACCOUNT_ID` | UUID мастер-счёта (создаётся при старте Core, если ещё нет) | 00000000-0000-0000-0000-000000000001 |
+| `BANK_SERVICE_USER_ID` | UUID «владельца» мастер-счёта в Core (client_id счёта) | 11111111-1111-1111-1111-111111111111 |
+| `MASTER_ACCOUNT_INITIAL_BALANCE` | Начальный баланс мастер-счёта при первом создании | 1000000000 |
+| `MASTER_ACCOUNT_CURRENCY` | Валюта мастер-счёта | RUB |
 | `USERS_PORT` | Порт Users | 8002 |
 | `USERS_DSN` | DSN для Users | ... dbname=users ... |
 | `SSO_CLIENTS` | Реестр OAuth-клиентов в формате `client_id|role|redirect_uri` через запятую (`role`: `client`, `employee`, `any`) | client-app\|any\|http://localhost:3000/callback,employee-app\|any\|http://localhost:3001/callback |
 | `SSO_FORCE_SECURE_COOKIE` | Принудительно выставлять `Secure` для SSO-cookie | false |
 | `CREDITS_PORT` | Порт Credits | 8003 |
 | `CREDITS_DSN` | DSN для Credits | ... dbname=credits ... |
-| `MASTER_ACCOUNT_ID` | UUID мастер-счёта банка | 00000000-0000-0000-0000-000000000001 |
-| `BANK_SERVICE_USER_ID` | UUID служебного пользователя банка для межсервисной авторизации | 11111111-1111-1111-1111-111111111111 |
+| `MASTER_ACCOUNT_ID` | Должен совпадать с Core — тот же UUID мастер-счёта | 00000000-0000-0000-0000-000000000001 |
+| `BANK_SERVICE_USER_ID` | Должен совпадать с Core — для внутреннего JWT | 11111111-1111-1111-1111-111111111111 |
 | `INTERNAL_TOKEN_TTL_MIN` | TTL внутреннего service-to-service access token (мин) | 15 |
 | `APP_SETTINGS_PORT` | Порт App Settings | 8004 |
 | `APP_SETTINGS_DSN` | DSN для App Settings | ... dbname=app_settings ... |
@@ -146,10 +150,10 @@ docker compose up -d --build
 
 ## Мастер-счёт для кредитов
 
-- При выдаче кредита деньги переводятся с мастер-счёта банка на счёт клиента.
-- При погашении кредита деньги возвращаются со счёта клиента на мастер-счёт банка.
-- Перевод выполняется через core `/accounts/transfer`, поэтому мастер-счёт также защищён от ухода в минус.
-- Перед запуском укажите `MASTER_ACCOUNT_ID` существующего счёта банка.
+- При старте **Core** при необходимости создаётся счёт с `MASTER_ACCOUNT_ID` (номер `9999999999999999`), баланс — `MASTER_ACCOUNT_INITIAL_BALANCE`.
+- Сервис **Credits** должен использовать те же `MASTER_ACCOUNT_ID` и `BANK_SERVICE_USER_ID`, что и Core (см. `docker-compose.yml`).
+- При выдаче кредита деньги переводятся с мастер-счёта на счёт клиента; при погашении — обратно.
+- Перевод идёт через `/accounts/transfer`, баланс мастер-счёта не уходит в минус.
 
 ## Первый запуск
 
