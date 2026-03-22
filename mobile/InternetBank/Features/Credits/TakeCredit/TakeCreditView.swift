@@ -7,35 +7,50 @@ struct TakeCreditView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Picker("Тариф", selection: $viewModel.selectedTariffId) {
-                    ForEach(viewModel.tariffs) { tariff in
-                        Text("\(tariff.name) — \(tariff.rate)%")
-                            .tag(tariff.id)
+                Section {
+                    Picker("Тариф", selection: $viewModel.selectedTariffId) {
+                        ForEach(viewModel.tariffs) { tariff in
+                            Text("\(tariff.name) — \(tariff.displayAnnualPercent.formattedAmount)%")
+                                .tag(tariff.id)
+                        }
                     }
-                }
-                .pickerStyle(.navigationLink)
-                Picker("Счёт зачисления", selection: $viewModel.selectedAccountId) {
-                    ForEach(viewModel.accounts) { account in
-                        Text("\(account.displayAccountNumber) · \(account.balance.formattedAmount) \(account.currencySymbol)")
-                            .tag(account.id)
+                    .pickerStyle(.navigationLink)
+                    Picker("Счёт зачисления", selection: $viewModel.selectedAccountId) {
+                        ForEach(viewModel.accounts) { account in
+                            Text("\(account.displayAccountNumber) · \(account.balance.formattedAmount) \(account.currencySymbol)")
+                                .tag(account.id)
+                        }
                     }
+                    .pickerStyle(.menu)
                 }
-                .pickerStyle(.navigationLink)
-                TextField("Сумма", text: $viewModel.amount)
-                    .keyboardType(.decimalPad)
+                Section {
+                    TextField("Сумма", text: $viewModel.amount)
+                        .keyboardType(.decimalPad)
+                    TextField("Срок, мес.", text: $viewModel.termMonthsText)
+                        .keyboardType(.numberPad)
+                } footer: {
+                    Text("Срок кредита от 1 до \(CreditTermLimits.maxMonths) месяцев.")
+                        .font(.footnote)
+                }
                 if let error = viewModel.errorMessage {
-                    Text(error)
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Section {
+                        Text(error)
+                            .foregroundStyle(ClientBankTheme.statusOverdue)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                Button("Оформить кредит") {
-                    Task { await viewModel.takeCredit() }
+                Section {
+                    Button("Оформить кредит") {
+                        Task { await viewModel.takeCredit() }
+                    }
+                    .disabled(viewModel.isLoading)
                 }
-                .disabled(viewModel.isLoading)
             }
             .navigationTitle("Взять кредит")
+            .navigationBarTitleDisplayMode(.inline)
+            .tint(ClientBankTheme.primaryStart)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Отмена") { onDismiss() }
@@ -46,4 +61,11 @@ struct TakeCreditView: View {
             }
         }
     }
+}
+
+#Preview {
+    TakeCreditView(
+        viewModel: PreviewDependencies.factory.viewModelFactory.makeTakeCreditViewModel(
+            clientId: "00000000-0000-0000-0000-000000000002"),
+        onDismiss: {})
 }

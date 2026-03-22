@@ -23,15 +23,20 @@ struct AccountDetailView: View {
                     .listRowSeparator(.hidden, edges: .all)
             }
             Section {
-                CopyableValueRow(
-                    title: "Номер счёта",
-                    value: viewModel.account.displayAccountNumber,
-                    copyValue: viewModel.account.clipboardAccountReference)
-                LabeledContent("Статус") {
+                LabeledContent {
                     Text(viewModel.account.statusDisplayTitle)
                         .multilineTextAlignment(.trailing)
+                        .foregroundStyle(
+                            viewModel.account.status.lowercased() == "active"
+                                ? ClientBankTheme.statusActive
+                                : ClientBankTheme.statusClosed)
+                        .fontWeight(.medium)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .fixedSize(horizontal: false, vertical: true)
+                } label: {
+                    Text("Статус")
+                        .foregroundStyle(ClientBankTheme.textSecondary)
+                        .fontWeight(.semibold)
                 }
                 Text("Открыт: \(viewModel.account.openedAt.formatted(date: .numeric, time: .omitted))")
                     .foregroundStyle(.secondary)
@@ -58,7 +63,7 @@ struct AccountDetailView: View {
         .refreshable {
             await viewModel.refresh()
         }
-        .task(id: refreshTrigger) {
+        .task(id: "\(refreshTrigger)-\(viewModel.account.id)") {
             await viewModel.refresh()
             viewModel.startRealtimeUpdates()
         }

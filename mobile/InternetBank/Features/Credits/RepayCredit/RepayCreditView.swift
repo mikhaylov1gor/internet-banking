@@ -40,3 +40,21 @@ struct RepayCreditView: View {
         }
     }
 }
+
+#Preview {
+    let credit = Credit(
+        id: "00000000-0000-0000-0000-000000000010",
+        clientId: "00000000-0000-0000-0000-000000000002",
+        accountId: "00000000-0000-0000-0000-000000000001",
+        tariffId: "00000000-0000-0000-0000-000000000020",
+        amount: 100_000,
+        remainingAmount: 80_000,
+        issuedAt: Date(),
+        tariffName: nil,
+        rate: 12,
+        status: "active")
+    let vm = PreviewDependencies.factory.viewModelFactory.makeRepayCreditViewModel(
+        credit: credit,
+        suggestedAmount: 12_345)
+    RepayCreditView(viewModel: vm, onDismiss: {})
+}

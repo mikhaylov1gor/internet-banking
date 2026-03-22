@@ -93,11 +93,9 @@ struct AccountsListView: View {
             }
         }
         .refreshable {
-            guard settingsReady else { return }
             await viewModel.loadAccounts()
         }
         .task(id: "\(refreshTrigger)-\(settingsReady)") {
-            guard settingsReady else { return }
             await viewModel.loadAccounts()
         }
     }

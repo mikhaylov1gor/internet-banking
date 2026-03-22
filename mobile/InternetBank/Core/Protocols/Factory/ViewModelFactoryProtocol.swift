@@ -12,7 +12,7 @@ protocol ViewModelFactoryProtocol: AnyObject {
     func makeCloseAccountViewModel(account: Account) -> CloseAccountViewModel
     func makeCreditsListViewModel(clientId: String) -> CreditsListViewModel
     func makeTakeCreditViewModel(clientId: String) -> TakeCreditViewModel
-    func makeRepayCreditViewModel(credit: Credit) -> RepayCreditViewModel
+    func makeRepayCreditViewModel(credit: Credit, suggestedAmount: Decimal?) -> RepayCreditViewModel
     func makeCreditDetailViewModel(credit: Credit, clientId: String) -> CreditDetailViewModel
     func makeProfileViewModel(onAppSettingsChanged: @escaping () -> Void) -> ProfileViewModel
 }

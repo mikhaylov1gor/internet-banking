@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AccountSummaryCard: View {
     let account: Account
@@ -7,40 +8,43 @@ struct AccountSummaryCard: View {
     var onTap: (() -> Void)?
     var onToggleVisibility: (() -> Void)?
 
-    private let cornerRadius: CGFloat = 16
+    private let cornerRadius: CGFloat = 12
+
+    private var statusTint: Color {
+        account.status.lowercased() == "active" ? ClientBankTheme.statusActive : ClientBankTheme.statusClosed
+    }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Счёт \(account.displayAccountNumber)")
-                    .font(.headline)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("\(account.balance.formattedAmount) \(account.currencySymbol)")
-                    .font(.title2)
-                    .minimumScaleFactor(0.75)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(account.currency)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("Счёт")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(ClientBankTheme.primaryStart)
+                    Button {
+                        UIPasteboard.general.string = account.clipboardAccountReference
+                    } label: {
+                        Text(account.displayAccountNumber)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(ClientBankTheme.textAccent)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Скопировать номер счёта")
+                }
+                Text("Баланс: \(account.balance.formattedAmount) \(account.currency)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 Text(account.statusDisplayTitle)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(statusTint)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if showsVisibilityToggle, let onToggleVisibility {
                 Button(action: onToggleVisibility) {
                     Image(systemName: visibilityToggleShowsEyeForReveal ? "eye" : "eye.slash")
-                        .font(.title3)
+                        .font(.body)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
@@ -48,13 +52,14 @@ struct AccountSummaryCard: View {
                 .accessibilityLabel(visibilityToggleShowsEyeForReveal ? "Показать на главном" : "Скрыть с главного")
             }
         }
-        .padding(16)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             shape.fill(Color(.secondarySystemGroupedBackground))
         }
         .overlay {
-            shape.strokeBorder(Color(.separator), lineWidth: 1)
+            shape.strokeBorder(Color(.separator), lineWidth: 0.5)
         }
         .contentShape(shape)
         .modifier(OptionalCardTapModifier(onTap: onTap))

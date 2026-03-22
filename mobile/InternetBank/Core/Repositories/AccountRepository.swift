@@ -73,6 +73,39 @@ final class AccountRepository: AccountRepositoryProtocol {
             body: request)
     }
 
+    func previewTransfer(
+        fromAccountId: String,
+        to destination: AccountTransferDestination,
+        amount: Decimal) async throws -> TransferPreviewQuote
+    {
+        let value = NSDecimalNumber(decimal: amount).doubleValue
+        let request: TransferRequest
+        switch destination {
+            case let .accountId(id):
+                request = TransferRequest(
+                    fromAccountId: fromAccountId,
+                    amount: value,
+                    toAccountId: id,
+                    toAccountNumber: nil)
+            case let .accountNumber(number):
+                request = TransferRequest(
+                    fromAccountId: fromAccountId,
+                    amount: value,
+                    toAccountId: nil,
+                    toAccountNumber: number)
+        }
+        let response: TransferPreviewResponse = try await apiClient.request(
+            path: AccountEndpoints.transferPreview,
+            method: "POST",
+            body: request)
+        return TransferPreviewQuote(
+            fromCurrency: response.fromCurrency,
+            toCurrency: response.toCurrency,
+            debitAmount: Decimal(response.debitAmount),
+            creditAmount: Decimal(response.creditAmount),
+            rate: Decimal(response.rate))
+    }
+
     func getOperations(accountId: String) async throws -> [AccountOperation] {
         let response: OperationListResponse = try await apiClient.request(
             path: AccountEndpoints.operations(accountId: accountId))

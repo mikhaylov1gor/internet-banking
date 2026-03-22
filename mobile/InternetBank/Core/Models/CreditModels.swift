@@ -38,6 +38,8 @@ struct IssueCreditRequest: Encodable {
     let accountId: String
     let tariffId: String
     let amount: Double
+    let termDays: Int?
+    let termMonths: Int?
 }
 
 struct RepayCreditRequest: Encodable {
@@ -61,4 +63,28 @@ struct CreditRatingDTO: Decodable {
     let riskLevel: String
     let overdueAmount: Double
     let overdueCount: Int
+}
+
+struct CreditPaymentItemDTO: Decodable {
+    let day: Int?
+    let index: Int
+    let dueAt: String
+    let amountDue: Double?
+    let amountPaid: Double?
+    let amountRemaining: Double?
+    let expectedTotal: Double
+    let paidNowTotal: Double
+    let status: String
+}
+
+struct CreditPaymentListResponse: Decodable {
+    let items: [CreditPaymentItemDTO]
+    let pageNumber: Int
+    let pageQuantity: Int
+}
+
+struct CreditPaymentListResult: Sendable {
+    let items: [CreditScheduledPayment]
+    let pageNumber: Int
+    let pageQuantity: Int
 }

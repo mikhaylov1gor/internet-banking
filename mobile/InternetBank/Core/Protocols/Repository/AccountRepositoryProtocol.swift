@@ -13,5 +13,7 @@ protocol AccountRepositoryProtocol: AnyObject {
     func deposit(accountId: String, amount: Decimal) async throws
     func withdraw(accountId: String, amount: Decimal) async throws
     func transfer(fromAccountId: String, to destination: AccountTransferDestination, amount: Decimal) async throws
+    func previewTransfer(fromAccountId: String, to destination: AccountTransferDestination, amount: Decimal) async throws
+        -> TransferPreviewQuote
     func getOperations(accountId: String) async throws -> [AccountOperation]
 }

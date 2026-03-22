@@ -14,34 +14,34 @@ struct CreditsListView: View {
     @State private var auxiliarySheet: CreditsListAuxiliarySheet?
 
     var body: some View {
-        List {
-            ForEach(viewModel.credits) { credit in
-                Button {
-                    onCreditTap(credit)
-                } label: {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(credit.tariffName ?? "Кредит")
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text("Остаток: \(credit.remainingAmount.formattedAmount) ₽")
-                            .font(.caption)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Text(credit.statusDisplayTitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+        Group {
+            if viewModel.credits.isEmpty {
+                ContentUnavailableView(
+                    "Нет кредитов",
+                    systemImage: "banknote",
+                    description: Text("Оформите кредит через кнопку выше."))
+            } else {
+                List {
+                    ForEach(viewModel.credits) { credit in
+                        Button {
+                            onCreditTap(credit)
+                        } label: {
+                            CreditsListRowContent(credit: credit)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .listStyle(.insetGrouped)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay {
+            if viewModel.isLoading, viewModel.credits.isEmpty {
+                ProgressView()
             }
         }
         .navigationTitle("Мои кредиты")
+        .tint(ClientBankTheme.primaryStart)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -79,8 +79,58 @@ struct CreditsListView: View {
                                 }
                             }
                     }
+                    .tint(ClientBankTheme.primaryStart)
             }
         }
+    }
+}
+
+private struct CreditsListRowContent: View {
+    let credit: Credit
+
+    private var statusTint: Color {
+        switch (credit.status ?? "").lowercased() {
+            case "active": return ClientBankTheme.statusActive
+            case "overdue": return ClientBankTheme.statusOverdue
+            case "paid": return ClientBankTheme.statusPaidMuted
+            default: return .secondary
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("Кредит")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(ClientBankTheme.primaryStart)
+                Text("#\(ClientBankFormat.formatShortId(credit.id))")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(ClientBankTheme.textAccent)
+            }
+            Text("Сумма: \(credit.amount.formattedAmount) ₽")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if ["active", "overdue"].contains((credit.status ?? "").lowercased()) {
+                Text("Остаток: \(credit.remainingAmount.formattedAmount) ₽")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if let daily = credit.dailyPaymentRounded {
+                    Text("Ежедневный платеж: \(daily.formattedAmount) ₽")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if let pct = credit.displayAnnualRatePercent {
+                Text("Ставка: \(pct.formattedAmount)%")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Text("Статус: \(credit.statusDisplayTitle)")
+                .font(.caption)
+                .foregroundStyle(statusTint)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
@@ -94,7 +144,7 @@ private struct CreditRatingSheetContent: View {
             }
             if let ratingError = viewModel.ratingError {
                 Text(ratingError)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(ClientBankTheme.statusOverdue)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)

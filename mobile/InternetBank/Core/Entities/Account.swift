@@ -28,19 +28,32 @@ struct Account: Identifiable, Hashable {
     }
 
     var displayAccountNumber: String {
-        accountNumber.isEmpty ? "···\(String(id.suffix(8)))" : accountNumber
+        let d = ClientBankFormat.digitsOnlyAccountNumber(accountNumber)
+        if !d.isEmpty {
+            return ClientBankFormat.formatAccountNumberMasked(d)
+        }
+        if accountNumber.isEmpty {
+            return "···\(ClientBankFormat.formatShortId(id, visibleLength: 8))"
+        }
+        return accountNumber
     }
 
     var clipboardAccountReference: String {
-        accountNumber.isEmpty ? id : accountNumber
+        let d = ClientBankFormat.digitsOnlyAccountNumber(accountNumber)
+        if !d.isEmpty { return d }
+        return id
     }
 
-    var currencySymbol: String {
-        switch currency.uppercased() {
+    static func symbol(forCurrencyCode code: String) -> String {
+        switch code.uppercased() {
             case "USD": return "$"
             case "EUR": return "€"
             default: return "₽"
         }
+    }
+
+    var currencySymbol: String {
+        Self.symbol(forCurrencyCode: currency)
     }
 
     var statusDisplayTitle: String {

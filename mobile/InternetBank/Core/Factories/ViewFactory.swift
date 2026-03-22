@@ -108,8 +108,14 @@ final class ViewFactory: ViewFactoryProtocol {
         return TakeCreditView(viewModel: viewModel, onDismiss: onDismiss)
     }
 
-    func makeRepayCreditView(credit: Credit, onDismiss: @escaping () -> Void) -> RepayCreditView {
-        let viewModel = viewModelFactory.makeRepayCreditViewModel(credit: credit)
+    func makeRepayCreditView(
+        credit: Credit,
+        suggestedAmount: Decimal?,
+        onDismiss: @escaping () -> Void) -> RepayCreditView
+    {
+        let viewModel = viewModelFactory.makeRepayCreditViewModel(
+            credit: credit,
+            suggestedAmount: suggestedAmount)
         viewModel.onSuccess = onDismiss
         return RepayCreditView(viewModel: viewModel, onDismiss: onDismiss)
     }
@@ -117,11 +123,13 @@ final class ViewFactory: ViewFactoryProtocol {
     func makeCreditDetailView(
         credit: Credit,
         clientId: String,
-        onRepay: @escaping () -> Void,
+        creditsRefreshTrigger: Int,
+        onRepay: @escaping (Decimal?) -> Void,
         onOpenLinkedAccount: @escaping (String) -> Void) -> CreditDetailView
     {
         CreditDetailView(
             viewModel: viewModelFactory.makeCreditDetailViewModel(credit: credit, clientId: clientId),
+            creditsRefreshTrigger: creditsRefreshTrigger,
             onRepay: onRepay,
             onOpenLinkedAccount: onOpenLinkedAccount)
     }

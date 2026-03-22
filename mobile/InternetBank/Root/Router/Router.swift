@@ -22,7 +22,7 @@ enum SheetItem: Identifiable {
     case openAccount(String)
     case closeAccount(Account)
     case takeCredit(String)
-    case repayCredit(Credit)
+    case repayCredit(Credit, suggestedAmount: Decimal?)
 
     var id: String {
         switch self {
@@ -31,7 +31,8 @@ enum SheetItem: Identifiable {
             case let .openAccount(clientId): "openAccount-\(clientId)"
             case let .closeAccount(account): "closeAccount-\(account.id)"
             case let .takeCredit(clientId): "takeCredit-\(clientId)"
-            case let .repayCredit(credit): "repayCredit-\(credit.id)"
+            case let .repayCredit(credit, suggested):
+                "repayCredit-\(credit.id)-\(suggested.map { NSDecimalNumber(decimal: $0).stringValue } ?? "none")"
         }
     }
 }

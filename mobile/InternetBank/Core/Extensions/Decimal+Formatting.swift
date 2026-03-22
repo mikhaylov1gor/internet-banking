@@ -10,4 +10,11 @@ extension Decimal {
         formatter.groupingSeparator = " "
         return formatter.string(from: self as NSDecimalNumber) ?? "\(self)"
     }
+
+    func roundedToScale(_ scale: Int) -> Decimal {
+        var x = self
+        var r = Decimal()
+        NSDecimalRound(&r, &x, scale, .plain)
+        return r
+    }
 }

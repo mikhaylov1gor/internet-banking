@@ -24,8 +24,9 @@ struct CreditsCoordinatorView: View {
                         viewFactory.makeCreditDetailView(
                             credit: credit,
                             clientId: clientId,
-                            onRepay: {
-                                sheetItem = .repayCredit(credit)
+                            creditsRefreshTrigger: creditsRefreshTrigger,
+                            onRepay: { suggested in
+                                sheetItem = .repayCredit(credit, suggestedAmount: suggested)
                             },
                             onOpenLinkedAccount: onOpenLinkedAccount)
                 }

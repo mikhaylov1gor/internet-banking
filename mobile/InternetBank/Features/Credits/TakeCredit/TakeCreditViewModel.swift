@@ -6,6 +6,7 @@ final class TakeCreditViewModel {
     var selectedTariffId = ""
     var selectedAccountId = ""
     var amount = ""
+    var termMonthsText = String(CreditTermLimits.defaultMonths)
     var accounts: [Account] = []
     var isLoading = false
     var errorMessage: String?
@@ -42,12 +43,17 @@ final class TakeCreditViewModel {
     }
 
     func takeCredit() async {
-        guard let value = Decimal(string: amount), value > 0 else {
+        guard let value = Decimal(string: amount.replacingOccurrences(of: ",", with: ".")), value > 0 else {
             errorMessage = "Введите корректную сумму"
             return
         }
         guard !selectedTariffId.isEmpty, !selectedAccountId.isEmpty else {
             errorMessage = "Выберите тариф и счёт"
+            return
+        }
+        let trimmedTerm = termMonthsText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let termMonths = Int(trimmedTerm), termMonths >= 1, termMonths <= CreditTermLimits.maxMonths else {
+            errorMessage = "Срок: от 1 до \(CreditTermLimits.maxMonths) мес."
             return
         }
         isLoading = true
@@ -57,7 +63,8 @@ final class TakeCreditViewModel {
                 clientId: clientId,
                 accountId: selectedAccountId,
                 tariffId: selectedTariffId,
-                amount: value)
+                amount: value,
+                termMonths: termMonths)
             onSuccess?(credit)
         } catch {
             errorMessage = error.displayMessage

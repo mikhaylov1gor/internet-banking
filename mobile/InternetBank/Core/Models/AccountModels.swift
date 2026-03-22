@@ -66,6 +66,25 @@ struct TransferAPIResponse: Decodable {
     let creditOperation: OperationResponse?
 }
 
+struct TransferPreviewResponse: Decodable {
+    let fromAccountId: String
+    let toAccountId: String
+    let toAccountNumber: String?
+    let fromCurrency: String
+    let toCurrency: String
+    let debitAmount: Double
+    let creditAmount: Double
+    let rate: Double
+}
+
+struct TransferPreviewQuote: Equatable {
+    let fromCurrency: String
+    let toCurrency: String
+    let debitAmount: Decimal
+    let creditAmount: Decimal
+    let rate: Decimal
+}
+
 struct ChangeBalanceRequest: Encodable {
     let amount: Double
 }

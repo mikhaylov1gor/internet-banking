@@ -12,6 +12,7 @@ enum AccountEndpoints {
     static func account(id: String) -> String { "/accounts/\(id)" }
     static let openAccount = "/accounts"
     static let transfer = "/accounts/transfer"
+    static let transferPreview = "/accounts/transfer/preview"
     static func closeAccount(id: String, clientId: String) -> String { "/accounts/\(id)?client_id=\(clientId)" }
     static func deposit(accountId: String) -> String { "/accounts/\(accountId)/deposit" }
     static func withdraw(accountId: String) -> String { "/accounts/\(accountId)/withdraw" }

@@ -112,10 +112,46 @@ struct StandaloneTransferView: View {
                 Section {
                     TextField("Сумма списания", text: $viewModel.amount)
                         .keyboardType(.decimalPad)
+                    if !viewModel.transferPreviewTaskKey.isEmpty {
+                        if viewModel.isLoadingPreview, viewModel.previewQuote == nil {
+                            ProgressView()
+                        }
+                        if let q = viewModel.previewQuote {
+                            LabeledContent("Списание") {
+                                Text(
+                                    "\(q.debitAmount.formattedAmount) \(Account.symbol(forCurrencyCode: q.fromCurrency))")
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            LabeledContent("Зачисление") {
+                                Text(
+                                    "\(q.creditAmount.formattedAmount) \(Account.symbol(forCurrencyCode: q.toCurrency))")
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            LabeledContent("Курс") {
+                                Text(q.rate.formattedAmount)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        if let previewErr = viewModel.previewError {
+                            Text(previewErr)
+                                .foregroundStyle(.red)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                     Button("Перевести") {
                         Task { await viewModel.submitTransfer() }
                     }
                     .disabled(viewModel.isSubmitting || !viewModel.canSubmit)
+                } header: {
+                    Text("Сумма и расчёт")
                 }
             }
         }
@@ -123,6 +159,9 @@ struct StandaloneTransferView: View {
         .task(id: viewModel.prefillStore.revision) {
             await viewModel.loadAccounts()
             viewModel.applyPrefillFromStore()
+        }
+        .task(id: viewModel.transferPreviewTaskKey) {
+            await viewModel.refreshPreview()
         }
     }
 

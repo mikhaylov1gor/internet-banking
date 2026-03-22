@@ -160,8 +160,8 @@ struct MainCoordinatorView: View {
                     creditsRefreshTrigger += 1
                     sheetItem = nil
                 }
-            case let .repayCredit(credit):
-                viewFactory.makeRepayCreditView(credit: credit) {
+            case let .repayCredit(credit, suggested):
+                viewFactory.makeRepayCreditView(credit: credit, suggestedAmount: suggested) {
                     creditsRefreshTrigger += 1
                     sheetItem = nil
                 }

@@ -25,6 +25,9 @@ final class StandaloneTransferViewModel {
     var isSubmitting = false
     var errorMessage: String?
     var didSucceed = false
+    var previewQuote: TransferPreviewQuote?
+    var previewError: String?
+    var isLoadingPreview = false
 
     let prefillStore: TransferPrefillStore
 
@@ -60,8 +63,40 @@ final class StandaloneTransferViewModel {
     }
 
     var otherRecipientValid: Bool {
-        guard let uuid = UUID(uuidString: trimmedOtherAccountId) else { return false }
-        return uuid.uuidString.lowercased() != fromAccountId.lowercased()
+        let t = trimmedOtherAccountId
+        guard !t.isEmpty else { return false }
+        if let uuid = UUID(uuidString: t) {
+            return uuid.uuidString.lowercased() != fromAccountId.lowercased()
+        }
+        return true
+    }
+
+    var transferPreviewTaskKey: String {
+        guard let from = fromAccount else { return "" }
+        guard let amt = parsedDebitAmount, amt >= 0.01 else { return "" }
+        let destKey: String
+        switch recipientMode {
+            case .own:
+                guard let to = toAccount, from.id != to.id else { return "" }
+                destKey = "id:\(to.id.lowercased())"
+            case .other:
+                guard otherRecipientValid else { return "" }
+                let t = trimmedOtherAccountId
+                if UUID(uuidString: t) != nil {
+                    destKey = "id:\(t.lowercased())"
+                } else {
+                    destKey = "num:\(t)"
+                }
+        }
+        let amtKey = NSDecimalNumber(decimal: amt).stringValue
+        return "\(from.id)|\(destKey)|\(amtKey)"
+    }
+
+    private var parsedDebitAmount: Decimal? {
+        guard let d = Decimal(string: amount.replacingOccurrences(of: ",", with: ".")),
+              d >= 0.01
+        else { return nil }
+        return d
     }
 
     var showDifferentCurrencyHint: Bool {
@@ -122,6 +157,8 @@ final class StandaloneTransferViewModel {
         didSucceed = false
         amount = ""
         errorMessage = nil
+        previewQuote = nil
+        previewError = nil
         recipientMode = .own
         otherAccountIdText = ""
         if let t, let f, f != t {
@@ -145,8 +182,46 @@ final class StandaloneTransferViewModel {
         didSucceed = false
         amount = ""
         errorMessage = nil
+        previewQuote = nil
+        previewError = nil
         lastAppliedPrefillRevision = -1
         applyPrefillFromStore()
+    }
+
+    func refreshPreview() async {
+        guard !transferPreviewTaskKey.isEmpty else {
+            previewQuote = nil
+            previewError = nil
+            isLoadingPreview = false
+            return
+        }
+        guard let from = fromAccount else { return }
+        guard let value = parsedDebitAmount else { return }
+        let destination: AccountTransferDestination
+        switch recipientMode {
+            case .own:
+                guard let to = toAccount, from.id != to.id else { return }
+                destination = .accountId(to.id)
+            case .other:
+                let t = trimmedOtherAccountId
+                if UUID(uuidString: t) != nil {
+                    destination = .accountId(t)
+                } else {
+                    destination = .accountNumber(t)
+                }
+        }
+        isLoadingPreview = true
+        previewError = nil
+        defer { isLoadingPreview = false }
+        do {
+            previewQuote = try await accountRepository.previewTransfer(
+                fromAccountId: from.id,
+                to: destination,
+                amount: value)
+        } catch {
+            previewQuote = nil
+            previewError = error.displayMessage
+        }
     }
 
     func syncPickersAfterFromAccountChange() {

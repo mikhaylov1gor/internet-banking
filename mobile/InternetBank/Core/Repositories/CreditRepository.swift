@@ -25,13 +25,21 @@ final class CreditRepository: CreditRepositoryProtocol {
         return response.tariffs.map { mapToTariff($0) }
     }
 
-    func takeCredit(clientId: String, accountId: String, tariffId: String, amount: Decimal) async throws -> Credit {
+    func takeCredit(
+        clientId: String,
+        accountId: String,
+        tariffId: String,
+        amount: Decimal,
+        termMonths: Int) async throws -> Credit
+    {
         let value = NSDecimalNumber(decimal: amount).doubleValue
         let request = IssueCreditRequest(
             clientId: clientId,
             accountId: accountId,
             tariffId: tariffId,
-            amount: value)
+            amount: value,
+            termDays: nil,
+            termMonths: termMonths)
         let response: CreditResponse = try await apiClient.request(
             path: CreditEndpoints.takeCredit,
             method: "POST",
@@ -57,6 +65,47 @@ final class CreditRepository: CreditRepositoryProtocol {
         try await apiClient.request(path: CreditEndpoints.clientCreditRating(clientId: clientId))
     }
 
+    func getCreditPayments(
+        creditId: String,
+        page: Int,
+        pageSize: Int,
+        onlyOverdue: Bool) async throws -> CreditPaymentListResult
+    {
+        let response: CreditPaymentListResponse = try await apiClient.request(
+            path: CreditEndpoints.creditPayments(
+                creditId: creditId,
+                page: page,
+                pageSize: pageSize,
+                onlyOverdue: onlyOverdue))
+        let items = response.items.map { mapCreditPayment($0) }
+        return CreditPaymentListResult(
+            items: items,
+            pageNumber: response.pageNumber,
+            pageQuantity: response.pageQuantity)
+    }
+
+    private func mapCreditPayment(_ dto: CreditPaymentItemDTO) -> CreditScheduledPayment {
+        CreditScheduledPayment(
+            day: dto.day,
+            index: dto.index,
+            dueAt: Self.parseCreditPaymentDueAt(dto.dueAt),
+            amountDue: dto.amountDue.map { Decimal($0) },
+            amountPaid: dto.amountPaid.map { Decimal($0) },
+            amountRemaining: dto.amountRemaining.map { Decimal($0) },
+            expectedTotal: Decimal(dto.expectedTotal),
+            paidNowTotal: Decimal(dto.paidNowTotal),
+            status: dto.status)
+    }
+
+    private static func parseCreditPaymentDueAt(_ raw: String) -> Date {
+        let withFrac = ISO8601DateFormatter()
+        withFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = withFrac.date(from: raw) { return d }
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        return plain.date(from: raw) ?? Date()
+    }
+
     private func mapToCredit(_ dto: CreditResponse) -> Credit {
         Credit(
             id: dto.id,
@@ -68,6 +117,7 @@ final class CreditRepository: CreditRepositoryProtocol {
             issuedAt: (dto.issuedAt.flatMap { ISO8601DateFormatter().date(from: $0) }) ?? Date(),
             tariffName: nil,
             rate: dto.rate.map { Decimal($0) },
+            dailyPayment: dto.dailyPayment.map { Decimal($0) },
             status: dto.status)
     }
 

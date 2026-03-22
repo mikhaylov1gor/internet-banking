@@ -85,11 +85,12 @@ final class ViewModelFactory: ViewModelFactoryProtocol {
             clientId: clientId)
     }
 
-    func makeRepayCreditViewModel(credit: Credit) -> RepayCreditViewModel {
+    func makeRepayCreditViewModel(credit: Credit, suggestedAmount: Decimal?) -> RepayCreditViewModel {
         RepayCreditViewModel(
             creditRepository: creditRepository,
             accountRepository: accountRepository,
-            credit: credit)
+            credit: credit,
+            suggestedAmount: suggestedAmount)
     }
 
     func makeCreditDetailViewModel(credit: Credit, clientId _: String) -> CreditDetailViewModel {

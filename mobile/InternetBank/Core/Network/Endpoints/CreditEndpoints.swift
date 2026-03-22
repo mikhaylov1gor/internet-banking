@@ -10,6 +10,13 @@ enum CreditEndpoints {
     }
     static let takeCredit = "/credits"
     static func repayCredit(creditId: String) -> String { "/credits/\(creditId)/repay" }
+    static func creditPayments(creditId: String, page: Int, pageSize: Int, onlyOverdue: Bool) -> String {
+        var parts = ["page=\(page)", "page_size=\(pageSize)"]
+        if onlyOverdue {
+            parts.append("only_overdue=true")
+        }
+        return "/credits/\(creditId)/payments?" + parts.joined(separator: "&")
+    }
     static func creditOverdue(creditId: String) -> String { "/credits/\(creditId)/overdue" }
     static func clientCreditRating(clientId: String) -> String { "/clients/\(clientId)/credit-rating" }
 }

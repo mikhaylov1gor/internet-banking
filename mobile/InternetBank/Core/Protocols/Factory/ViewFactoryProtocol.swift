@@ -32,11 +32,15 @@ protocol ViewFactoryProtocol: AnyObject {
         onCreditTap: @escaping (Credit) -> Void,
         onTakeCredit: @escaping () -> Void) -> CreditsListView
     func makeTakeCreditView(clientId: String, onDismiss: @escaping () -> Void) -> TakeCreditView
-    func makeRepayCreditView(credit: Credit, onDismiss: @escaping () -> Void) -> RepayCreditView
+    func makeRepayCreditView(
+        credit: Credit,
+        suggestedAmount: Decimal?,
+        onDismiss: @escaping () -> Void) -> RepayCreditView
     func makeCreditDetailView(
         credit: Credit,
         clientId: String,
-        onRepay: @escaping () -> Void,
+        creditsRefreshTrigger: Int,
+        onRepay: @escaping (Decimal?) -> Void,
         onOpenLinkedAccount: @escaping (String) -> Void) -> CreditDetailView
     func makeProfileView(
         onLogout: @escaping () -> Void,
