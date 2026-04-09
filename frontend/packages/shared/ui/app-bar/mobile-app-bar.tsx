@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Button } from '../button'
+import { ThemeToggle } from '../theme-toggle'
 import { useLogout } from '@shared/features/auth'
 import './style.css'
 
@@ -15,7 +16,7 @@ export type MobileAppBarProps = {
   onLogoClick?: () => void
 }
 
-export const MobileAppBar: React.FC<MobileAppBarProps> = ({ buttons, onLogoClick }) => {
+export const MobileAppBar = ({ buttons, onLogoClick }: MobileAppBarProps) => {
   const location = useLocation()
   const logout = useLogout()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -28,15 +29,18 @@ export const MobileAppBar: React.FC<MobileAppBarProps> = ({ buttons, onLogoClick
         <div className="logo mobile-logo" onClick={onLogoClick || (() => {})}>
           Z-Банк
         </div>
-        <button
-          className="mobile-menu-toggle"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          <span className={isMenuOpen ? 'open' : ''}></span>
-          <span className={isMenuOpen ? 'open' : ''}></span>
-          <span className={isMenuOpen ? 'open' : ''}></span>
-        </button>
+        <div className="mobile-app-bar-right">
+          <ThemeToggle />
+          <button
+            className="mobile-menu-toggle"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className={isMenuOpen ? 'open' : ''}></span>
+            <span className={isMenuOpen ? 'open' : ''}></span>
+            <span className={isMenuOpen ? 'open' : ''}></span>
+          </button>
+        </div>
       </div>
       {isMenuOpen && (
         <div className="mobile-menu">

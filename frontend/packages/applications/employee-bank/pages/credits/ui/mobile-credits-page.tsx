@@ -6,10 +6,11 @@ import { Spinner } from '@shared/ui/spinner'
 import { MobilePagination } from '@shared/ui/pagination'
 import { UserSelect } from '@shared/ui/user-select'
 import { CreditCard } from '@shared/ui/credit-card'
+import { getLoadDataErrorMessage } from '@shared/api'
 import { useCreditsPage } from '../model/use-credits-page'
 import './style.css'
 
-export const MobileCreditsPage: React.FC = () => {
+export const MobileCreditsPage = () => {
   const navigate = useNavigate()
   const {
     creditId,
@@ -19,6 +20,7 @@ export const MobileCreditsPage: React.FC = () => {
     handleSearch,
     credits,
     isLoading,
+    creditsLoadError,
     selectedUserId,
     setSelectedUserId,
     page,
@@ -72,14 +74,22 @@ export const MobileCreditsPage: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && selectedUserId && credits !== undefined && credits.length === 0 && (
+      {!isLoading && selectedUserId && creditsLoadError && (
+        <div className="empty credits-page-empty error">{getLoadDataErrorMessage('кредиты')}</div>
+      )}
+
+      {!isLoading &&
+        selectedUserId &&
+        !creditsLoadError &&
+        credits !== undefined &&
+        credits.length === 0 && (
         <div className="empty credits-page-empty">
           <div className="empty-icon">💳</div>
           <div className="empty-text">У клиента нет кредитов</div>
         </div>
       )}
 
-      {!isLoading && selectedUserId && credits && credits.length > 0 && (
+      {!isLoading && selectedUserId && !creditsLoadError && credits && credits.length > 0 && (
         <>
           <div className="list mobile-list">
             {credits.map((credit) => (
@@ -87,7 +97,6 @@ export const MobileCreditsPage: React.FC = () => {
                 key={credit.id}
                 credit={credit}
                 onClick={() => navigate(`/credits/${credit.id}`)}
-                shortenId={false}
               />
             ))}
           </div>

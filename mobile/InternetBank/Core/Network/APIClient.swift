@@ -22,10 +22,8 @@ final class APIClient {
         body: Encodable? = nil,
         requiresAuth: Bool = true) async throws -> T
     {
-        let (data, response) = try await execute(path: path, method: method, body: body, requiresAuth: requiresAuth)
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return try decoder.decode(T.self, from: data)
+        let (data, _) = try await execute(path: path, method: method, body: body, requiresAuth: requiresAuth)
+        return try decodeResponse(T.self, from: data)
     }
 
     func requestEmpty(
@@ -67,13 +65,18 @@ final class APIClient {
     }
 
     private func makeRequest(path: String, method: String, body: Encodable?, requiresAuth: Bool) throws -> URLRequest {
-        let url = URL(string: path, relativeTo: baseURL) ?? baseURL.appendingPathComponent(path)
+        guard let url = Self.resolveURL(path: path, baseURL: baseURL) else {
+            throw APIError.invalidResponse
+        }
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if body != nil {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
         if requiresAuth, let token = tokenHandler?.getAccessToken() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            request.setValue("Bearer \(trimmed)", forHTTPHeaderField: "Authorization")
         }
         if let body = body {
             let encoder = JSONEncoder()
@@ -83,6 +86,16 @@ final class APIClient {
         return request
     }
 
+    private func decodeResponse<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw APIError.responseDecodingFailed(error.localizedDescription)
+        }
+    }
+
     private func parseError(data: Data, statusCode: Int) -> APIError {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -90,6 +103,18 @@ final class APIClient {
             return APIError.serverError(statusCode: statusCode, message: errorResponse.error)
         }
         return APIError.serverError(statusCode: statusCode, message: nil)
+    }
+
+    static func resolveURL(path: String, baseURL: URL) -> URL? {
+        if path.hasPrefix("http://") || path.hasPrefix("https://") {
+            return URL(string: path)
+        }
+        var baseString = baseURL.absoluteString
+        while baseString.last == "/" {
+            baseString.removeLast()
+        }
+        let normalizedPath = path.hasPrefix("/") ? path : "/" + path
+        return URL(string: baseString + normalizedPath)
     }
 }
 
@@ -108,6 +133,7 @@ enum APIError: LocalizedError {
     case invalidResponse
     case serverError(statusCode: Int, message: String?)
     case sessionExpired
+    case responseDecodingFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -115,6 +141,8 @@ enum APIError: LocalizedError {
                 return "Некорректный ответ сервера"
             case .sessionExpired:
                 return "Сессия истекла"
+            case let .responseDecodingFailed(detail):
+                return "Ответ API не распознан. \(detail)"
             case let .serverError(code, message):
                 if let msg = message, !msg.isEmpty {
                     return msg
@@ -124,7 +152,10 @@ enum APIError: LocalizedError {
                     case 401: return "Требуется авторизация"
                     case 403: return "Доступ запрещён"
                     case 404: return "Не найдено"
-                    case 500 ... 599: return "Ошибка сервера"
+                    case 502: return "Шлюз недоступен (502). Проверьте, что Core/Credits/AppSettings запущены в Docker."
+                    case 503: return "Сервис временно недоступен (503)"
+                    case 504: return "Таймаут шлюза (504)"
+                    case 500 ... 599: return "Ошибка сервера (\(code))"
                     default: return "Ошибка (\(code))"
                 }
         }

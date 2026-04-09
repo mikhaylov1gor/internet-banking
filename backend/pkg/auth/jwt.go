@@ -8,6 +8,12 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	tokenIssuer          = "internet-bank-users"
+	accessTokenAudience  = "internet-bank-api"
+	refreshTokenAudience = "internet-bank-refresh"
+)
+
 type UserType string
 
 const (
@@ -22,9 +28,13 @@ type Claims struct {
 }
 
 func ParseAccessToken(tokenString, secret string) (*Claims, error) {
-	tok, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
-	})
+	tok, err := jwt.ParseWithClaims(
+		tokenString,
+		&Claims{},
+		func(t *jwt.Token) (interface{}, error) { return []byte(secret), nil },
+		jwt.WithIssuer(tokenIssuer),
+		jwt.WithAudience(accessTokenAudience),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -42,9 +52,13 @@ type RefreshClaims struct {
 }
 
 func ParseRefreshToken(tokenString, secret string) (*RefreshClaims, error) {
-	tok, err := jwt.ParseWithClaims(tokenString, &RefreshClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
-	})
+	tok, err := jwt.ParseWithClaims(
+		tokenString,
+		&RefreshClaims{},
+		func(t *jwt.Token) (interface{}, error) { return []byte(secret), nil },
+		jwt.WithIssuer(tokenIssuer),
+		jwt.WithAudience(refreshTokenAudience),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +74,9 @@ func NewAccessToken(userID uuid.UUID, userType UserType, secret string, ttlMinut
 		UserID:   userID.String(),
 		UserType: userType,
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    tokenIssuer,
+			Audience:  jwt.ClaimStrings{accessTokenAudience},
+			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(ttlMinutes) * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -73,6 +90,9 @@ func NewRefreshToken(userID uuid.UUID, userType UserType, secret string, ttlMinu
 		UserID:   userID.String(),
 		UserType: userType,
 		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    tokenIssuer,
+			Audience:  jwt.ClaimStrings{refreshTokenAudience},
+			ID:        uuid.New().String(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(ttlMinutes) * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},

@@ -1,3 +1,2 @@
-export { EmailInput } from './email-input'
-export type { EmailInputProps } from './email-input'
-
+export { EmailInput } from './ui/email-input'
+export type { EmailInputProps } from './ui/email-input'

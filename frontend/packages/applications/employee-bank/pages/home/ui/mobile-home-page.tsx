@@ -1,9 +1,8 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@shared/ui/button'
 import './style.css'
 
-export const MobileHomePage: React.FC = () => {
+export const MobileHomePage = () => {
   const navigate = useNavigate()
 
   return (

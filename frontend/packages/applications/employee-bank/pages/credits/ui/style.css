@@ -1,15 +1,15 @@
 .credits-page-container {
   padding: 1.5rem;
-  max-width: 1200px;
+  max-width: 56.25rem;
   margin: 0 auto;
-  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
   min-height: calc(100vh - 80px);
 }
 
 .credits-page-title {
   font-size: 2rem;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--btn-primary-start) 0%, var(--btn-primary-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -59,10 +59,10 @@
 .empty {
   text-align: center;
   padding: 2rem;
-  color: #64748b;
-  background: #ffffff;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-default);
 }
 
 .credits-page-select-user {
@@ -72,8 +72,8 @@
   justify-content: center;
   gap: 1rem;
   padding: 3rem 2rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
-  border: 2px dashed #cbd5e1;
+  background: linear-gradient(135deg, var(--dashed-bg-start) 0%, var(--dashed-bg-end) 100%);
+  border: 2px dashed var(--dashed-border-color);
 }
 
 .select-user-icon {
@@ -84,7 +84,7 @@
 .select-user-text {
   font-size: 1.125rem;
   font-weight: 500;
-  color: #475569;
+  color: var(--text-muted);
 }
 
 .list {
@@ -95,18 +95,18 @@
 
 .creditCard {
   padding: 1.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+  background: linear-gradient(135deg, var(--bg-card-start) 0%, var(--bg-card-end) 100%);
+  box-shadow: var(--shadow-sm);
 }
 
 .creditCard:hover {
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-4px);
-  border-color: #93c5fd;
+  border-color: var(--border-hover);
 }
 
 .creditInfo {
@@ -118,7 +118,7 @@
 .creditId {
   font-weight: 600;
   font-size: 1.125rem;
-  color: #1e40af;
+  color: var(--text-accent);
   margin-top: 0;
   margin-bottom: 0;
 }
@@ -132,22 +132,22 @@
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .active {
-  color: #10b981;
+  color: var(--status-active);
   font-weight: 500;
 }
 
 .paid {
-  color: #64748b;
+  color: var(--status-paid-secondary);
   font-weight: 500;
 }
 
 .desktop-credits-page {
   padding: 1.5rem;
-  max-width: 1200px;
+  max-width: 56.25rem;
   margin: 0 auto;
 }
 
@@ -159,18 +159,18 @@
 
 .desktop-creditCard {
   padding: 1.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+  background: linear-gradient(135deg, var(--bg-card-start) 0%, var(--bg-card-end) 100%);
+  box-shadow: var(--shadow-sm);
 }
 
 .desktop-creditCard:hover {
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-4px);
-  border-color: #93c5fd;
+  border-color: var(--border-hover);
 }
 
 .mobile-credits-page {
@@ -226,17 +226,16 @@
 
 .mobile-creditCard {
   padding: 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.05);
+  background: linear-gradient(135deg, var(--bg-card-start) 0%, var(--bg-card-end) 100%);
+  box-shadow: var(--shadow-sm);
 }
 
 .mobile-creditCard:active {
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-card-hover);
   transform: scale(0.98);
-  border-color: #93c5fd;
+  border-color: var(--border-hover);
 }
-

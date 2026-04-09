@@ -2,26 +2,31 @@ import SwiftUI
 
 final class ViewFactory: ViewFactoryProtocol {
     private let viewModelFactory: ViewModelFactoryProtocol
+    private let authRepository: AuthRepositoryProtocol
 
-    init(viewModelFactory: ViewModelFactoryProtocol) {
+    init(viewModelFactory: ViewModelFactoryProtocol, authRepository: AuthRepositoryProtocol) {
         self.viewModelFactory = viewModelFactory
+        self.authRepository = authRepository
     }
 
     func makeLoginView(onSuccess: @escaping () -> Void) -> LoginView {
-        let viewModel = viewModelFactory.makeLoginViewModel()
-        viewModel.onLoginSuccess = onSuccess
-        return LoginView(viewModel: viewModel)
+        LoginView(authRepository: authRepository, onLoginSuccess: onSuccess)
     }
 
     func makeAccountsListView(
         clientId: String,
         refreshTrigger: Int,
+        settingsReady: Bool,
+        onAppSettingsChanged: @escaping () -> Void,
         onAccountTap: @escaping (Account) -> Void,
         onOpenAccount: @escaping () -> Void) -> AccountsListView
     {
         AccountsListView(
-            viewModel: viewModelFactory.makeAccountsListViewModel(clientId: clientId),
+            viewModel: viewModelFactory.makeAccountsListViewModel(
+                clientId: clientId,
+                onAppSettingsChanged: onAppSettingsChanged),
             refreshTrigger: refreshTrigger,
+            settingsReady: settingsReady,
             onAccountTap: onAccountTap,
             onOpenAccount: onOpenAccount)
     }
@@ -30,7 +35,9 @@ final class ViewFactory: ViewFactoryProtocol {
         account: Account,
         refreshTrigger: Int,
         onDeposit: @escaping () -> Void,
+        onTopUpFromOtherAccount: @escaping () -> Void,
         onWithdraw: @escaping () -> Void,
+        onOpenTransferTabFromHere: @escaping () -> Void,
         onHistory: @escaping () -> Void,
         onCloseAccount: @escaping () -> Void) -> AccountDetailView
     {
@@ -38,7 +45,9 @@ final class ViewFactory: ViewFactoryProtocol {
             viewModel: viewModelFactory.makeAccountDetailViewModel(account: account),
             refreshTrigger: refreshTrigger,
             onDeposit: onDeposit,
+            onTopUpFromOtherAccount: onTopUpFromOtherAccount,
             onWithdraw: onWithdraw,
+            onOpenTransferTabFromHere: onOpenTransferTabFromHere,
             onHistory: onHistory,
             onCloseAccount: onCloseAccount)
     }
@@ -53,6 +62,15 @@ final class ViewFactory: ViewFactoryProtocol {
         let viewModel = viewModelFactory.makeWithdrawViewModel(account: account)
         viewModel.onSuccess = onDismiss
         return WithdrawView(viewModel: viewModel, onDismiss: onDismiss)
+    }
+
+    func makeStandaloneTransferViewModel(
+        clientId: String,
+        prefillStore: TransferPrefillStore) -> StandaloneTransferViewModel
+    {
+        viewModelFactory.makeStandaloneTransferViewModel(
+            clientId: clientId,
+            prefillStore: prefillStore)
     }
 
     func makeOperationHistoryView(account: Account) -> OperationHistoryView {
@@ -90,13 +108,39 @@ final class ViewFactory: ViewFactoryProtocol {
         return TakeCreditView(viewModel: viewModel, onDismiss: onDismiss)
     }
 
-    func makeRepayCreditView(credit: Credit, onDismiss: @escaping () -> Void) -> RepayCreditView {
-        let viewModel = viewModelFactory.makeRepayCreditViewModel(credit: credit)
+    func makeRepayCreditView(
+        credit: Credit,
+        suggestedAmount: Decimal?,
+        onDismiss: @escaping () -> Void) -> RepayCreditView
+    {
+        let viewModel = viewModelFactory.makeRepayCreditViewModel(
+            credit: credit,
+            suggestedAmount: suggestedAmount)
         viewModel.onSuccess = onDismiss
         return RepayCreditView(viewModel: viewModel, onDismiss: onDismiss)
     }
 
-    func makeProfileView(clientId: String, onLogout: @escaping () -> Void) -> ProfileView {
-        ProfileView(viewModel: viewModelFactory.makeProfileViewModel(clientId: clientId), onLogout: onLogout)
+    func makeCreditDetailView(
+        credit: Credit,
+        clientId: String,
+        creditsRefreshTrigger: Int,
+        onRepay: @escaping (Decimal?) -> Void,
+        onOpenLinkedAccount: @escaping (String) -> Void) -> CreditDetailView
+    {
+        CreditDetailView(
+            viewModel: viewModelFactory.makeCreditDetailViewModel(credit: credit, clientId: clientId),
+            creditsRefreshTrigger: creditsRefreshTrigger,
+            onRepay: onRepay,
+            onOpenLinkedAccount: onOpenLinkedAccount)
+    }
+
+    func makeProfileView(
+        onLogout: @escaping () -> Void,
+        onAppSettingsChanged: @escaping () -> Void) -> ProfileView
+    {
+        ProfileView(
+            viewModel: viewModelFactory.makeProfileViewModel(
+                onAppSettingsChanged: onAppSettingsChanged),
+            onLogout: onLogout)
     }
 }

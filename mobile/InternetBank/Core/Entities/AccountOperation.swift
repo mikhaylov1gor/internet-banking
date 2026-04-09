@@ -1,11 +1,15 @@
 import Foundation
 
 struct AccountOperation: Identifiable, Hashable {
+    private static let transferDescription = "перевод между счетами"
+
     let id: String
     let accountId: String
     let type: OperationType
     let amount: Decimal
     let date: Date
+    let balanceAfter: Decimal?
+    let description: String?
 
     enum OperationType: String, Hashable, Codable {
         case deposit
@@ -21,5 +25,16 @@ struct AccountOperation: Identifiable, Hashable {
                 case .creditIssue: return "Выдача кредита"
             }
         }
+    }
+
+    var displayTitle: String {
+        if description == Self.transferDescription {
+            switch type {
+                case .withdraw: return "Перевод со счёта"
+                case .deposit: return "Перевод на счёт"
+                default: break
+            }
+        }
+        return type.displayName
     }
 }

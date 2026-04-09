@@ -1,4 +1,3 @@
-import React from 'react'
 import { Button } from '../button'
 import './style.css'
 
@@ -11,14 +10,14 @@ export type PaginationProps = {
   itemsPerPageOptions?: number[]
 }
 
-export const MobilePagination: React.FC<PaginationProps> = ({
+export const MobilePagination = ({
   currentPage,
   totalPages,
   onPageChange,
   itemsPerPage,
   onItemsPerPageChange,
   itemsPerPageOptions = [10, 20, 50, 100],
-}) => {
+}: PaginationProps) => {
   const handlePrevious = () => {
     if (currentPage > 1) {
       onPageChange(currentPage - 1)

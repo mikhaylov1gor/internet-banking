@@ -1,61 +1,89 @@
-.input-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.input-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #1e40af;
-}
-
 .input-input {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
   transition: all 0.2s ease;
-  background-color: #ffffff;
-  color: #1e293b;
+  background-color: var(--bg-surface);
+  color: var(--text-default);
   box-sizing: border-box;
 }
 
 .input-input::placeholder {
-  color: #94a3b8;
+  color: var(--text-placeholder);
   opacity: 1;
 }
 
 .input-input:hover {
-  border-color: #93c5fd;
+  border-color: var(--border-hover);
 }
 
 .input-input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-  background-color: #ffffff;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+  background-color: var(--bg-surface);
 }
 
 .input-input:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background-color: #f1f5f9;
+  background-color: var(--bg-disabled);
 }
 
 .input-input.input-error {
-  border-color: #ef4444;
+  border-color: var(--error-color);
 }
 
 .input-input.input-error:focus {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  border-color: var(--error-color);
+  box-shadow: var(--error-focus-shadow);
 }
 
-.input-error-text {
-  color: #ef4444;
-  font-size: 12px;
+.input-suffix-wrap {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
 }
 
+.input-suffix-wrap .input-input {
+  flex: 1;
+  min-width: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.input-suffix-wrap .input-input:focus {
+  z-index: 1;
+}
+
+.input-suffix {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 14px;
+  border: 1px solid var(--border-medium);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  background-color: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.input-suffix-wrap:focus-within .input-suffix {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.input-suffix-wrap .input-input.input-error + .input-suffix {
+  border-color: var(--error-color);
+}
+
+.input-suffix-wrap .input-input.input-error:focus + .input-suffix {
+  border-color: var(--error-color);
+  box-shadow: var(--error-focus-shadow);
+}

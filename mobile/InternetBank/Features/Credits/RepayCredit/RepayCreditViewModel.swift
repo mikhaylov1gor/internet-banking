@@ -13,15 +13,18 @@ final class RepayCreditViewModel {
     private let creditRepository: CreditRepositoryProtocol
     private let accountRepository: AccountRepositoryProtocol
     private let credit: Credit
+    private let suggestedAmount: Decimal?
 
     init(
         creditRepository: CreditRepositoryProtocol,
         accountRepository: AccountRepositoryProtocol,
-        credit: Credit)
+        credit: Credit,
+        suggestedAmount: Decimal?)
     {
         self.creditRepository = creditRepository
         self.accountRepository = accountRepository
         self.credit = credit
+        self.suggestedAmount = suggestedAmount
     }
 
     func loadData() async {
@@ -29,6 +32,10 @@ final class RepayCreditViewModel {
         do {
             accounts = try await accountRepository.getAccounts(clientId: credit.clientId)
             selectedAccountId = accounts.first { $0.id == credit.accountId }?.id ?? accounts.first?.id ?? ""
+            if let s = suggestedAmount, s >= 0.01 {
+                let capped = min(s, credit.remainingAmount)
+                amount = NSDecimalNumber(decimal: capped).stringValue
+            }
         } catch {
             errorMessage = error.displayMessage
         }
@@ -36,7 +43,8 @@ final class RepayCreditViewModel {
     }
 
     func repay() async {
-        guard let value = Decimal(string: amount), value > 0 else {
+        let normalized = amount.replacingOccurrences(of: ",", with: ".")
+        guard let value = Decimal(string: normalized), value > 0 else {
             errorMessage = "Введите корректную сумму"
             return
         }

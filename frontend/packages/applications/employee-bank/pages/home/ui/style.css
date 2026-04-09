@@ -5,13 +5,13 @@
   justify-content: center;
   min-height: 60vh;
   padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
 }
 
 .home-page-title {
   font-size: 2.5rem;
   margin-bottom: 2rem;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--btn-primary-start) 0%, var(--btn-primary-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -25,4 +25,3 @@
   width: 100%;
   max-width: 300px;
 }
-

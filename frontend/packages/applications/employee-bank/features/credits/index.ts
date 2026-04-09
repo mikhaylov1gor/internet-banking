@@ -1,3 +1,7 @@
-export { useCredits, useCredit } from './model/use-credits'
-
-
+export {
+  useCredits,
+  useCredit,
+  useCreditPayments,
+  useClientCreditRatingForUser,
+  verifyCreditExistsForNavigation,
+} from './model/use-credits'

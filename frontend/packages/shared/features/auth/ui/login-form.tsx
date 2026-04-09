@@ -1,26 +1,27 @@
-import React, { useState } from 'react'
+import type { ChangeEvent } from 'react'
+import { getApiErrorMessage } from '@shared/api'
+import { InlineAlert } from '@shared/ui/inline-alert'
 import { EmailInput } from '@shared/ui/email-input'
 import { PasswordInput } from '@shared/ui/password-input'
 import { Button } from '@shared/ui/button'
-import { useLogin, type LoginRequest, type LoginResponse } from '../model'
+import { useLogin, useLoginForm, type LoginRequest, type LoginResponse } from '../model'
 import './style.css'
 
 type LoginFormProps = {
   loginFn: (data: LoginRequest) => Promise<LoginResponse>
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ loginFn }) => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [emailValid, setEmailValid] = useState(false)
+export const LoginForm = ({ loginFn }: LoginFormProps) => {
   const loginMutation = useLogin(loginFn)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (emailValid && password) {
-      loginMutation.mutate({ email, password })
-    }
-  }
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    emailValid,
+    setEmailValid,
+    handleSubmit,
+  } = useLoginForm(loginMutation)
 
   return (
     <form onSubmit={handleSubmit} className="login-form">
@@ -28,29 +29,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ loginFn }) => {
       <EmailInput
         label="Email"
         value={email}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
         onValidationChange={setEmailValid}
         required
       />
       <PasswordInput
         label="Пароль"
         value={password}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
         required
       />
       {loginMutation.isError && (
-        <div className="login-form-error">
-          {(() => {
-            const error = loginMutation.error as any
-            if (error?.response?.data?.error) {
-              return error.response.data.error
-            }
-            if (error instanceof Error) {
-              return error.message
-            }
-            return 'Ошибка авторизации'
-          })()}
-        </div>
+        <InlineAlert>
+          {getApiErrorMessage(loginMutation.error, 'Ошибка авторизации. Попробуйте позже.')}
+        </InlineAlert>
       )}
       <Button type="submit" disabled={!emailValid || !password || loginMutation.isPending}>
         {loginMutation.isPending ? 'Вход...' : 'Войти'}
@@ -58,4 +50,3 @@ export const LoginForm: React.FC<LoginFormProps> = ({ loginFn }) => {
     </form>
   )
 }
-

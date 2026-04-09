@@ -1,14 +1,20 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { DesktopApp, MobileApp} from './app/App'
+import { ThemeProvider } from '@shared/features/theme'
+import { ToastProvider } from '@shared/ui/toast'
+import { DesktopApp, MobileApp } from './app/App'
 import { isMobileDevice } from '@shared/utils'
+import '@shared/ui/theme/theme.css'
 import './index.css'
 
-export const isMobile = isMobileDevice()
+const isMobile = isMobileDevice()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-      {isMobile ? <MobileApp/> : <DesktopApp/>}
+    <ThemeProvider appType="client">
+      <ToastProvider>
+        {isMobile ? <MobileApp /> : <DesktopApp />}
+      </ToastProvider>
+    </ThemeProvider>
   </React.StrictMode>
 )
-

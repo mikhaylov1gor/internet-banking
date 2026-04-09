@@ -11,3 +11,11 @@ protocol AuthServiceProtocol: AnyObject {
     func getUserId() -> String?
     func clearUserId()
 }
+
+protocol AccountOperationsWebSocketProtocol: AnyObject {
+    func connect(
+        accountId: String,
+        onOperationCreated: @escaping () -> Void,
+        onError: @escaping (String) -> Void)
+    func disconnect()
+}

@@ -19,8 +19,8 @@ final class AccountRepository: AccountRepositoryProtocol {
         return mapToAccount(response)
     }
 
-    func openAccount(clientId: String) async throws -> Account {
-        let request = OpenAccountRequest(clientId: clientId)
+    func openAccount(clientId: String, currency: String) async throws -> Account {
+        let request = OpenAccountRequest(clientId: clientId, currency: currency)
         let response: AccountResponse = try await apiClient.request(
             path: AccountEndpoints.openAccount,
             method: "POST",
@@ -50,28 +50,78 @@ final class AccountRepository: AccountRepositoryProtocol {
             body: request)
     }
 
+    func transfer(fromAccountId: String, to destination: AccountTransferDestination, amount: Decimal) async throws {
+        let value = NSDecimalNumber(decimal: amount).doubleValue
+        let request: TransferRequest
+        switch destination {
+            case let .accountId(id):
+                request = TransferRequest(
+                    fromAccountId: fromAccountId,
+                    amount: value,
+                    toAccountId: id,
+                    toAccountNumber: nil)
+            case let .accountNumber(number):
+                request = TransferRequest(
+                    fromAccountId: fromAccountId,
+                    amount: value,
+                    toAccountId: nil,
+                    toAccountNumber: number)
+        }
+        let _: TransferAPIResponse = try await apiClient.request(
+            path: AccountEndpoints.transfer,
+            method: "POST",
+            body: request)
+    }
+
+    func previewTransfer(
+        fromAccountId: String,
+        to destination: AccountTransferDestination,
+        amount: Decimal) async throws -> TransferPreviewQuote
+    {
+        let value = NSDecimalNumber(decimal: amount).doubleValue
+        let request: TransferRequest
+        switch destination {
+            case let .accountId(id):
+                request = TransferRequest(
+                    fromAccountId: fromAccountId,
+                    amount: value,
+                    toAccountId: id,
+                    toAccountNumber: nil)
+            case let .accountNumber(number):
+                request = TransferRequest(
+                    fromAccountId: fromAccountId,
+                    amount: value,
+                    toAccountId: nil,
+                    toAccountNumber: number)
+        }
+        let response: TransferPreviewResponse = try await apiClient.request(
+            path: AccountEndpoints.transferPreview,
+            method: "POST",
+            body: request)
+        return TransferPreviewQuote(
+            fromCurrency: response.fromCurrency,
+            toCurrency: response.toCurrency,
+            debitAmount: Decimal(response.debitAmount),
+            creditAmount: Decimal(response.creditAmount),
+            rate: Decimal(response.rate))
+    }
+
     func getOperations(accountId: String) async throws -> [AccountOperation] {
         let response: OperationListResponse = try await apiClient.request(
             path: AccountEndpoints.operations(accountId: accountId))
-        return response.operations.compactMap { mapToOperation($0) }
+        return response.operations.compactMap { AccountOperationMapping.from(dto: $0) }
     }
 
     private func mapToAccount(_ dto: AccountResponse) -> Account {
-        Account(
+        let number = dto.accountNumber?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return Account(
             id: dto.id,
             clientId: dto.clientId,
             balance: Decimal(dto.balance),
+            currency: dto.currency ?? "RUB",
             openedAt: ISO8601DateFormatter().date(from: dto.openedAt) ?? Date(),
-            status: dto.status)
+            status: dto.status,
+            accountNumber: number)
     }
 
-    private func mapToOperation(_ dto: OperationResponse) -> AccountOperation? {
-        guard let type = AccountOperation.OperationType(rawValue: dto.type) else { return nil }
-        return AccountOperation(
-            id: dto.id,
-            accountId: dto.accountId,
-            type: type,
-            amount: Decimal(dto.amount),
-            date: ISO8601DateFormatter().date(from: dto.createdAt) ?? Date())
-    }
 }

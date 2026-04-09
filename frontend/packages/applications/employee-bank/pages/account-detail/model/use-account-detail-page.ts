@@ -1,21 +1,38 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useAccountOperationsWsSync } from '@shared/features/accounts'
 import { useAccount, useAccountOperations } from '../../../features/accounts'
+
+const OPERATIONS_PAGE_SIZE = 10
 
 export const useAccountDetailPage = () => {
   const { accountId } = useParams<{ accountId: string }>()
   const navigate = useNavigate()
-  const [pageSize, setPageSize] = useState(10)
-  const [page, setPage] = useState(1)
+  const [operationsPage, setOperationsPage] = useState(1)
+
+  useEffect(() => {
+    setOperationsPage(1)
+  }, [accountId])
+
+  useAccountOperationsWsSync(accountId || null, OPERATIONS_PAGE_SIZE)
 
   const { data: account, isLoading: accountLoading, error: accountError } = useAccount(accountId || null)
-  const { data: operationsResponse, isLoading: operationsLoading } = useAccountOperations(accountId || null, {
-    page,
-    page_size: pageSize,
+
+  const {
+    data: operationsData,
+    isLoading: operationsLoading,
+    isError: operationsError,
+  } = useAccountOperations(accountId || null, {
+    page: operationsPage,
+    page_size: OPERATIONS_PAGE_SIZE,
   })
 
-  const operations = useMemo(() => operationsResponse?.operations || [], [operationsResponse])
-  const totalPages = useMemo(() => operationsResponse?.pageQuantity || 1, [operationsResponse])
+  const operations = operationsData?.operations ?? []
+  const operationsTotalPages = Math.max(operationsData?.pageQuantity ?? 1, 1)
+
+  const goPrevOperationsPage = () => setOperationsPage((p) => Math.max(1, p - 1))
+  const goNextOperationsPage = () =>
+    setOperationsPage((p) => Math.min(operationsTotalPages, p + 1))
 
   return {
     account,
@@ -23,13 +40,11 @@ export const useAccountDetailPage = () => {
     accountError,
     operations,
     operationsLoading,
-    limit: pageSize,
-    setLimit: setPageSize,
-    page,
-    setPage,
-    totalPages,
+    operationsError,
+    operationsPage,
+    operationsTotalPages,
+    goPrevOperationsPage,
+    goNextOperationsPage,
     navigate,
   }
 }
-
-

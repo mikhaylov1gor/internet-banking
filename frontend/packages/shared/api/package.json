@@ -8,6 +8,7 @@
   "exports": {
     ".": "./index.ts",
     "./endpoints/accounts": "./endpoints/accounts/index.ts",
+    "./endpoints/app-settings": "./endpoints/app-settings/index.ts",
     "./endpoints/auth": "./endpoints/auth/index.ts",
     "./endpoints/credits": "./endpoints/credits/index.ts",
     "./endpoints/tariffs": "./endpoints/tariffs/index.ts",
@@ -15,6 +16,7 @@
     "./client": "./client.ts"
   },
   "dependencies": {
-    "axios": "^1.6.5"
+    "axios": "^1.6.5",
+    "zod": "*"
   }
 }

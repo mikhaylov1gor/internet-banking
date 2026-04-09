@@ -1,0 +1,3 @@
+export const MAX_CREDIT_TERM_DAYS = 3650
+
+export const MAX_CREDIT_TERM_MONTHS = Math.floor(MAX_CREDIT_TERM_DAYS / 30)

@@ -22,7 +22,7 @@ export const useTariffsPage = () => {
     maxAmount?: boolean
   }>({})
 
-  const { data: tariffsResponse, isLoading } = useTariffs({
+  const { data: tariffsResponse, isLoading, isError: tariffsLoadError } = useTariffs({
     page,
     page_size: pageSize,
   })
@@ -159,6 +159,7 @@ export const useTariffsPage = () => {
     setMaxAmount,
     tariffs,
     isLoading,
+    tariffsLoadError,
     createTariffMutation,
     handleSubmit,
     page,

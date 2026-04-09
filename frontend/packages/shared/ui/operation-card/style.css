@@ -1,14 +1,14 @@
 .operation-card {
   padding: 1.25rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-default);
   border-radius: 12px;
-  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--bg-surface-alt) 0%, var(--bg-card-start) 100%);
   transition: all 0.2s ease;
 }
 
 .operation-card:hover {
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
-  border-color: #93c5fd;
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--border-hover);
 }
 
 .operation-card-header {
@@ -19,11 +19,11 @@
 
 .operation-card-type {
   font-weight: 600;
-  color: #1e40af;
+  color: var(--text-accent);
 }
 
 .operation-card-date {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
@@ -32,10 +32,9 @@
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .operation-card-details span {
   display: block;
 }
-

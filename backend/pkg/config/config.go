@@ -12,7 +12,14 @@ type Config struct {
 
 type CoreConfig struct {
 	Config
-	JWTSecret string
+	JWTSecret            string
+	FXBaseURL            string
+	RabbitURL            string
+	RabbitQueue          string
+	MasterAccountID      string
+	BankServiceUserID    string
+	MasterInitialBalance float64
+	MasterCurrency       string
 }
 
 func LoadCore() CoreConfig {
@@ -26,9 +33,52 @@ func LoadCore() CoreConfig {
 	}
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "change-me-in-production"
+		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
-	return CoreConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret}
+	fxBaseURL := os.Getenv("FX_BASE_URL")
+	if fxBaseURL == "" {
+		fxBaseURL = "https://open.er-api.com/v6/latest"
+	}
+	rabbitURL := os.Getenv("RABBITMQ_URL")
+	if rabbitURL == "" {
+		rabbitURL = "amqp://guest:guest@rabbitmq:5672/"
+	}
+	rabbitQueue := os.Getenv("RABBITMQ_QUEUE")
+	if rabbitQueue == "" {
+		rabbitQueue = "core.operations"
+	}
+	masterAccountID := os.Getenv("MASTER_ACCOUNT_ID")
+	if masterAccountID == "" {
+		masterAccountID = "00000000-0000-0000-0000-000000000001"
+	}
+	bankServiceUserID := os.Getenv("BANK_SERVICE_USER_ID")
+	if bankServiceUserID == "" {
+		bankServiceUserID = "11111111-1111-1111-1111-111111111111"
+	}
+	masterInitialBalance := 1_000_000_000.0
+	if s := os.Getenv("MASTER_ACCOUNT_INITIAL_BALANCE"); s != "" {
+		if v, err := strconv.ParseFloat(s, 64); err == nil {
+			masterInitialBalance = v
+		}
+	}
+	masterCurrency := os.Getenv("MASTER_ACCOUNT_CURRENCY")
+	if masterCurrency == "" {
+		masterCurrency = "RUB"
+	}
+	return CoreConfig{
+		Config: Config{
+			Port: port,
+			DSN:  dsn,
+		},
+		JWTSecret:            jwtSecret,
+		FXBaseURL:            fxBaseURL,
+		RabbitURL:            rabbitURL,
+		RabbitQueue:          rabbitQueue,
+		MasterAccountID:      masterAccountID,
+		BankServiceUserID:    bankServiceUserID,
+		MasterInitialBalance: masterInitialBalance,
+		MasterCurrency:       masterCurrency,
+	}
 }
 
 func LoadUsers() (Config, UsersAuth) {
@@ -42,7 +92,7 @@ func LoadUsers() (Config, UsersAuth) {
 	}
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "change-me-in-production"
+		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
 	accessTTL := 15
 	if ttl := os.Getenv("JWT_ACCESS_TTL_MIN"); ttl != "" {
@@ -56,17 +106,37 @@ func LoadUsers() (Config, UsersAuth) {
 			refreshTTL = v
 		}
 	}
+	ssoClients := os.Getenv("SSO_CLIENTS")
+	if ssoClients == "" {
+		ssoClients = "client-app|any|http://localhost:3000/callback,employee-app|any|http://localhost:3001/callback"
+	}
+	forceSecureSSO := false
+	if raw := os.Getenv("SSO_FORCE_SECURE_COOKIE"); raw != "" {
+		if v, err := strconv.ParseBool(raw); err == nil {
+			forceSecureSSO = v
+		}
+	}
 	return Config{Port: port, DSN: dsn}, UsersAuth{
-		JWTSecret:  jwtSecret,
-		AccessTTL:  accessTTL,
-		RefreshTTL: refreshTTL,
+		JWTSecret:      jwtSecret,
+		AccessTTL:      accessTTL,
+		RefreshTTL:     refreshTTL,
+		SSOClients:     ssoClients,
+		ForceSecureSSO: forceSecureSSO,
 	}
 }
 
 type CreditsConfig struct {
 	Config
+	JWTSecret           string
+	CoreURL             string
+	MasterAccountID     string
+	BankServiceUserID   string
+	InternalTokenTTLMin int
+}
+
+type AppSettingsConfig struct {
+	Config
 	JWTSecret string
-	CoreURL   string
 }
 
 func LoadCredits() CreditsConfig {
@@ -80,17 +150,56 @@ func LoadCredits() CreditsConfig {
 	}
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "change-me-in-production"
+		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
 	coreURL := os.Getenv("CORE_URL")
 	if coreURL == "" {
 		coreURL = "http://localhost:8001"
 	}
-	return CreditsConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret, CoreURL: coreURL}
+	masterAccountID := os.Getenv("MASTER_ACCOUNT_ID")
+	if masterAccountID == "" {
+		masterAccountID = "00000000-0000-0000-0000-000000000001"
+	}
+	bankServiceUserID := os.Getenv("BANK_SERVICE_USER_ID")
+	if bankServiceUserID == "" {
+		bankServiceUserID = "11111111-1111-1111-1111-111111111111"
+	}
+	internalTokenTTLMin := 15
+	if ttl := os.Getenv("INTERNAL_TOKEN_TTL_MIN"); ttl != "" {
+		if v, err := strconv.Atoi(ttl); err == nil && v > 0 {
+			internalTokenTTLMin = v
+		}
+	}
+	return CreditsConfig{
+		Config:              Config{Port: port, DSN: dsn},
+		JWTSecret:           jwtSecret,
+		CoreURL:             coreURL,
+		MasterAccountID:     masterAccountID,
+		BankServiceUserID:   bankServiceUserID,
+		InternalTokenTTLMin: internalTokenTTLMin,
+	}
+}
+
+func LoadAppSettings() AppSettingsConfig {
+	port := os.Getenv("APP_SETTINGS_PORT")
+	if port == "" {
+		port = "8004"
+	}
+	dsn := os.Getenv("APP_SETTINGS_DSN")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=postgres dbname=app_settings port=5432 sslmode=disable"
+	}
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
+	}
+	return AppSettingsConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret}
 }
 
 type UsersAuth struct {
-	JWTSecret  string
-	AccessTTL  int
-	RefreshTTL int
+	JWTSecret      string
+	AccessTTL      int
+	RefreshTTL     int
+	SSOClients     string
+	ForceSecureSSO bool
 }

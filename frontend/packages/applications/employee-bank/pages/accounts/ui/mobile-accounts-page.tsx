@@ -6,17 +6,17 @@ import { Select } from '@shared/ui/select'
 import { Spinner } from '@shared/ui/spinner'
 import { MobilePagination } from '@shared/ui/pagination'
 import { AccountCard } from '@shared/ui/account-card'
+import { getLoadDataErrorMessage } from '@shared/api'
 import { useAccountsPage } from '../model/use-accounts-page'
 import { UserSelect } from '@shared/ui/user-select'
 import './style.css'
 
-export const MobileAccountsPage: React.FC = () => {
+export const MobileAccountsPage = () => {
   const navigate = useNavigate()
   const {
     accountId,
     setAccountId,
     error,
-    setError,
     handleSearch,
     accounts,
     isLoading,
@@ -29,6 +29,13 @@ export const MobileAccountsPage: React.FC = () => {
     limit,
     setLimit,
     totalPages,
+    hideAccountsFeatureEnabled,
+    hiddenAccountIds,
+    toggleHiddenAccount,
+    showHidden,
+    setShowHidden,
+    hiddenCount,
+    accountsLoadError,
   } = useAccountsPage()
 
   return (
@@ -39,12 +46,10 @@ export const MobileAccountsPage: React.FC = () => {
         <div className="accounts-page-search-section mobile-search-section">
           <div className="accounts-page-search-box mobile-search-box">
             <Input
-              placeholder="ID счёта"
+              placeholder="0000-0000-0000-0000"
               value={accountId}
-              onChange={(e) => {
-                setAccountId(e.target.value)
-                setError('')
-              }}
+              onChange={(e) => setAccountId(e.target.value)}
+              inputMode="numeric"
               onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSearch()}
               error={error || undefined}
             />
@@ -58,6 +63,7 @@ export const MobileAccountsPage: React.FC = () => {
             value={selectedUserId}
             onChange={setSelectedUserId}
             className="accounts-page-user-select"
+            userKind="all"
           />
           <Select
             label="Статус"
@@ -69,6 +75,15 @@ export const MobileAccountsPage: React.FC = () => {
               { value: 'closed', label: 'Закрытые' },
             ]}
           />
+          {hideAccountsFeatureEnabled && hiddenCount > 0 && (
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => setShowHidden(!showHidden)}
+            >
+              {showHidden ? 'Скрыть скрытые' : `Показать скрытые (${hiddenCount})`}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -78,17 +93,24 @@ export const MobileAccountsPage: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && accounts && accounts.length === 0 && <div className="empty">Счета не найдены</div>}
+      {!isLoading && accountsLoadError && (
+        <div className="empty error">{getLoadDataErrorMessage('счета')}</div>
+      )}
 
-      {!isLoading && accounts && accounts.length > 0 && (
+      {!isLoading && !accountsLoadError && accounts && accounts.length === 0 && (
+        <div className="empty">Счета не найдены</div>
+      )}
+
+      {!isLoading && !accountsLoadError && accounts && accounts.length > 0 && (
         <>
           <div className="list mobile-list">
             {accounts.map((account) => (
               <AccountCard
                 key={account.id}
                 account={account}
+                isHidden={hideAccountsFeatureEnabled && hiddenAccountIds.includes(account.id)}
+                onToggleHidden={hideAccountsFeatureEnabled ? toggleHiddenAccount : undefined}
                 onClick={() => navigate(`/accounts/${account.id}`)}
-                shortenId={false}
               />
             ))}
           </div>

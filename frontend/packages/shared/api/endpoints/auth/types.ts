@@ -1,15 +1,20 @@
-export type LoginRequest = {
-  email: string
-  password: string
-}
+import { z } from 'zod'
 
-export type LoginResponse = {
-  token: string
-  refresh_token: string
-  user_id: string
-  type: 'client' | 'employee'
-}
+export const LoginRequestSchema = z.object({
+  email: z.string(),
+  password: z.string(),
+})
+export type LoginRequest = z.infer<typeof LoginRequestSchema>
 
-export type RefreshTokenRequest = {
-  refresh_token: string
-}
+export const LoginResponseSchema = z.object({
+  token: z.string(),
+  refresh_token: z.string(),
+  user_id: z.string(),
+  type: z.enum(['client', 'employee']),
+})
+export type LoginResponse = z.infer<typeof LoginResponseSchema>
+
+export const RefreshTokenRequestSchema = z.object({
+  refresh_token: z.string(),
+})
+export type RefreshTokenRequest = z.infer<typeof RefreshTokenRequestSchema>

@@ -1,8 +1,8 @@
 .credit-detail-page-container {
   padding: 2rem 1.5rem 1.5rem 1.5rem;
-  max-width: 1200px;
+  max-width: 56.25rem;
   margin: 0 auto;
-  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
   min-height: calc(100vh - 80px);
 }
 
@@ -18,23 +18,50 @@
 }
 
 .credit-detail-page-credit-info {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  background: linear-gradient(135deg, var(--bg-card-start) 0%, var(--bg-card-end) 100%);
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1);
-  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-default);
   margin-bottom: 2rem;
 }
 
 .credit-detail-page-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15em;
   font-size: 2rem;
   margin-top: 0;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  font-weight: 700;
+}
+
+.credit-detail-page-title-gradient {
+  background: linear-gradient(135deg, var(--btn-primary-start) 0%, var(--btn-primary-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.credit-detail-page-title-gradient:not(.credit-detail-page-title-id) {
+  cursor: default;
+}
+
+.credit-detail-page-title-id {
+  font: inherit;
   font-weight: 700;
+  border: none;
+  padding: 0;
+  cursor: pointer !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.credit-detail-page-title-id:hover {
+  cursor: pointer !important;
+  text-decoration: underline;
+  text-decoration-color: var(--btn-primary-end);
 }
 
 .credit-detail-page-details {
@@ -49,48 +76,98 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 1rem;
-  background: #eff6ff;
+  background: var(--bg-surface-alt);
   border-radius: 8px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--border-light);
+}
+
+.credit-detail-page-detail-item--issue-dates .credit-detail-page-issue-range {
+  margin: 0;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .credit-detail-page-label {
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 .credit-detail-page-amount {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1e40af;
+  color: var(--credit-amount-color);
 }
 
 .credit-detail-page-remaining {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #ef4444;
+  color: var(--credit-remaining-color);
 }
 
 .credit-detail-page-active {
-  color: #10b981;
+  color: var(--status-active);
   font-weight: 500;
 }
 
 .credit-detail-page-paid {
-  color: #3b82f6;
+  color: var(--status-paid-credit);
   font-weight: 500;
 }
 
-.credit-detail-page-account-link {
-  cursor: pointer;
-  color: #3b82f6;
-  text-decoration: underline;
-  transition: color 0.2s;
+.credit-detail-page-overdue {
+  color: var(--error-color, #c62828);
+  font-weight: 500;
 }
 
-.credit-detail-page-account-link:hover {
-  color: #2563eb;
+.credit-detail-page-detail-item--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.credit-detail-page-account-value {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.credit-detail-page-id-copy {
+  font: inherit;
+  font-weight: 600;
+  color: var(--link-color);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.credit-detail-page-id-copy:hover {
+  cursor: pointer !important;
+  color: var(--link-hover-color);
+}
+
+.credit-detail-page-account-open {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--link-color);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.credit-detail-page-account-open:hover {
+  color: var(--link-hover-color);
 }
 
 .actions {
@@ -104,12 +181,12 @@
 }
 
 .error {
-  color: #ef4444;
+  color: var(--error-color);
   font-size: 0.875rem;
   padding: 0.75rem 1rem;
-  background-color: #fef2f2;
+  background-color: var(--error-bg);
   border-radius: 8px;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--error-border);
 }
 
 .modalActions {
@@ -126,3 +203,241 @@
   min-height: 200px;
 }
 
+.credit-detail-payments-section {
+  background: linear-gradient(135deg, var(--bg-card-start) 0%, var(--bg-card-end) 100%);
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-default);
+  margin-bottom: 2rem;
+}
+
+.credit-detail-payments-head {
+  margin-bottom: 1.25rem;
+}
+
+.credit-detail-payments-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--btn-primary-start) 0%, var(--btn-primary-end) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.credit-detail-payments-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.credit-detail-payments-filter input {
+  cursor: pointer;
+}
+
+.credit-detail-payments-loading {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.credit-detail-payments-empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+.credit-payments-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.credit-payments-feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border-radius: 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.credit-payments-feed-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  background: color-mix(in srgb, var(--text-secondary) 18%, transparent);
+}
+
+.credit-payments-feed-icon--pending {
+  background: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+}
+
+.credit-payments-feed-icon--paid {
+  background: color-mix(in srgb, var(--status-active) 35%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--status-active) 45%, transparent);
+}
+
+.credit-payments-feed-icon--overdue {
+  background: color-mix(in srgb, var(--error-color) 22%, transparent);
+}
+
+.credit-payments-feed-icon--partial {
+  background: color-mix(in srgb, var(--text-accent, #1565c0) 20%, transparent);
+}
+
+.credit-payments-feed-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.credit-payments-feed-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.credit-payments-feed-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.credit-payments-feed-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-default);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.credit-payments-feed-date {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.credit-payments-feed-schedule-line {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.credit-payments-feed-sumcol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.credit-payments-feed-amount {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-default);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.credit-payments-feed-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  text-transform: none;
+}
+
+.credit-payments-feed-badge--pending {
+  background: color-mix(in srgb, var(--text-secondary) 14%, transparent);
+  color: var(--text-secondary);
+}
+
+.credit-payments-feed-badge--paid {
+  background: color-mix(in srgb, var(--status-active) 16%, transparent);
+  color: var(--status-active);
+}
+
+.credit-payments-feed-badge--overdue {
+  background: var(--error-bg);
+  color: var(--error-color);
+}
+
+.credit-payments-feed-badge--partial {
+  background: color-mix(in srgb, var(--text-accent, #1565c0) 14%, transparent);
+  color: var(--text-accent, #1565c0);
+}
+
+.credit-payments-feed-action {
+  padding-top: 0.125rem;
+}
+
+.credit-payments-feed-pay-btn {
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .credit-payments-feed-pay-btn {
+    width: auto;
+    min-width: 7.5rem;
+  }
+}
+
+.credit-detail-payments-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.credit-detail-payments-page-info {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.credit-detail-pay-installment-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-light);
+  margin-bottom: 0.25rem;
+}
+
+.credit-detail-pay-installment-sum-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.credit-detail-pay-installment-sum-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--credit-amount-color);
+  font-variant-numeric: tabular-nums;
+}

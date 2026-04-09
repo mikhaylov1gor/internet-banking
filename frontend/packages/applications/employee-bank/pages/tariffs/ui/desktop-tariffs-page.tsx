@@ -1,13 +1,13 @@
-import React from 'react'
 import { Input } from '@shared/ui/input'
 import { Button } from '@shared/ui/button'
 import { Spinner } from '@shared/ui/spinner'
 import { DesktopPagination } from '@shared/ui/pagination'
 import { Modal } from '@shared/ui/modal'
+import { getLoadDataErrorMessage } from '@shared/api'
 import { useTariffsPage } from '../model/use-tariffs-page'
 import './style.css'
 
-export const DesktopTariffsPage: React.FC = () => {
+export const DesktopTariffsPage = () => {
   const {
     name,
     setName,
@@ -19,6 +19,7 @@ export const DesktopTariffsPage: React.FC = () => {
     setMaxAmount,
     tariffs,
     isLoading,
+    tariffsLoadError,
     createTariffMutation,
     handleSubmit,
     page,
@@ -48,10 +49,13 @@ export const DesktopTariffsPage: React.FC = () => {
               <Spinner />
             </div>
           )}
-          {tariffs && tariffs.length === 0 && (
+          {!isLoading && tariffsLoadError && (
+            <div className="empty error">{getLoadDataErrorMessage('тарифы')}</div>
+          )}
+          {!isLoading && !tariffsLoadError && tariffs && tariffs.length === 0 && (
             <div className="empty">Тарифы не найдены</div>
           )}
-          {tariffs && tariffs.length > 0 && (
+          {!isLoading && !tariffsLoadError && tariffs && tariffs.length > 0 && (
             <div className="list desktop-tariffs-list">
               {tariffs.map((tariff) => (
                 <div key={tariff.id} className="tariffCard desktop-tariffCard">

@@ -1,16 +1,15 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@shared/ui/button'
 import { Spinner } from '@shared/ui/spinner'
-import { ErrorFallback } from '@shared/ui/error-fallback'
 import { Modal } from '@shared/ui/modal'
 import { Select } from '@shared/ui/select'
 import { MobilePagination } from '@shared/ui/pagination'
 import { AccountCard } from '@shared/ui/account-card'
+import { getLoadDataErrorMessage } from '@shared/api'
 import { useAccountsPage } from '../model/use-accounts-page'
 import './style.css'
 
-export const MobileAccountsPage: React.FC = () => {
+export const MobileAccountsPage = () => {
   const navigate = useNavigate()
   const {
     accounts,
@@ -29,6 +28,12 @@ export const MobileAccountsPage: React.FC = () => {
     limit,
     setLimit,
     totalPages,
+    hiddenAccountIds,
+    toggleHiddenAccount,
+    showHidden,
+    setShowHidden,
+    hiddenCount,
+    accountsLoadError,
   } = useAccountsPage()
 
   return (
@@ -53,6 +58,15 @@ export const MobileAccountsPage: React.FC = () => {
             ]}
           />
         </div>
+        {hiddenCount > 0 && (
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => setShowHidden(!showHidden)}
+          >
+            {showHidden ? 'Скрыть скрытые' : `Показать скрытые (${hiddenCount})`}
+          </Button>
+        )}
       </div>
 
       {isLoading && (
@@ -61,19 +75,24 @@ export const MobileAccountsPage: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && accounts && accounts.length === 0 && (
+      {!isLoading && accountsLoadError && (
+        <div className="empty error">{getLoadDataErrorMessage('счета')}</div>
+      )}
+
+      {!isLoading && !accountsLoadError && accounts && accounts.length === 0 && (
         <div className="empty">У вас пока нет счетов. Откройте первый счет!</div>
       )}
 
-      {!isLoading && accounts && accounts.length > 0 && (
+      {!isLoading && !accountsLoadError && accounts && accounts.length > 0 && (
         <>
           <div className="list mobile-list">
             {accounts.map((account) => (
               <AccountCard
                 key={account.id}
                 account={account}
+                isHidden={hiddenAccountIds.includes(account.id)}
+                onToggleHidden={toggleHiddenAccount}
                 onClick={() => navigate(`/accounts/${account.id}`)}
-                shortenId={true}
               />
             ))}
           </div>

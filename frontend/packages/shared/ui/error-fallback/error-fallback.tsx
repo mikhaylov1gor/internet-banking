@@ -1,4 +1,3 @@
-import React from 'react'
 import { Button } from '../button'
 import './style.css'
 
@@ -8,17 +7,24 @@ export type ErrorFallbackProps = {
   onRetry?: () => void
   onGoBack?: () => void
   goBackLabel?: string
+  variant?: 'fullscreen' | 'embedded'
 }
 
-export const ErrorFallback: React.FC<ErrorFallbackProps> = ({
+export const ErrorFallback = ({
   title = 'Произошла ошибка',
   message = 'Что-то пошло не так. Попробуйте обновить страницу или вернуться назад.',
   onRetry,
   onGoBack,
   goBackLabel,
-}) => {
+  variant = 'fullscreen',
+}: ErrorFallbackProps) => {
+  const containerClass =
+    variant === 'embedded'
+      ? 'error-fallback-container error-fallback-container--embedded'
+      : 'error-fallback-container'
+
   return (
-    <div className="error-fallback-container">
+    <div className={containerClass}>
       <div className="error-fallback-content">
         <h2 className="error-fallback-title">{title}</h2>
         <p className="error-fallback-message">{message}</p>

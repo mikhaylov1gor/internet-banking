@@ -11,15 +11,18 @@
     "./button": "./button/index.ts",
     "./email-input": "./email-input/index.ts",
     "./error-fallback": "./error-fallback/index.ts",
+    "./inline-alert": "./inline-alert/index.ts",
     "./input": "./input/index.ts",
     "./modal": "./modal/index.ts",
     "./pagination": "./pagination/index.ts",
+    "./rub-deposit-preview": "./rub-deposit-preview/index.ts",
     "./password-input": "./password-input/index.ts",
     "./phone-input": "./phone-input/index.ts",
     "./select": "./select/index.ts",
     "./spinner": "./spinner/index.ts"
   },
   "dependencies": {
+    "@shared/utils": "*",
     "@shared/features": "*",
     "@shared/api": "*",
     "react": "^18.2.0",

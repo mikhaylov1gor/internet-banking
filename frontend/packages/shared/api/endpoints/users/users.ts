@@ -1,19 +1,20 @@
 import { apiClient } from '../../client'
-import type { User, CreateUserRequest, GetUsersParams, UserListResponse } from './types'
+import { parseApiResponse } from '../../parse-response'
+import { UserSchema, UserListResponseSchema, type User, type CreateUserRequest, type GetUsersParams, type UserListResponse } from './types'
 
 export const getUsers = async (params?: GetUsersParams): Promise<UserListResponse> => {
-  const response = await apiClient.get<UserListResponse>('/users', { params })
-  return response.data
+  const response = await apiClient.get('/users', { params })
+  return parseApiResponse(UserListResponseSchema, response.data)
 }
 
 export const getUserById = async (userId: string): Promise<User> => {
-  const response = await apiClient.get<User>(`/users/${userId}`)
-  return response.data
+  const response = await apiClient.get(`/users/${userId}`)
+  return parseApiResponse(UserSchema, response.data)
 }
 
 export const createUser = async (data: CreateUserRequest): Promise<User> => {
-  const response = await apiClient.post<User>('/users', data)
-  return response.data
+  const response = await apiClient.post('/users', data)
+  return parseApiResponse(UserSchema, response.data)
 }
 
 export const blockUser = async (userId: string): Promise<void> => {

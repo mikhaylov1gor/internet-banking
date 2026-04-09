@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 25rem;
+  min-height: calc(100vh - 5rem);
   padding: 1.25rem;
 }
 
@@ -10,16 +10,16 @@
   text-align: center;
   max-width: 31.25rem;
   padding: 2rem;
-  background: #ffffff;
+  background: var(--bg-surface);
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1);
-  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-default);
 }
 
 .error-fallback-title {
   font-size: 1.5rem;
   font-weight: 600;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--btn-primary-start) 0%, var(--btn-primary-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -28,7 +28,7 @@
 
 .error-fallback-message {
   font-size: 1rem;
-  color: #64748b;
+  color: var(--text-secondary);
   margin: 0 0 1.5rem 0;
   line-height: 1.5;
 }
@@ -40,3 +40,15 @@
   flex-wrap: wrap;
 }
 
+.error-fallback-container--embedded {
+  min-height: 0;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.75rem 0 1.25rem;
+}
+
+.error-fallback-container--embedded .error-fallback-content {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}

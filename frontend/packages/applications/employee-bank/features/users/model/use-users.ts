@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { inlineHandledMutationMeta } from '@shared/features/app/model/inline-handled-mutation-meta'
 import {
   getUsers,
   getUserById,
@@ -33,6 +34,7 @@ export const useCreateUser = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: (data: CreateUserRequest) => createUser(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
@@ -54,4 +56,5 @@ export const useToggleUserStatus = () => {
   })
 }
 
+export const verifyUserExistsForNavigation = (userId: string) => getUserById(userId)
 

@@ -5,7 +5,7 @@ export const useTariffs = (params?: GetTariffsParams) => {
   return useQuery({
     queryKey: ['tariffs', params],
     queryFn: () => getTariffs(params),
-    select: (data) => data?.tariffs, // Извлекаем массив tariffs из ответа для обратной совместимости
+    select: (data) => data?.tariffs,
   })
 }
 

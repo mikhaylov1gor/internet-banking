@@ -11,6 +11,7 @@ type CreditRepository interface {
 	Create(c *entity.Credit) error
 	GetByID(id uuid.UUID) (*entity.Credit, error)
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
+	ListActive() ([]*entity.Credit, error)
 	Update(c *entity.Credit) error
 	Delete(id uuid.UUID) error
 	AccrueInterest() error
@@ -58,12 +59,19 @@ func (r *creditRepo) Update(c *entity.Credit) error {
 	return r.db.Save(c).Error
 }
 
+func (r *creditRepo) ListActive() ([]*entity.Credit, error) {
+	var list []*entity.Credit
+	err := r.db.
+		Where("status = ?", entity.CreditStatusActive).
+		Order("issued_at ASC").
+		Find(&list).Error
+	return list, err
+}
+
 func (r *creditRepo) Delete(id uuid.UUID) error {
 	return r.db.Delete(&entity.Credit{}, "id = ?", id).Error
 }
 
 func (r *creditRepo) AccrueInterest() error {
-	return r.db.Model(&entity.Credit{}).
-		Where("status = ?", entity.CreditStatusActive).
-		Update("remaining", gorm.Expr("remaining * (1 + rate / 525600)")).Error
+	return nil
 }

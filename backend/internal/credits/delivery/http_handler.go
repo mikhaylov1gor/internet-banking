@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"internet-bank/internal/credits/entity"
 	"internet-bank/internal/credits/usecase"
@@ -20,10 +21,14 @@ type TariffUseCase interface {
 }
 
 type CreditUseCase interface {
-	Issue(clientID, accountID, tariffID uuid.UUID, amount float64, bearerToken string) (*entity.Credit, error)
+	Issue(clientID, accountID, tariffID uuid.UUID, amount float64, termDays, termMonths *int, bearerToken string) (*entity.Credit, error)
 	GetByID(id uuid.UUID) (*entity.Credit, error)
 	ListByClientID(clientID uuid.UUID, limit, offset int) ([]*entity.Credit, int64, error)
 	Repay(creditID uuid.UUID, accountID uuid.UUID, amount float64, userID uuid.UUID, bearerToken string) (*entity.Credit, error)
+	GetOverdue(creditID uuid.UUID) (*usecase.CreditOverdue, error)
+	GetPayments(creditID uuid.UUID, page, pageSize int, onlyOverdue bool) (*usecase.CreditPaymentList, error)
+	GetClientRating(clientID uuid.UUID) (*usecase.CreditRating, error)
+	CheckCreditAvailability(amount float64) (*usecase.CreditAvailability, error)
 }
 
 type Handler struct {
@@ -75,8 +80,12 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Use(h.authMiddleware)
 		r.Get("/tariffs", h.listTariffs)
 		r.Get("/credits", h.listCredits)
+		r.Post("/credits/availability", h.checkCreditAvailability)
 		r.Post("/credits", h.issueCredit)
 		r.Get("/credits/{creditId}", h.getCredit)
+		r.Get("/credits/{creditId}/overdue", h.getCreditOverdue)
+		r.Get("/credits/{creditId}/payments", h.getCreditPayments)
+		r.Get("/clients/{clientId}/credit-rating", h.getClientRating)
 		r.Post("/credits/{creditId}/repay", h.repayCredit)
 	})
 
@@ -139,17 +148,40 @@ func (h *Handler) listTariffs(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
-	userID, _, bearer := userFromContext(r.Context())
+func (h *Handler) checkCreditAvailability(w http.ResponseWriter, r *http.Request) {
+	userID, _, _ := userFromContext(r.Context())
 	if userID == nil {
 		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
 		return
 	}
 	var body struct {
-		ClientID  string  `json:"client_id"`
-		AccountID string  `json:"account_id"`
-		TariffID  string  `json:"tariff_id"`
-		Amount    float64 `json:"amount"`
+		Amount float64 `json:"amount"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
+		return
+	}
+	res, err := h.creditUC.CheckCreditAvailability(body.Amount)
+	if err != nil {
+		writeCheckCreditAvailabilityError(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
+	userID, userType, bearer := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	var body struct {
+		ClientID   string  `json:"client_id"`
+		AccountID  string  `json:"account_id"`
+		TariffID   string  `json:"tariff_id"`
+		Amount     float64 `json:"amount"`
+		TermDays   *int    `json:"term_days"`
+		TermMonths *int    `json:"term_months"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		response.Err(w, http.StatusBadRequest, "неверное тело запроса")
@@ -162,17 +194,13 @@ func (h *Handler) issueCredit(w http.ResponseWriter, r *http.Request) {
 		response.Err(w, http.StatusBadRequest, "неверные id")
 		return
 	}
-	credit, err := h.creditUC.Issue(clientID, accountID, tariffID, body.Amount, bearer)
+	if userType == auth.UserTypeClient && *userID != clientID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
+		return
+	}
+	credit, err := h.creditUC.Issue(clientID, accountID, tariffID, body.Amount, body.TermDays, body.TermMonths, bearer)
 	if err != nil {
-		if err == usecase.ErrTariffNotFound {
-			response.Err(w, http.StatusBadRequest, "тариф не найден")
-			return
-		}
-		if err == usecase.ErrAmountOutOfRange {
-			response.Err(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		response.Err(w, http.StatusBadRequest, err.Error())
+		writeIssueCreditError(w, err)
 		return
 	}
 	response.JSON(w, http.StatusCreated, toCreditResp(credit))
@@ -293,22 +321,105 @@ func (h *Handler) repayCredit(w http.ResponseWriter, r *http.Request) {
 	}
 	credit, err = h.creditUC.Repay(creditID, accountID, body.Amount, *userID, bearer)
 	if err != nil {
-		if err == usecase.ErrCreditNotFound || err == usecase.ErrCreditNotActive {
-			response.Err(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		if err.Error() == "счёт не найден" || err.Error() == "счёт не принадлежит пользователю" || err.Error() == "счёт закрыт или заблокирован" {
-			response.Err(w, http.StatusForbidden, err.Error())
-			return
-		}
-		if err.Error() == "недостаточно средств на счёте" {
-			response.Err(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		response.Err(w, http.StatusBadRequest, err.Error())
+		writeRepayCreditError(w, err)
 		return
 	}
 	response.JSON(w, http.StatusOK, toCreditResp(credit))
+}
+
+func (h *Handler) getCreditOverdue(w http.ResponseWriter, r *http.Request) {
+	userID, userType, _ := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	creditID, err := uuid.Parse(chi.URLParam(r, "creditId"))
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный creditId")
+		return
+	}
+	credit, err := h.creditUC.GetByID(creditID)
+	if err != nil {
+		response.Err(w, http.StatusNotFound, "кредит не найден")
+		return
+	}
+	if userType == auth.UserTypeClient && credit.ClientID != *userID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
+		return
+	}
+	overdue, err := h.creditUC.GetOverdue(creditID)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.JSON(w, http.StatusOK, overdue)
+}
+
+func (h *Handler) getCreditPayments(w http.ResponseWriter, r *http.Request) {
+	userID, userType, _ := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	creditID, err := uuid.Parse(chi.URLParam(r, "creditId"))
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный creditId")
+		return
+	}
+	credit, err := h.creditUC.GetByID(creditID)
+	if err != nil {
+		response.Err(w, http.StatusNotFound, "кредит не найден")
+		return
+	}
+	if userType == auth.UserTypeClient && credit.ClientID != *userID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
+		return
+	}
+	page := 1
+	if p := r.URL.Query().Get("page"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			page = v
+		}
+	}
+	pageSize := 50
+	if p := r.URL.Query().Get("page_size"); p != "" {
+		if v, err := strconv.Atoi(p); err == nil && v > 0 {
+			pageSize = v
+		}
+	}
+	onlyOverdue := false
+	if v := r.URL.Query().Get("only_overdue"); v == "1" || v == "true" {
+		onlyOverdue = true
+	}
+	out, err := h.creditUC.GetPayments(creditID, page, pageSize, onlyOverdue)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.JSON(w, http.StatusOK, out)
+}
+
+func (h *Handler) getClientRating(w http.ResponseWriter, r *http.Request) {
+	userID, userType, _ := userFromContext(r.Context())
+	if userID == nil {
+		response.Err(w, http.StatusUnauthorized, "требуется авторизация")
+		return
+	}
+	clientID, err := uuid.Parse(chi.URLParam(r, "clientId"))
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, "неверный clientId")
+		return
+	}
+	if userType == auth.UserTypeClient && *userID != clientID {
+		response.Err(w, http.StatusForbidden, "доступ запрещён")
+		return
+	}
+	rating, err := h.creditUC.GetClientRating(clientID)
+	if err != nil {
+		response.Err(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	response.JSON(w, http.StatusOK, rating)
 }
 
 type tariffResp struct {
@@ -333,7 +444,10 @@ type creditResp struct {
 	Amount       float64 `json:"amount"`
 	Remaining    float64 `json:"remaining"`
 	Rate         float64 `json:"rate"`
+	TermDays     int     `json:"term_days"`
+	TotalDue     float64 `json:"total_due"`
 	DailyPayment float64 `json:"daily_payment"`
+	MaturityAt   string  `json:"maturity_at,omitempty"`
 	IssuedAt     string  `json:"issued_at"`
 	Status       string  `json:"status"`
 }
@@ -355,7 +469,7 @@ func toTariffResp(t *entity.CreditTariff) tariffResp {
 }
 
 func toCreditResp(c *entity.Credit) creditResp {
-	return creditResp{
+	r := creditResp{
 		ID:           c.ID.String(),
 		ClientID:     c.ClientID.String(),
 		AccountID:    c.AccountID.String(),
@@ -363,10 +477,21 @@ func toCreditResp(c *entity.Credit) creditResp {
 		Amount:       c.Amount,
 		Remaining:    c.Remaining,
 		Rate:         c.Rate,
+		TermDays:     c.TermDays,
+		TotalDue:     c.TotalDue,
 		DailyPayment: c.DailyPayment,
 		IssuedAt:     c.IssuedAt.Format("2006-01-02T15:04:05.000Z07:00"),
 		Status:       string(c.Status),
 	}
+	if c.TermDays > 0 {
+		mat := calendarBase(c.IssuedAt).AddDate(0, 0, c.TermDays)
+		r.MaturityAt = mat.Format("2006-01-02T15:04:05.000Z07:00")
+	}
+	return r
+}
+
+func calendarBase(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
 func parseLimitOffset(r *http.Request, defaultLimit, defaultOffset int) (limit, offset int) {

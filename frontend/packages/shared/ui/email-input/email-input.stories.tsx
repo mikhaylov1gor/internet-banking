@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
-import { EmailInput } from './email-input'
+import { EmailInput } from './ui/email-input'
 
 const meta: Meta<typeof EmailInput> = {
   title: 'Shared/EmailInput',

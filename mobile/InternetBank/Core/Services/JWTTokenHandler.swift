@@ -32,7 +32,7 @@ final class JWTTokenHandler: JWTTokenHandlerProtocol {
             invalidateSession()
             throw APIError.sessionExpired
         }
-        guard let url = URL(string: AuthEndpoints.refresh, relativeTo: baseURL) else {
+        guard let url = APIClient.resolveURL(path: AuthEndpoints.refresh, baseURL: baseURL) else {
             invalidateSession()
             throw APIError.sessionExpired
         }
@@ -55,13 +55,19 @@ final class JWTTokenHandler: JWTTokenHandlerProtocol {
         }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let loginResponse = try decoder.decode(LoginResponse.self, from: data)
+        let loginResponse: LoginResponse
+        do {
+            loginResponse = try decoder.decode(LoginResponse.self, from: data)
+        } catch {
+            invalidateSession()
+            throw APIError.responseDecodingFailed(error.localizedDescription)
+        }
         lock.lock()
-        authService.saveToken(loginResponse.token)
-        if let refresh = loginResponse.refreshToken {
+        authService.saveToken(loginResponse.token.trimmingCharacters(in: .whitespacesAndNewlines))
+        if let refresh = loginResponse.refreshToken?.trimmingCharacters(in: .whitespacesAndNewlines), !refresh.isEmpty {
             authService.saveRefreshToken(refresh)
         }
-        authService.saveUserId(loginResponse.userId)
+        authService.saveUserId(loginResponse.userId.trimmingCharacters(in: .whitespacesAndNewlines))
         lock.unlock()
     }
 

@@ -1,26 +1,39 @@
 package usecase
 
 import (
+	"crypto/rand"
 	"errors"
+	"fmt"
+	"math"
+	"math/big"
 	"time"
 
+	"internet-bank/internal/core/client"
 	"internet-bank/internal/core/entity"
+	"internet-bank/pkg/bankconstants"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 var (
-	ErrAccountNotFound   = errors.New("счёт не найден")
-	ErrAccountClosed     = errors.New("счёт закрыт")
-	ErrInsufficientFunds = errors.New("недостаточно средств")
-	ErrInvalidAmount     = errors.New("сумма должна быть положительной")
+	ErrAccountNotFound    = errors.New("счёт не найден")
+	ErrAccountClosed      = errors.New("счёт закрыт")
+	ErrInsufficientFunds  = errors.New("недостаточно средств")
+	ErrInvalidAmount      = errors.New("сумма должна быть положительной")
+	ErrInvalidCurrency    = errors.New("неверная валюта")
+	ErrFXUnavailable      = errors.New("провайдер курсов валют не настроен")
+	ErrConversionTooSmall = errors.New("сумма после конвертации меньше минимально допустимой")
 )
 
 type AccountRepository interface {
 	Create(acc *entity.Account) error
 	GetByID(id uuid.UUID) (*entity.Account, error)
+	GetByNumber(accountNumber string) (*entity.Account, error)
 	List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error)
 	Update(acc *entity.Account) error
+	DebitIfSufficient(accountID uuid.UUID, amount float64) (*entity.Account, error)
+	TransferAtomic(fromAccountID, toAccountID uuid.UUID, debitAmount, creditAmount float64) (*entity.Account, *entity.Account, error)
 }
 
 type OperationRepository interface {
@@ -28,23 +41,57 @@ type OperationRepository interface {
 	ListByAccountID(accountID uuid.UUID, limit, offset int) ([]*entity.Operation, int64, error)
 }
 
+type OperationProducer interface {
+	Publish(op *entity.Operation) error
+}
+
 type AccountUseCase struct {
-	accRepo AccountRepository
-	opRepo  OperationRepository
+	accRepo    AccountRepository
+	opRepo     OperationRepository
+	fxProvider client.FXRateProvider
+	producer   OperationProducer
 }
 
-func NewAccountUseCase(accRepo AccountRepository, opRepo OperationRepository) *AccountUseCase {
-	return &AccountUseCase{accRepo: accRepo, opRepo: opRepo}
+type TransferQuote struct {
+	FromAccountID   uuid.UUID       `json:"from_account_id"`
+	ToAccountID     uuid.UUID       `json:"to_account_id"`
+	ToAccountNumber string          `json:"to_account_number,omitempty"`
+	FromCurrency    entity.Currency `json:"from_currency"`
+	ToCurrency      entity.Currency `json:"to_currency"`
+	DebitAmount     float64         `json:"debit_amount"`
+	CreditAmount    float64         `json:"credit_amount"`
+	Rate            float64         `json:"rate"`
 }
 
-func (uc *AccountUseCase) OpenAccount(clientID uuid.UUID) (*entity.Account, error) {
+// CurrencyConvertQuote — расчёт суммы в целевой валюте без привязки к счетам.
+type CurrencyConvertQuote struct {
+	Amount       float64         `json:"amount"`
+	FromCurrency entity.Currency `json:"from_currency"`
+	ToCurrency   entity.Currency `json:"to_currency"`
+	Rate         float64         `json:"rate"`
+	ResultAmount float64         `json:"result_amount"`
+}
+
+func NewAccountUseCase(accRepo AccountRepository, opRepo OperationRepository, fxProvider client.FXRateProvider, producer OperationProducer) *AccountUseCase {
+	return &AccountUseCase{accRepo: accRepo, opRepo: opRepo, fxProvider: fxProvider, producer: producer}
+}
+
+func (uc *AccountUseCase) OpenAccount(clientID uuid.UUID, currency entity.Currency) (*entity.Account, error) {
+	if currency != entity.CurrencyRUB && currency != entity.CurrencyUSD && currency != entity.CurrencyEUR {
+		return nil, ErrInvalidCurrency
+	}
+	number, err := generateUniqueAccountNumber()
+	if err != nil {
+		return nil, err
+	}
 	acc := &entity.Account{
-		ID:       uuid.New(),
-		ClientID: clientID,
-		Balance:  0,
-		Currency: entity.CurrencyRUB,
-		Status:   entity.AccountStatusActive,
-		OpenedAt: time.Now(),
+		ID:            uuid.New(),
+		AccountNumber: number,
+		ClientID:      clientID,
+		Balance:       0,
+		Currency:      currency,
+		Status:        entity.AccountStatusActive,
+		OpenedAt:      time.Now(),
 	}
 	if err := uc.accRepo.Create(acc); err != nil {
 		return nil, err
@@ -56,8 +103,191 @@ func (uc *AccountUseCase) GetByID(id uuid.UUID) (*entity.Account, error) {
 	return uc.accRepo.GetByID(id)
 }
 
+func (uc *AccountUseCase) GetByNumber(accountNumber string) (*entity.Account, error) {
+	return uc.accRepo.GetByNumber(accountNumber)
+}
+
 func (uc *AccountUseCase) List(clientID *uuid.UUID, status *entity.AccountStatus, limit, offset int) ([]*entity.Account, int64, error) {
 	return uc.accRepo.List(clientID, status, limit, offset)
+}
+
+func (uc *AccountUseCase) Transfer(fromAccountID, toAccountID uuid.UUID, amount float64, description string) (*entity.Operation, *entity.Operation, error) {
+	if amount < 0.01 {
+		return nil, nil, ErrInvalidAmount
+	}
+	if fromAccountID == toAccountID {
+		return nil, nil, errors.New("счета отправителя и получателя должны отличаться")
+	}
+	fromAcc, err := uc.accRepo.GetByID(fromAccountID)
+	if err != nil {
+		return nil, nil, ErrAccountNotFound
+	}
+	toAcc, err := uc.accRepo.GetByID(toAccountID)
+	if err != nil {
+		return nil, nil, ErrAccountNotFound
+	}
+	if fromAcc.Status != entity.AccountStatusActive || toAcc.Status != entity.AccountStatusActive {
+		return nil, nil, ErrAccountClosed
+	}
+	if fromAcc.Balance < amount {
+		return nil, nil, ErrInsufficientFunds
+	}
+	quote, err := uc.buildTransferQuote(fromAcc, toAcc, amount)
+	if err != nil {
+		return nil, nil, err
+	}
+	fromAcc, toAcc, err = uc.accRepo.TransferAtomic(fromAccountID, toAccountID, amount, quote.CreditAmount)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, ErrInsufficientFunds
+		}
+		return nil, nil, err
+	}
+	outOp := &entity.Operation{
+		ID:           uuid.New(),
+		AccountID:    fromAcc.ID,
+		Type:         entity.OpWithdraw,
+		Amount:       amount,
+		BalanceAfter: fromAcc.Balance,
+		Description:  description,
+		CreatedAt:    time.Now(),
+	}
+	inOp := &entity.Operation{
+		ID:           uuid.New(),
+		AccountID:    toAcc.ID,
+		Type:         entity.OpDeposit,
+		Amount:       quote.CreditAmount,
+		BalanceAfter: toAcc.Balance,
+		Description:  description,
+		CreatedAt:    time.Now(),
+	}
+	if err := uc.publishOperation(outOp); err != nil {
+		return nil, nil, err
+	}
+	if err := uc.publishOperation(inOp); err != nil {
+		return nil, nil, err
+	}
+	return outOp, inOp, nil
+}
+
+func (uc *AccountUseCase) PreviewTransfer(fromAccountID, toAccountID uuid.UUID, amount float64) (*TransferQuote, error) {
+	if amount < 0.01 {
+		return nil, ErrInvalidAmount
+	}
+	fromAcc, err := uc.accRepo.GetByID(fromAccountID)
+	if err != nil {
+		return nil, ErrAccountNotFound
+	}
+	toAcc, err := uc.accRepo.GetByID(toAccountID)
+	if err != nil {
+		return nil, ErrAccountNotFound
+	}
+	if fromAcc.Status != entity.AccountStatusActive || toAcc.Status != entity.AccountStatusActive {
+		return nil, ErrAccountClosed
+	}
+	return uc.buildTransferQuote(fromAcc, toAcc, amount)
+}
+
+func (uc *AccountUseCase) buildTransferQuote(fromAcc, toAcc *entity.Account, amount float64) (*TransferQuote, error) {
+	creditAmount := amount
+	rate := 1.0
+	if fromAcc.Currency != toAcc.Currency {
+		if uc.fxProvider == nil {
+			return nil, ErrFXUnavailable
+		}
+		r, err := uc.fxProvider.Rate(fromAcc.Currency, toAcc.Currency)
+		if err != nil {
+			return nil, err
+		}
+		rate = r
+		creditAmount = roundMoney(amount * rate)
+		if creditAmount < 0.01 {
+			return nil, ErrConversionTooSmall
+		}
+	}
+	return &TransferQuote{
+		FromAccountID:   fromAcc.ID,
+		ToAccountID:     toAcc.ID,
+		ToAccountNumber: toAcc.AccountNumber,
+		FromCurrency:    fromAcc.Currency,
+		ToCurrency:      toAcc.Currency,
+		DebitAmount:     roundMoney(amount),
+		CreditAmount:    creditAmount,
+		Rate:            rate,
+	}, nil
+}
+
+func supportedCurrency(c entity.Currency) bool {
+	return c == entity.CurrencyRUB || c == entity.CurrencyUSD || c == entity.CurrencyEUR
+}
+
+// ConvertCurrency возвращает эквивалент суммы в целевой валюте по текущему курсу.
+func (uc *AccountUseCase) ConvertCurrency(amount float64, from, to entity.Currency) (*CurrencyConvertQuote, error) {
+	if amount < 0.01 {
+		return nil, ErrInvalidAmount
+	}
+	if !supportedCurrency(from) || !supportedCurrency(to) {
+		return nil, ErrInvalidCurrency
+	}
+	if from == to {
+		a := roundMoney(amount)
+		return &CurrencyConvertQuote{
+			Amount:       a,
+			FromCurrency: from,
+			ToCurrency:   to,
+			Rate:         1,
+			ResultAmount: a,
+		}, nil
+	}
+	if uc.fxProvider == nil {
+		return nil, ErrFXUnavailable
+	}
+	rate, err := uc.fxProvider.Rate(from, to)
+	if err != nil {
+		return nil, err
+	}
+	result := roundMoney(amount * rate)
+	if result < 0.01 {
+		return nil, ErrConversionTooSmall
+	}
+	return &CurrencyConvertQuote{
+		Amount:       roundMoney(amount),
+		FromCurrency: from,
+		ToCurrency:   to,
+		Rate:         rate,
+		ResultAmount: result,
+	}, nil
+}
+
+func roundMoney(v float64) float64 {
+	return math.Round(v*100) / 100
+}
+
+func generateUniqueAccountNumber() (string, error) {
+	for i := 0; i < 20; i++ {
+		s, err := generateAccountNumber()
+		if err != nil {
+			return "", err
+		}
+		if s != bankconstants.MasterAccountNumber {
+			return s, nil
+		}
+	}
+	return "", errors.New("не удалось сгенерировать номер счёта")
+}
+
+func generateAccountNumber() (string, error) {
+	const length = 16
+	digits := make([]byte, length)
+	for i := 0; i < length; i++ {
+		n, err := rand.Int(rand.Reader, big.NewInt(10))
+		if err != nil {
+			return "", err
+		}
+		digits[i] = byte('0' + n.Int64())
+	}
+	digits[0] = byte('1' + digits[0]%9)
+	return fmt.Sprintf("%s", digits), nil
 }
 
 func (uc *AccountUseCase) CloseAccount(accountID, clientID uuid.UUID) error {
@@ -104,7 +334,7 @@ func (uc *AccountUseCase) Deposit(accountID uuid.UUID, amount float64, descripti
 		Description:  description,
 		CreatedAt:    time.Now(),
 	}
-	if err := uc.opRepo.Create(op); err != nil {
+	if err := uc.publishOperation(op); err != nil {
 		return nil, err
 	}
 	return op, nil
@@ -121,11 +351,11 @@ func (uc *AccountUseCase) Withdraw(accountID uuid.UUID, amount float64, descript
 	if acc.Status != entity.AccountStatusActive {
 		return nil, ErrAccountClosed
 	}
-	if acc.Balance < amount {
-		return nil, ErrInsufficientFunds
-	}
-	acc.Balance -= amount
-	if err := uc.accRepo.Update(acc); err != nil {
+	acc, err = uc.accRepo.DebitIfSufficient(accountID, amount)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrInsufficientFunds
+		}
 		return nil, err
 	}
 	op := &entity.Operation{
@@ -137,7 +367,7 @@ func (uc *AccountUseCase) Withdraw(accountID uuid.UUID, amount float64, descript
 		Description:  description,
 		CreatedAt:    time.Now(),
 	}
-	if err := uc.opRepo.Create(op); err != nil {
+	if err := uc.publishOperation(op); err != nil {
 		return nil, err
 	}
 	return op, nil
@@ -148,4 +378,13 @@ func (uc *AccountUseCase) ListOperations(accountID uuid.UUID, limit, offset int)
 		limit = 50
 	}
 	return uc.opRepo.ListByAccountID(accountID, limit, offset)
+}
+
+func (uc *AccountUseCase) publishOperation(op *entity.Operation) error {
+	if uc.producer != nil {
+		if err := uc.producer.Publish(op); err == nil {
+			return nil
+		}
+	}
+	return uc.opRepo.Create(op)
 }

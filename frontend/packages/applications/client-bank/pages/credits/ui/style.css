@@ -1,8 +1,8 @@
 .credits-page-container {
   padding: 2rem 1.5rem 1.5rem 1.5rem;
-  max-width: 1200px;
+  max-width: 56.25rem;
   margin: 0 auto;
-  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
   min-height: calc(100vh - 80px);
 }
 
@@ -10,13 +10,56 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.credits-page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.credits-page-take-credit-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: min(100%, 20rem);
+}
+
+.credits-page-take-credit-unavailable {
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface-alt);
+  box-sizing: border-box;
+}
+
+.credits-rating-modal-body {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.credits-rating-modal-gauge {
+  margin-bottom: 0;
+  max-width: 100%;
 }
 
 .credits-page-title {
   font-size: 2rem;
   margin: 0;
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--btn-primary-start) 0%, var(--btn-primary-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -32,10 +75,10 @@
 .empty {
   text-align: center;
   padding: 2rem;
-  color: #64748b;
-  background: #ffffff;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-default);
 }
 
 .list {
@@ -46,18 +89,18 @@
 
 .creditCard {
   padding: 1.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+  background: linear-gradient(135deg, var(--bg-card-start) 0%, var(--bg-card-end) 100%);
+  box-shadow: var(--shadow-sm);
 }
 
 .creditCard:hover {
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-4px);
-  border-color: #93c5fd;
+  border-color: var(--border-hover);
 }
 
 .creditInfo {
@@ -69,7 +112,7 @@
 .creditId {
   font-weight: 600;
   font-size: 1.125rem;
-  color: #1e40af;
+  color: var(--text-accent);
   margin-top: 0;
 }
 
@@ -78,16 +121,16 @@
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .active {
-  color: #10b981;
+  color: var(--status-active);
   font-weight: 500;
 }
 
 .paid {
-  color: #3b82f6;
+  color: var(--status-paid-credit);
   font-weight: 500;
 }
 
@@ -105,37 +148,37 @@
 
 .form-group label {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-default);
   font-size: 0.875rem;
 }
 
 .error {
-  color: #ef4444;
+  color: var(--error-color);
   font-size: 0.875rem;
   padding: 0.75rem 1rem;
-  background-color: #fef2f2;
+  background-color: var(--error-bg);
   border-radius: 8px;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--error-border);
 }
 
 .error-message {
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
+  background-color: var(--error-bg);
+  border: 1px solid var(--error-border);
   border-radius: 8px;
-  color: #dc2626;
+  color: var(--error-color);
   font-size: 0.875rem;
 }
 
 .tariff-hint {
   margin-top: 0.5rem;
   padding: 0.75rem;
-  background-color: #eff6ff;
+  background-color: var(--bg-surface-alt);
   border-radius: 8px;
   font-size: 0.875rem;
-  color: #64748b;
-  border: 1px solid #dbeafe;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
 }
 
 .modalActions {
@@ -145,3 +188,74 @@
   margin-top: 1rem;
 }
 
+.issue-credit-currency-note {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.issue-credit-preview {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-light);
+}
+
+.issue-credit-preview-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.issue-credit-preview-fx-notice {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.issue-credit-preview-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.issue-credit-preview-error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--error-color);
+}
+
+.issue-credit-preview-body {
+  font-size: 0.875rem;
+  color: var(--text-default);
+}
+
+.issue-credit-preview-line {
+  margin: 0 0 0.35rem 0;
+  line-height: 1.45;
+}
+
+.issue-credit-preview-rate {
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.issue-credit-preview-disclaimer {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.issue-credit-availability-loading {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}

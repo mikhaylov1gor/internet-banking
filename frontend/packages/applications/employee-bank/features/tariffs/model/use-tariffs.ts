@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { inlineHandledMutationMeta } from '@shared/features/app/model/inline-handled-mutation-meta'
 import {
   getTariffs,
   createTariff,
@@ -32,6 +33,7 @@ export const useCreateTariff = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    meta: { ...inlineHandledMutationMeta },
     mutationFn: (data: CreateTariffRequest) => createTariff(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tariffs'] })
