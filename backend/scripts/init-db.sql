@@ -2,3 +2,4 @@ CREATE DATABASE core;
 CREATE DATABASE users;
 CREATE DATABASE credits;
 CREATE DATABASE app_settings;
+CREATE DATABASE monitoring;

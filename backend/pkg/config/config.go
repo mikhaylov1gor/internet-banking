@@ -12,14 +12,17 @@ type Config struct {
 
 type CoreConfig struct {
 	Config
-	JWTSecret            string
-	FXBaseURL            string
-	RabbitURL            string
-	RabbitQueue          string
-	MasterAccountID      string
-	BankServiceUserID    string
-	MasterInitialBalance float64
-	MasterCurrency       string
+	JWTSecret               string
+	FXBaseURL               string
+	RabbitURL               string
+	RabbitQueue             string
+	RabbitNotificationQueue string
+	MasterAccountID         string
+	BankServiceUserID       string
+	MasterInitialBalance    float64
+	MasterCurrency          string
+	FirebaseCredentialsPath string
+	MonitoringURL           string
 }
 
 func LoadCore() CoreConfig {
@@ -65,19 +68,31 @@ func LoadCore() CoreConfig {
 	if masterCurrency == "" {
 		masterCurrency = "RUB"
 	}
+	rabbitNotificationQueue := os.Getenv("RABBITMQ_NOTIFICATION_QUEUE")
+	if rabbitNotificationQueue == "" {
+		rabbitNotificationQueue = "operations.created"
+	}
+	firebaseCredentialsPath := os.Getenv("FIREBASE_CREDENTIALS_PATH")
+	monitoringURL := os.Getenv("MONITORING_URL")
+	if monitoringURL == "" {
+		monitoringURL = "http://monitoring:8005"
+	}
 	return CoreConfig{
 		Config: Config{
 			Port: port,
 			DSN:  dsn,
 		},
-		JWTSecret:            jwtSecret,
-		FXBaseURL:            fxBaseURL,
-		RabbitURL:            rabbitURL,
-		RabbitQueue:          rabbitQueue,
-		MasterAccountID:      masterAccountID,
-		BankServiceUserID:    bankServiceUserID,
-		MasterInitialBalance: masterInitialBalance,
-		MasterCurrency:       masterCurrency,
+		JWTSecret:               jwtSecret,
+		FXBaseURL:               fxBaseURL,
+		RabbitURL:               rabbitURL,
+		RabbitQueue:             rabbitQueue,
+		RabbitNotificationQueue: rabbitNotificationQueue,
+		MasterAccountID:         masterAccountID,
+		BankServiceUserID:       bankServiceUserID,
+		MasterInitialBalance:    masterInitialBalance,
+		MasterCurrency:          masterCurrency,
+		FirebaseCredentialsPath: firebaseCredentialsPath,
+		MonitoringURL:           monitoringURL,
 	}
 }
 
@@ -116,12 +131,17 @@ func LoadUsers() (Config, UsersAuth) {
 			forceSecureSSO = v
 		}
 	}
+	monitoringURL := os.Getenv("MONITORING_URL")
+	if monitoringURL == "" {
+		monitoringURL = "http://monitoring:8005"
+	}
 	return Config{Port: port, DSN: dsn}, UsersAuth{
 		JWTSecret:      jwtSecret,
 		AccessTTL:      accessTTL,
 		RefreshTTL:     refreshTTL,
 		SSOClients:     ssoClients,
 		ForceSecureSSO: forceSecureSSO,
+		MonitoringURL:  monitoringURL,
 	}
 }
 
@@ -132,6 +152,7 @@ type CreditsConfig struct {
 	MasterAccountID     string
 	BankServiceUserID   string
 	InternalTokenTTLMin int
+	MonitoringURL       string
 }
 
 type AppSettingsConfig struct {
@@ -170,6 +191,10 @@ func LoadCredits() CreditsConfig {
 			internalTokenTTLMin = v
 		}
 	}
+	monitoringURL := os.Getenv("MONITORING_URL")
+	if monitoringURL == "" {
+		monitoringURL = "http://monitoring:8005"
+	}
 	return CreditsConfig{
 		Config:              Config{Port: port, DSN: dsn},
 		JWTSecret:           jwtSecret,
@@ -177,6 +202,7 @@ func LoadCredits() CreditsConfig {
 		MasterAccountID:     masterAccountID,
 		BankServiceUserID:   bankServiceUserID,
 		InternalTokenTTLMin: internalTokenTTLMin,
+		MonitoringURL:       monitoringURL,
 	}
 }
 
@@ -202,4 +228,26 @@ type UsersAuth struct {
 	RefreshTTL     int
 	SSOClients     string
 	ForceSecureSSO bool
+	MonitoringURL  string
+}
+
+type MonitoringConfig struct {
+	Config
+}
+
+func LoadMonitoring() MonitoringConfig {
+	port := os.Getenv("MONITORING_PORT")
+	if port == "" {
+		port = "8005"
+	}
+	dsn := os.Getenv("MONITORING_DSN")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres password=postgres dbname=monitoring port=5432 sslmode=disable"
+	}
+	return MonitoringConfig{
+		Config: Config{
+			Port: port,
+			DSN:  dsn,
+		},
+	}
 }
