@@ -37,14 +37,32 @@ enum APILogger {
         let url = request.url?.absoluteString ?? "?"
         let trace = request.value(forHTTPHeaderField: APITracing.traceIDHeaderField) ?? "-"
         let status = response.statusCode
+        let httpOk = (200 ... 299).contains(status)
         var suffix = ""
         if response.value(forHTTPHeaderField: "X-Idempotency-Cache") == "true" {
             suffix = " · idem-cache"
         }
         let ms = String(format: "%.0fms", duration * 1000)
         let body = formatBody(data)
-        let message = "← [\(trace)] \(method) \(url) → \(status)\(suffix) · \(ms)\n\(body)"
-        logger.debug("\(message, privacy: .public)")
+        let detail = "← [\(trace)] \(method) \(url) → \(status)\(suffix) · \(ms)\n\(body)"
+        if httpOk {
+            logger.debug("\(detail, privacy: .public)")
+        } else {
+            let line = String(repeating: "=", count: 20)
+            let banner = "\(line) HTTP \(status) FAILED \(line)"
+            logger.error("\(banner, privacy: .public)\n\(detail, privacy: .public)\n\(banner, privacy: .public)")
+        }
+    }
+
+    static func logTransportFailure(request: URLRequest, error: Error, duration: TimeInterval) {
+        let method = request.httpMethod ?? "?"
+        let url = request.url?.absoluteString ?? "?"
+        let trace = request.value(forHTTPHeaderField: APITracing.traceIDHeaderField) ?? "-"
+        let ms = String(format: "%.0fms", duration * 1000)
+        let line = String(repeating: "=", count: 20)
+        let banner = "\(line) TRANSPORT FAILED \(line)"
+        let detail = "<- [\(trace)] \(method) \(url) · \(ms)\n\(error.localizedDescription)"
+        logger.error("\(banner, privacy: .public)\n\(detail, privacy: .public)\n\(banner, privacy: .public)")
     }
 
     private static func logsOutboundBody(for request: URLRequest) -> Bool {
