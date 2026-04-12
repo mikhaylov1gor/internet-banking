@@ -248,11 +248,12 @@ canvas { max-height: 220px; margin-bottom: 2rem; }
 table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
 th, td { border: 1px solid #ccc; padding: 0.35rem; text-align: left; }
 th { background: #f4f4f4; }
+td.err { max-width: 28rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body>
 <h1>Мониторинг запросов</h1>
-<p>Сервис (пусто = все): <input id="svc" placeholder="core, users, credits…" /></p>
+<p>Сервис (пусто = все): <input id="svc" placeholder="core, users, credits, app-settings…" /></p>
 <button type="button" id="reload">Обновить</button>
 <h2>Сводка (24ч)</h2>
 <pre id="summary"></pre>
@@ -266,6 +267,10 @@ th { background: #f4f4f4; }
 function basePath() {
   const p = location.pathname.replace(/\/dashboard\/?$/, '');
   return p || '/monitoring';
+}
+function esc(s) {
+  if (s == null || s === '') return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 async function load() {
   const svc = document.getElementById('svc').value.trim();
@@ -295,9 +300,10 @@ async function load() {
   mk('durChart', 'Средняя длительность мс / час', durData, 'ms');
   const rows = (data.recent_requests || []).map(r => {
     const ts = r.timestamp || '';
-    return '<tr><td>' + ts + '</td><td>' + (r.service||'') + '</td><td>' + (r.method||'') + '</td><td>' + (r.endpoint||'') + '</td><td>' + r.status_code + '</td><td>' + r.duration_ms + '</td><td>' + (r.trace_id||'') + '</td></tr>';
+    const em = r.error_msg != null ? r.error_msg : '';
+    return '<tr><td>' + esc(ts) + '</td><td>' + esc(r.service||'') + '</td><td>' + esc(r.method||'') + '</td><td>' + esc(r.endpoint||'') + '</td><td>' + r.status_code + '</td><td>' + r.duration_ms + '</td><td>' + esc(r.trace_id||'') + '</td><td class="err">' + esc(em) + '</td></tr>';
   }).join('');
-  document.getElementById('table').innerHTML = '<table><thead><tr><th>Время</th><th>Сервис</th><th>Method</th><th>Path</th><th>Код</th><th>мс</th><th>trace</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  document.getElementById('table').innerHTML = '<table><thead><tr><th>Время</th><th>Сервис</th><th>Method</th><th>Path</th><th>Код</th><th>мс</th><th>trace</th><th>Ошибка (тело ответа)</th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 document.getElementById('reload').onclick = load;
 load();

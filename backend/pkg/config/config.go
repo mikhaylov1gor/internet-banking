@@ -163,7 +163,8 @@ type CreditsConfig struct {
 
 type AppSettingsConfig struct {
 	Config
-	JWTSecret string
+	JWTSecret     string
+	MonitoringURL string
 }
 
 func LoadCredits() CreditsConfig {
@@ -225,7 +226,15 @@ func LoadAppSettings() AppSettingsConfig {
 	if jwtSecret == "" {
 		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
-	return AppSettingsConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret}
+	monitoringURL := os.Getenv("MONITORING_URL")
+	if monitoringURL == "" {
+		monitoringURL = "http://monitoring:8005"
+	}
+	return AppSettingsConfig{
+		Config:        Config{Port: port, DSN: dsn},
+		JWTSecret:     jwtSecret,
+		MonitoringURL: monitoringURL,
+	}
 }
 
 type UsersAuth struct {

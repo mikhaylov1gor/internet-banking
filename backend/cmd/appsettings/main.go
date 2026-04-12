@@ -9,6 +9,7 @@ import (
 	"internet-bank/internal/appsettings/repository"
 	"internet-bank/internal/appsettings/usecase"
 	"internet-bank/pkg/config"
+	"internet-bank/pkg/tracing"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/driver/postgres"
@@ -29,7 +30,11 @@ func main() {
 	uc := usecase.NewSettingsUseCase(repo)
 	handler := delivery.NewHandler(uc, cfg.JWTSecret)
 
+	lb := tracing.InitLogBuffer(cfg.MonitoringURL)
+	defer lb.Close()
+
 	r := chi.NewRouter()
+	r.Use(tracing.TracingMiddleware("app-settings", lb))
 	r.Route("/", handler.Mount)
 
 	log.Printf("AppSettings service listening on :%s", cfg.Port)

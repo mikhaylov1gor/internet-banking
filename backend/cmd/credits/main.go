@@ -51,11 +51,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("внутренний JWT: %v", err)
 	}
-	if _, err := coreClient.GetAccount(masterAccountID, tok); err != nil {
+	var lastCoreErr error
+	for attempt := 0; attempt < 60; attempt++ {
+		if attempt > 0 {
+			time.Sleep(500 * time.Millisecond)
+		}
+		_, err := coreClient.GetAccount(masterAccountID, tok)
+		if err == nil {
+			lastCoreErr = nil
+			break
+		}
+		lastCoreErr = err
 		if errors.Is(err, client.ErrAccountNotFound) {
 			log.Fatalf("мастер-счёт %s не найден в Core. Проверьте CORE_URL и JWT_SECRET (как у Core), что Core пересобран с bootstrap (логи: master account created/ok). Команда: docker compose up -d --build core", masterAccountID)
 		}
-		log.Fatalf("мастер-счёт недоступен в Core: %v", err)
+	}
+	if lastCoreErr != nil {
+		log.Fatalf("мастер-счёт недоступен в Core (после повторов, в т.ч. chaos): %v", lastCoreErr)
 	}
 	tariffUC := usecase.NewTariffUseCase(tariffRepo)
 	creditUC := usecase.NewCreditUseCase(tariffRepo, creditRepo, coreClient, masterAccountID, internalTokenFn)
