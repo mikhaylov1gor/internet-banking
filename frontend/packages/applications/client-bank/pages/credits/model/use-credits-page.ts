@@ -45,18 +45,31 @@ export const useCreditsPage = () => {
     data: creditRating,
     isLoading: ratingLoading,
     isError: ratingError,
+    error: ratingQueryError,
     refetch: refetchRating,
   } = useClientCreditRating()
 
-  const { data: creditsResponse, isLoading, isError: creditsLoadError } = useCredits({
+  const {
+    data: creditsResponse,
+    isLoading,
+    isError: creditsLoadError,
+    error: creditsQueryError,
+  } = useCredits({
     page,
     page_size: pageSize,
   })
   const credits = creditsResponse?.credits || []
   const totalPages = creditsResponse?.pageQuantity || 1
-  const { data: accountsResponse, isError: accountsLoadError } = useAccounts({ status: 'active' })
+  const { data: accountsResponse, isError: accountsLoadError, error: accountsQueryError } = useAccounts({
+    status: 'active',
+  })
   const accounts = accountsResponse?.accounts
-  const { data: tariffs, isError: tariffsLoadError, isPending: tariffsPending } = useTariffs()
+  const {
+    data: tariffs,
+    isError: tariffsLoadError,
+    isPending: tariffsPending,
+    error: tariffsQueryError,
+  } = useTariffs()
 
   const takeCreditDisabledByTariffs =
     tariffsPending || tariffsLoadError || !tariffs?.length
@@ -172,7 +185,7 @@ export const useCreditsPage = () => {
 
   const handleOpenModal = () => {
     if (accountsLoadError) {
-      setNoAccountsError(getLoadDataErrorMessage('счета'))
+      setNoAccountsError(getLoadDataErrorMessage('счета', accountsQueryError))
       return
     }
     if (tariffsPending || tariffsLoadError || !tariffs?.length) {
@@ -405,8 +418,11 @@ export const useCreditsPage = () => {
     credits,
     isLoading,
     creditsLoadError,
+    creditsQueryError,
     accountsLoadError,
+    accountsQueryError,
     tariffsLoadError,
+    tariffsQueryError,
     takeCreditDisabledByTariffs,
     takeCreditTariffsHint,
     accounts,
@@ -443,6 +459,7 @@ export const useCreditsPage = () => {
     creditRating,
     ratingLoading,
     ratingError,
+    ratingQueryError,
     tariffLimitsHint,
     amountValidationIssue,
     issueCreditSubmitDisabled,

@@ -31,6 +31,9 @@ export const useLogout = () => {
 
   return () => {
     tokenStorage.clear()
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('push_registered')
+    }
     queryClient.clear()
     redirectToSso()
   }

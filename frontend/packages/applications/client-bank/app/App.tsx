@@ -25,6 +25,7 @@ const getNavigationButtons = (): NavigationButton[] => {
     { name: 'Счета', path: '/accounts' },
     { name: 'Перевод', path: '/transfer' },
     { name: 'Кредиты', path: '/credits' },
+    { name: 'Мониторинг', path: '/monitoring/dashboard', external: true },
   ]
   if (getUserType() === 'employee') {
     buttons.push({ name: 'Приложение сотрудника', path: EMPLOYEE_APP_URL, external: true })

@@ -21,6 +21,7 @@ export const DesktopCreditsPage = () => {
     credits,
     isLoading,
     creditsLoadError,
+    creditsQueryError,
     selectedUserId,
     setSelectedUserId,
     page,
@@ -75,7 +76,7 @@ export const DesktopCreditsPage = () => {
       )}
 
       {!isLoading && selectedUserId && creditsLoadError && (
-        <div className="empty credits-page-empty error">{getLoadDataErrorMessage('кредиты')}</div>
+        <div className="empty credits-page-empty error">{getLoadDataErrorMessage('кредиты', creditsQueryError)}</div>
       )}
 
       {!isLoading &&

@@ -26,8 +26,11 @@ export const CreditsPage = () => {
     credits,
     isLoading,
     creditsLoadError,
+    creditsQueryError,
     accountsLoadError,
+    accountsQueryError,
     tariffsLoadError,
+    tariffsQueryError,
     takeCreditDisabledByTariffs,
     takeCreditTariffsHint,
     showModal,
@@ -61,6 +64,7 @@ export const CreditsPage = () => {
     creditRating,
     ratingLoading,
     ratingError,
+    ratingQueryError,
     tariffLimitsHint,
     amountValidationIssue,
     issueCreditSubmitDisabled,
@@ -116,6 +120,7 @@ export const CreditsPage = () => {
             rating={creditRating}
             isLoading={ratingLoading}
             isError={ratingError}
+            loadError={ratingQueryError}
             showTitle={false}
             showDescription
             descriptionContext="client"
@@ -133,7 +138,7 @@ export const CreditsPage = () => {
       )}
 
       {!isLoading && creditsLoadError && (
-        <div className="empty error-message">{getLoadDataErrorMessage('кредиты')}</div>
+        <div className="empty error-message">{getLoadDataErrorMessage('кредиты', creditsQueryError)}</div>
       )}
 
       {!isLoading && !creditsLoadError && credits.length === 0 && (
@@ -166,8 +171,8 @@ export const CreditsPage = () => {
 
       <Modal isOpen={showModal} onClose={handleCloseModal} title="Взять кредит">
         <div className="issue-credit-form">
-          {tariffsLoadError && <div className="error">{getLoadDataErrorMessage('тарифы')}</div>}
-          {accountsLoadError && <div className="error">{getLoadDataErrorMessage('счета')}</div>}
+          {tariffsLoadError && <div className="error">{getLoadDataErrorMessage('тарифы', tariffsQueryError)}</div>}
+          {accountsLoadError && <div className="error">{getLoadDataErrorMessage('счета', accountsQueryError)}</div>}
           <div className="form-group">
             <label>Тариф</label>
             <Select

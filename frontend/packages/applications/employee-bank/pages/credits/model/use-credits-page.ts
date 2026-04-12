@@ -18,7 +18,12 @@ export const useCreditsPage = () => {
     page_size: pageSize,
   }
 
-  const { data: creditsResponse, isLoading, isError: creditsLoadError } = useCredits(params, {
+  const {
+    data: creditsResponse,
+    isLoading,
+    isError: creditsLoadError,
+    error: creditsQueryError,
+  } = useCredits(params, {
     enabled: !!selectedUserId,
   })
   const credits = creditsResponse?.credits
@@ -69,6 +74,7 @@ export const useCreditsPage = () => {
     credits,
     isLoading,
     creditsLoadError,
+    creditsQueryError,
     selectedUserId,
     setSelectedUserId: handleUserIdChange,
     page,

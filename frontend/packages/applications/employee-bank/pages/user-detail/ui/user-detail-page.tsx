@@ -23,6 +23,7 @@ export const UserDetailPage = () => {
     credits,
     creditsLoading,
     creditsLoadError,
+    creditsQueryError,
     page,
     setPage,
     limit,
@@ -38,6 +39,7 @@ export const UserDetailPage = () => {
     creditRating,
     ratingLoading,
     ratingError,
+    ratingQueryError,
   } = useUserDetailPage()
 
   if (userLoading) {
@@ -56,7 +58,7 @@ export const UserDetailPage = () => {
         message={
           notFound
             ? 'Пользователь с указанным ID не существует'
-            : getLoadDataErrorMessage('данные пользователя')
+            : getLoadDataErrorMessage('данные пользователя', userError)
         }
         onGoBack={() => navigate(returnTo || '/users')}
         goBackLabel="Назад"
@@ -142,6 +144,7 @@ export const UserDetailPage = () => {
             rating={creditRating}
             isLoading={ratingLoading}
             isError={ratingError}
+            loadError={ratingQueryError}
             showTitle={false}
             showDescription
             descriptionContext="employee"
@@ -159,7 +162,7 @@ export const UserDetailPage = () => {
             </div>
           )}
           {!creditsLoading && creditsLoadError && (
-            <div className="user-detail-page-empty">{getLoadDataErrorMessage('кредиты клиента')}</div>
+            <div className="user-detail-page-empty">{getLoadDataErrorMessage('кредиты клиента', creditsQueryError)}</div>
           )}
           {!creditsLoading && !creditsLoadError && credits.length === 0 && (
             <div className="user-detail-page-empty">Кредиты не найдены</div>

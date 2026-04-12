@@ -1,14 +1,21 @@
 import { AxiosError, isAxiosError } from 'axios'
 import { z } from 'zod'
+import { circuitBreakerIsOpen } from './http/circuit-breaker'
+
+export const CIRCUIT_BREAKER_USER_MESSAGE = 'Сервис временно недоступен. Подождите немного.'
+
+export class CircuitBreakerOpenError extends Error {
+  constructor() {
+    super(CIRCUIT_BREAKER_USER_MESSAGE)
+    this.name = 'CircuitBreakerOpenError'
+  }
+}
 
 const ApiErrorBodySchema = z
   .object({
     error: z.string().optional(),
   })
   .passthrough()
-
-export const getLoadDataErrorMessage = (what: string): string =>
-  `Не удалось получить ${what}. Попробуйте позже.`
 
 const readApiErrorFromBody = (data: unknown): string | undefined => {
   const parsed = ApiErrorBodySchema.safeParse(data)
@@ -21,6 +28,9 @@ export const getApiErrorMessage = (
   error: unknown,
   fallback = 'Произошла ошибка. Попробуйте позже.'
 ): string => {
+  if (error instanceof CircuitBreakerOpenError) {
+    return CIRCUIT_BREAKER_USER_MESSAGE
+  }
   if (error instanceof AxiosError) {
     const fromBody = error.response?.data !== undefined ? readApiErrorFromBody(error.response.data) : undefined
     if (fromBody) {
@@ -33,6 +43,17 @@ export const getApiErrorMessage = (
   }
   if (error instanceof Error && error.message) {
     return error.message
+  }
+  return fallback
+}
+
+export const getLoadDataErrorMessage = (what: string, cause?: unknown): string => {
+  const fallback = `Не удалось получить ${what}. Попробуйте позже.`
+  if (cause !== undefined) {
+    return getApiErrorMessage(cause, fallback)
+  }
+  if (circuitBreakerIsOpen()) {
+    return CIRCUIT_BREAKER_USER_MESSAGE
   }
   return fallback
 }

@@ -1,6 +1,14 @@
 import { apiClient } from '../../client'
 import { parseApiResponse } from '../../parse-response'
-import { UserSchema, UserListResponseSchema, type User, type CreateUserRequest, type GetUsersParams, type UserListResponse } from './types'
+import {
+  UserSchema,
+  UserListResponseSchema,
+  type User,
+  type CreateUserRequest,
+  type GetUsersParams,
+  type UserListResponse,
+  type RegisterPushDeviceRequest,
+} from './types'
 
 export const getUsers = async (params?: GetUsersParams): Promise<UserListResponse> => {
   const response = await apiClient.get('/users', { params })
@@ -23,4 +31,8 @@ export const blockUser = async (userId: string): Promise<void> => {
 
 export const unblockUser = async (userId: string): Promise<void> => {
   await apiClient.patch(`/users/${userId}`, null, { params: { action: 'unblock' } })
+}
+
+export const registerPushDevice = async (data: RegisterPushDeviceRequest): Promise<void> => {
+  await apiClient.post('/users/push/device', data)
 }

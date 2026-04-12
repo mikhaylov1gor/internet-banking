@@ -1,4 +1,5 @@
 import { isAuthenticated, getUserType } from '../../auth'
+import { useWebPushAfterAuth } from '../../push'
 import { redirectToSso } from '@shared/utils'
 import { ErrorFallback } from '@shared/ui/error-fallback'
 import { AppBarWithNavigation } from './app-bar-with-navigation'
@@ -10,6 +11,8 @@ export const ProtectedRoute = ({
   allowedUserType,
   appBarComponent,
 }: ProtectedRouteProps) => {
+  useWebPushAfterAuth()
+
   if (!isAuthenticated()) {
     redirectToSso()
     return null

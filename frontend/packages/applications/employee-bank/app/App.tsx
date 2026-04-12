@@ -27,6 +27,7 @@ const navigationButtons: NavigationButton[] = [
   { name: 'Кредиты', path: '/credits' },
   { name: 'Тарифы', path: '/tariffs' },
   { name: 'Пользователи', path: '/users' },
+  { name: 'Мониторинг', path: '/monitoring/dashboard', external: true },
   { name: 'Приложение клиента', path: CLIENT_APP_URL, external: true },
 ]
 

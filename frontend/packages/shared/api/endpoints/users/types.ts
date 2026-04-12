@@ -42,3 +42,8 @@ export type GetUsersParams = {
   page?: number
   page_size?: number
 }
+
+export type RegisterPushDeviceRequest = {
+  token: string
+  platform: string
+}

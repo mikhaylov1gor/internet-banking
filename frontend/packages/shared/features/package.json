@@ -11,6 +11,7 @@
     "./accounts": "./accounts/index.ts"
   },
   "dependencies": {
+    "firebase": "^10.14.1",
     "@shared/ui": "*",
     "@shared/api": "*",
     "@tanstack/react-query": "^5.17.0",

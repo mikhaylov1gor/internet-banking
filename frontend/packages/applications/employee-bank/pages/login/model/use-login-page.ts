@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { tokenStorage } from '@shared/utils'
 import { isAuthenticated } from '@shared/features/auth'
 import { inlineHandledMutationMeta } from '@shared/features/app/model/inline-handled-mutation-meta'
 import type { LoginRequest, LoginResponse } from '@shared/features/auth'
@@ -26,10 +27,12 @@ export const useEmployeeLogin = (loginFn: (data: LoginRequest) => Promise<LoginR
       return response
     },
     onSuccess: (data) => {
-      localStorage.setItem('access_token', data.token)
-      localStorage.setItem('refresh_token', data.refresh_token)
-      localStorage.setItem('user_id', data.user_id)
-      localStorage.setItem('user_type', data.type)
+      tokenStorage.setTokens({
+        accessToken: data.token,
+        refreshToken: data.refresh_token,
+        userId: data.user_id,
+        userType: data.type,
+      })
       queryClient.setQueryData(['user'], data)
       navigate('/')
     },

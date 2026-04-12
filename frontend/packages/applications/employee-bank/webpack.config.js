@@ -1,6 +1,49 @@
 const path = require('path');
+const fs = require('fs');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+
+const FIREBASE_SW_APP = {
+  apiKey: 'AIzaSyANrtOp6WcAzpP9F2BOI7yDG8VH9EpRsGk',
+  authDomain: 'internet-bank-61d9b.firebaseapp.com',
+  projectId: 'internet-bank-61d9b',
+  storageBucket: 'internet-bank-61d9b.firebasestorage.app',
+  messagingSenderId: '453381667763',
+  appId: '1:453381667763:web:6a588739b538e7260c69c6',
+};
+
+const writeFirebaseMessagingSw = () => {
+  const sw = `importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+firebase.initializeApp({
+  apiKey: ${JSON.stringify(FIREBASE_SW_APP.apiKey)},
+  authDomain: ${JSON.stringify(FIREBASE_SW_APP.authDomain)},
+  projectId: ${JSON.stringify(FIREBASE_SW_APP.projectId)},
+  storageBucket: ${JSON.stringify(FIREBASE_SW_APP.storageBucket)},
+  messagingSenderId: ${JSON.stringify(FIREBASE_SW_APP.messagingSenderId)},
+  appId: ${JSON.stringify(FIREBASE_SW_APP.appId)}
+});
+firebase.messaging();
+`;
+  fs.mkdirSync(path.join(__dirname, 'public'), { recursive: true });
+  fs.writeFileSync(path.join(__dirname, 'public', 'firebase-messaging-sw.js'), sw);
+};
+
+writeFirebaseMessagingSw();
+
+class CopyFirebaseMessagingSwPlugin {
+  apply(compiler) {
+    compiler.hooks.done.tap('CopyFirebaseMessagingSwPlugin', () => {
+      const outDir = compiler.options.output.path;
+      const src = path.join(__dirname, 'public', 'firebase-messaging-sw.js');
+      const dest = path.join(outDir, 'firebase-messaging-sw.js');
+      if (fs.existsSync(src)) {
+        fs.mkdirSync(outDir, { recursive: true });
+        fs.copyFileSync(src, dest);
+      }
+    });
+  }
+}
 
 module.exports = {
   mode: 'development',
@@ -59,6 +102,7 @@ module.exports = {
       template: './index.html',
       inject: 'body',
     }),
+    new CopyFirebaseMessagingSwPlugin(),
   ],
   watchOptions: {
     ignored: /node_modules\/(?!@shared)/,
@@ -94,6 +138,12 @@ module.exports = {
       },
     },
     proxy: {
+      '/monitoring': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        logLevel: 'debug',
+      },
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,

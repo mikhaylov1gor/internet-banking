@@ -14,7 +14,12 @@ export const useUserDetailPage = () => {
   const [showRatingModal, setShowRatingModal] = useState(false)
 
   const { data: user, isLoading: userLoading, error: userError } = useUser(userId || null)
-  const { data: creditsResponse, isLoading: creditsLoading, isError: creditsLoadError } = useCredits(
+  const {
+    data: creditsResponse,
+    isLoading: creditsLoading,
+    isError: creditsLoadError,
+    error: creditsQueryError,
+  } = useCredits(
     {
       client_id: user?.id || '',
       page,
@@ -27,8 +32,12 @@ export const useUserDetailPage = () => {
   const toggleStatusMutation = useToggleUserStatus()
 
   const ratingQueryEnabled = showRatingModal && !!userId && user?.type === 'client'
-  const { data: creditRating, isLoading: ratingLoading, isError: ratingError } =
-    useClientCreditRatingForUser(userId, { enabled: ratingQueryEnabled })
+  const {
+    data: creditRating,
+    isLoading: ratingLoading,
+    isError: ratingError,
+    error: ratingQueryError,
+  } = useClientCreditRatingForUser(userId, { enabled: ratingQueryEnabled })
 
   const openRatingModal = useCallback(() => setShowRatingModal(true), [])
   const closeRatingModal = useCallback(() => setShowRatingModal(false), [])
@@ -52,6 +61,7 @@ export const useUserDetailPage = () => {
     credits,
     creditsLoading,
     creditsLoadError,
+    creditsQueryError,
     page,
     setPage,
     limit,
@@ -67,5 +77,6 @@ export const useUserDetailPage = () => {
     creditRating,
     ratingLoading,
     ratingError,
+    ratingQueryError,
   }
 }
