@@ -1,5 +1,13 @@
 import Foundation
 
+enum IdempotencyKey {
+    static let headerField = "Idempotency-Key"
+
+    static func generate() -> String {
+        UUID().uuidString
+    }
+}
+
 protocol TokenHandlerProtocol: AnyObject {
     func getAccessToken() -> String?
     func refreshTokens() async throws
@@ -41,14 +49,25 @@ final class APIClient {
         body: Encodable?,
         requiresAuth: Bool) async throws -> (Data, HTTPURLResponse)
     {
-        var request = try makeRequest(path: path, method: method, body: body, requiresAuth: requiresAuth)
+        let idempotencyKey = IdempotencyKey.generate()
+        var request = try makeRequest(
+            path: path,
+            method: method,
+            body: body,
+            requiresAuth: requiresAuth,
+            idempotencyKey: idempotencyKey)
         let (data, urlResponse) = try await session.data(for: request)
         guard let httpResponse = urlResponse as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
         if httpResponse.statusCode == 401, requiresAuth, tokenHandler != nil {
             try await tokenHandler?.refreshTokens()
-            request = try makeRequest(path: path, method: method, body: body, requiresAuth: true)
+            request = try makeRequest(
+                path: path,
+                method: method,
+                body: body,
+                requiresAuth: true,
+                idempotencyKey: idempotencyKey)
             let (retryData, retryResponse) = try await session.data(for: request)
             guard let retryHttpResponse = retryResponse as? HTTPURLResponse else {
                 throw APIError.invalidResponse
@@ -64,12 +83,19 @@ final class APIClient {
         return (data, httpResponse)
     }
 
-    private func makeRequest(path: String, method: String, body: Encodable?, requiresAuth: Bool) throws -> URLRequest {
+    private func makeRequest(
+        path: String,
+        method: String,
+        body: Encodable?,
+        requiresAuth: Bool,
+        idempotencyKey: String) throws -> URLRequest
+    {
         guard let url = Self.resolveURL(path: path, baseURL: baseURL) else {
             throw APIError.invalidResponse
         }
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.setValue(idempotencyKey, forHTTPHeaderField: IdempotencyKey.headerField)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if body != nil {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")

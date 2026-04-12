@@ -38,6 +38,7 @@ final class JWTTokenHandler: JWTTokenHandlerProtocol {
         }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.setValue(IdempotencyKey.generate(), forHTTPHeaderField: IdempotencyKey.headerField)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         let body = RefreshTokenRequest(refreshToken: refreshToken)
