@@ -19,10 +19,11 @@ enum APILogger {
         guard logsOutboundBody(for: request) else { return }
         let method = request.httpMethod ?? "?"
         let url = request.url?.absoluteString ?? "?"
+        let trace = request.value(forHTTPHeaderField: APITracing.traceIDHeaderField) ?? "-"
         let headers = formattedSafeHeaders(request)
         let bodyText = request.httpBody.map { formatBody($0) } ?? "<empty>"
         let headerBlock = headers.isEmpty ? "" : "\n\(headers)"
-        let message = "→ \(method) \(url)\(headerBlock)\n\(bodyText)"
+        let message = "→ [\(trace)] \(method) \(url)\(headerBlock)\n\(bodyText)"
         logger.debug("\(message, privacy: .public)")
     }
 
@@ -34,6 +35,7 @@ enum APILogger {
     {
         let method = request.httpMethod ?? "?"
         let url = request.url?.absoluteString ?? "?"
+        let trace = request.value(forHTTPHeaderField: APITracing.traceIDHeaderField) ?? "-"
         let status = response.statusCode
         var suffix = ""
         if response.value(forHTTPHeaderField: "X-Idempotency-Cache") == "true" {
@@ -41,7 +43,7 @@ enum APILogger {
         }
         let ms = String(format: "%.0fms", duration * 1000)
         let body = formatBody(data)
-        let message = "← \(method) \(url) → \(status)\(suffix) · \(ms)\n\(body)"
+        let message = "← [\(trace)] \(method) \(url) → \(status)\(suffix) · \(ms)\n\(body)"
         logger.debug("\(message, privacy: .public)")
     }
 

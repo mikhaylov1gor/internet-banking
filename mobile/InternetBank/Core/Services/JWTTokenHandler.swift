@@ -39,26 +39,37 @@ final class JWTTokenHandler: JWTTokenHandlerProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue(IdempotencyKey.generate(), forHTTPHeaderField: IdempotencyKey.headerField)
+        request.setValue(APITracing.newTraceID(), forHTTPHeaderField: APITracing.traceIDHeaderField)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         let body = RefreshTokenRequest(refreshToken: refreshToken)
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
         request.httpBody = try encoder.encode(body)
+        let refreshLogStart = CFAbsoluteTimeGetCurrent()
         #if DEBUG
         APILogger.logRequest(request)
-        let refreshLogStart = CFAbsoluteTimeGetCurrent()
         #endif
         let (data, response) = try await session.data(for: request)
+        let refreshElapsedMs = Int((CFAbsoluteTimeGetCurrent() - refreshLogStart) * 1000)
         #if DEBUG
         if let httpResponse = response as? HTTPURLResponse {
             APILogger.logResponse(
                 request: request,
                 response: httpResponse,
                 data: data,
-                duration: CFAbsoluteTimeGetCurrent() - refreshLogStart)
+                duration: Double(refreshElapsedMs) / 1000)
         }
         #endif
+        if let httpForTrace = response as? HTTPURLResponse {
+            let trace = request.value(forHTTPHeaderField: APITracing.traceIDHeaderField)
+            APITracing.logSpan(
+                traceID: trace,
+                method: request.httpMethod ?? "POST",
+                url: url.absoluteString,
+                statusCode: httpForTrace.statusCode,
+                durationMs: refreshElapsedMs)
+        }
         guard let httpResponse = response as? HTTPURLResponse else {
             invalidateSession()
             throw APIError.sessionExpired

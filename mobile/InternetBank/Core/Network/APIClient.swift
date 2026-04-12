@@ -77,6 +77,7 @@ final class APIClient {
         if let circuitBreaker {
             try await circuitBreaker.beforeRequest()
         }
+        let traceID = APITracing.newTraceID()
         let ledger = RetryFailureLedger()
         do {
             let result = try await executeWithRetries(
@@ -84,7 +85,8 @@ final class APIClient {
                 method: method,
                 body: body,
                 requiresAuth: requiresAuth,
-                ledger: ledger)
+                ledger: ledger,
+                traceID: traceID)
             await circuitBreaker?.recordSuccess()
             return result
         } catch {
@@ -120,7 +122,8 @@ final class APIClient {
         method: String,
         body: Encodable?,
         requiresAuth: Bool,
-        ledger: RetryFailureLedger) async throws -> (Data, HTTPURLResponse)
+        ledger: RetryFailureLedger,
+        traceID: String) async throws -> (Data, HTTPURLResponse)
     {
         let idempotencyKey = IdempotencyKey.generate()
 
@@ -130,7 +133,8 @@ final class APIClient {
                 method: method,
                 body: body,
                 requiresAuth: requiresAuth,
-                idempotencyKey: idempotencyKey)
+                idempotencyKey: idempotencyKey,
+                traceID: traceID)
             {
             case let .success(data, response):
                 return (data, response)
@@ -167,7 +171,8 @@ final class APIClient {
                 method: method,
                 body: body,
                 requiresAuth: requiresAuth,
-                idempotencyKey: idempotencyKey)
+                idempotencyKey: idempotencyKey,
+                traceID: traceID)
             {
             case let .success(data, response):
                 return (data, response)
@@ -198,14 +203,16 @@ final class APIClient {
         method: String,
         body: Encodable?,
         requiresAuth: Bool,
-        idempotencyKey: String) async throws -> AttemptOutcome
+        idempotencyKey: String,
+        traceID: String) async throws -> AttemptOutcome
     {
         var request = try makeRequest(
             path: path,
             method: method,
             body: body,
             requiresAuth: requiresAuth,
-            idempotencyKey: idempotencyKey)
+            idempotencyKey: idempotencyKey,
+            traceID: traceID)
 
         let first: (Data, HTTPURLResponse)
         do {
@@ -226,7 +233,8 @@ final class APIClient {
                 method: method,
                 body: body,
                 requiresAuth: true,
-                idempotencyKey: idempotencyKey)
+                idempotencyKey: idempotencyKey,
+                traceID: traceID)
             do {
                 (data, httpResponse) = try await sendLoggedRequest(request)
             } catch {
@@ -249,20 +257,26 @@ final class APIClient {
     }
 
     private func sendLoggedRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let t0 = CFAbsoluteTimeGetCurrent()
         #if DEBUG
         APILogger.logRequest(request)
-        let t0 = CFAbsoluteTimeGetCurrent()
         #endif
         let (data, urlResponse) = try await session.data(for: request)
-        #if DEBUG
         let elapsed = CFAbsoluteTimeGetCurrent() - t0
-        #endif
         guard let httpResponse = urlResponse as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
         #if DEBUG
         APILogger.logResponse(request: request, response: httpResponse, data: data, duration: elapsed)
         #endif
+        let trace = request.value(forHTTPHeaderField: APITracing.traceIDHeaderField)
+        let ms = max(0, Int((elapsed * 1000).rounded()))
+        APITracing.logSpan(
+            traceID: trace,
+            method: request.httpMethod ?? "?",
+            url: request.url?.absoluteString ?? "?",
+            statusCode: httpResponse.statusCode,
+            durationMs: ms)
         return (data, httpResponse)
     }
 
@@ -271,7 +285,8 @@ final class APIClient {
         method: String,
         body: Encodable?,
         requiresAuth: Bool,
-        idempotencyKey: String) throws -> URLRequest
+        idempotencyKey: String,
+        traceID: String) throws -> URLRequest
     {
         guard let url = Self.resolveURL(path: path, baseURL: baseURL) else {
             throw APIError.invalidResponse
@@ -279,6 +294,7 @@ final class APIClient {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue(idempotencyKey, forHTTPHeaderField: IdempotencyKey.headerField)
+        request.setValue(traceID, forHTTPHeaderField: APITracing.traceIDHeaderField)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if body != nil {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
