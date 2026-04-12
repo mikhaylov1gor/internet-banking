@@ -1,11 +1,19 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	amqp "github.com/rabbitmq/amqp091-go"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
+	appnotif "internet-bank/internal/core/notification"
 	"internet-bank/internal/core/bootstrap"
 	"internet-bank/internal/core/broker"
 	"internet-bank/internal/core/client"
@@ -15,11 +23,10 @@ import (
 	"internet-bank/internal/core/repository"
 	"internet-bank/internal/core/usecase"
 	"internet-bank/pkg/config"
-
-	"github.com/go-chi/chi/v5"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"internet-bank/pkg/idempotency"
+	thttp "internet-bank/pkg/middleware"
+	"internet-bank/pkg/notification"
+	"internet-bank/pkg/tracing"
 )
 
 func main() {
@@ -44,6 +51,39 @@ func main() {
 		log.Fatalf("master account: %v", err)
 	}
 
+	lb := tracing.InitLogBuffer(cfg.MonitoringURL)
+	defer lb.Close()
+	idem := idempotency.NewIdempotencyCache()
+	defer idem.Close()
+
+	notifConn, err := amqp.Dial(cfg.RabbitURL)
+	if err != nil {
+		log.Fatalf("rabbitmq notification: %v", err)
+	}
+	defer notifConn.Close()
+
+	notifBroker, err := broker.NewNotificationBroker(notifConn, cfg.RabbitNotificationQueue)
+	if err != nil {
+		log.Fatalf("notification broker: %v", err)
+	}
+	defer notifBroker.Close()
+
+	fireNotifier, err := notification.NewFirebaseNotifier(context.Background(), cfg.FirebaseCredentialsPath)
+	if err != nil {
+		log.Fatalf("firebase: %v", err)
+	}
+	tokensClient := appnotif.NewUsersPushTokenClient(cfg.UsersURL, cfg.JWTSecret)
+	notifConsumer, err := appnotif.NewNotificationConsumer(notifConn, fireNotifier, tokensClient, cfg.RabbitNotificationQueue)
+	if err != nil {
+		log.Fatalf("notification consumer: %v", err)
+	}
+	defer notifConsumer.Close()
+	ctxNotif, cancelNotif := context.WithCancel(context.Background())
+	defer cancelNotif()
+	if err := notifConsumer.Start(ctxNotif); err != nil {
+		log.Fatalf("notification consumer start: %v", err)
+	}
+
 	accRepo := repository.NewAccountRepository(db)
 	opRepo := repository.NewOperationRepository(db)
 	fxProvider := client.NewFrankfurterClient(cfg.FXBaseURL)
@@ -62,10 +102,15 @@ func main() {
 	}); err != nil {
 		log.Fatalf("broker consume: %v", err)
 	}
-	uc := usecase.NewAccountUseCase(accRepo, opRepo, fxProvider, opsBroker)
+
+	opNotifier := &usecase.NotificationBrokerPublisher{B: notifBroker}
+	uc := usecase.NewAccountUseCase(accRepo, opRepo, fxProvider, opsBroker, opNotifier)
 	handler := delivery.NewHandler(uc, cfg.JWTSecret, hub)
 
 	r := chi.NewRouter()
+	r.Use(tracing.TracingMiddleware("core", lb))
+	r.Use(thttp.ChaosMiddleware)
+	r.Use(idempotency.IdempotencyMiddleware(idem))
 	r.Route("/", handler.Mount)
 
 	log.Printf("Core service listening on :%s", cfg.Port)

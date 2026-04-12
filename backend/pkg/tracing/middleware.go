@@ -8,34 +8,38 @@ import (
 
 const TraceIDKey = "trace-id"
 
-func TracingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		traceID := r.Header.Get(TraceIDKey)
-		if traceID == "" {
-			traceID = GenerateTraceID()
-		}
+// TracingMiddleware records request duration and status, forwards trace-id, and ships logs to the monitoring buffer.
+func TracingMiddleware(serviceName string, lb *LogBuffer) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			traceID := r.Header.Get(TraceIDKey)
+			if traceID == "" {
+				traceID = GenerateTraceID()
+			}
 
-		ctx := context.WithValue(r.Context(), TraceIDKey, traceID)
-		w.Header().Set(TraceIDKey, traceID)
+			ctx := context.WithValue(r.Context(), TraceIDKey, traceID)
+			w.Header().Set(TraceIDKey, traceID)
 
-		start := time.Now()
-		wrapped := &responseWriter{ResponseWriter: w}
+			start := time.Now()
+			wrapped := &responseWriter{ResponseWriter: w}
 
-		next.ServeHTTP(wrapped, r.WithContext(ctx))
+			next.ServeHTTP(wrapped, r.WithContext(ctx))
 
-		duration := time.Since(start).Milliseconds()
-		logEntry := LogEntry{
-			Timestamp:  time.Now().UTC().Format(time.RFC3339),
-			TraceID:    traceID,
-			Service:    "core",
-			Endpoint:   r.URL.Path,
-			Method:     r.Method,
-			StatusCode: wrapped.statusCode,
-			DurationMs: duration,
-		}
-
-		_ = logEntry // TODO: Send to monitoring service
-	})
+			duration := time.Since(start).Milliseconds()
+			entry := LogEntry{
+				Timestamp:  time.Now().UTC().Format(time.RFC3339Nano),
+				TraceID:    traceID,
+				Service:    serviceName,
+				Endpoint:   r.URL.Path,
+				Method:     r.Method,
+				StatusCode: wrapped.statusCode,
+				DurationMs: duration,
+			}
+			if lb != nil {
+				lb.AddLog(&entry)
+			}
+		})
+	}
 }
 
 type responseWriter struct {

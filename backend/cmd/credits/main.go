@@ -13,6 +13,9 @@ import (
 	"internet-bank/internal/credits/usecase"
 	"internet-bank/pkg/auth"
 	"internet-bank/pkg/config"
+	"internet-bank/pkg/idempotency"
+	mw "internet-bank/pkg/middleware"
+	"internet-bank/pkg/tracing"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -58,7 +61,15 @@ func main() {
 	creditUC := usecase.NewCreditUseCase(tariffRepo, creditRepo, coreClient, masterAccountID, internalTokenFn)
 	handler := delivery.NewHandler(tariffUC, creditUC, cfg.JWTSecret)
 
+	lb := tracing.InitLogBuffer(cfg.MonitoringURL)
+	defer lb.Close()
+	idem := idempotency.NewIdempotencyCache()
+	defer idem.Close()
+
 	r := chi.NewRouter()
+	r.Use(tracing.TracingMiddleware("credits", lb))
+	r.Use(mw.ChaosMiddleware)
+	r.Use(idempotency.IdempotencyMiddleware(idem))
 	handler.Mount(r)
 
 	go func() {

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"internet-bank/internal/users/entity"
+	"internet-bank/internal/users/repository"
 	"internet-bank/internal/users/usecase"
 	"internet-bank/pkg/auth"
 	"internet-bank/pkg/response"
@@ -44,6 +45,7 @@ type UserUseCase interface {
 type Handler struct {
 	authUC         AuthUseCase
 	userUC         UserUseCase
+	deviceRepo     repository.DeviceTokenRepository
 	jwtSecret      string
 	forceSecureSSO bool
 	ssoClients     map[string]ssoClientConfig
@@ -58,11 +60,12 @@ type ssoClientConfig struct {
 	RedirectURIs  map[string]struct{}
 }
 
-func NewHandler(authUC AuthUseCase, userUC UserUseCase, jwtSecret string, ssoClientsRaw string, forceSecureSSO bool) *Handler {
+func NewHandler(authUC AuthUseCase, userUC UserUseCase, deviceRepo repository.DeviceTokenRepository, jwtSecret string, ssoClientsRaw string, forceSecureSSO bool) *Handler {
 	clients := parseSSOClients(ssoClientsRaw)
 	return &Handler{
 		authUC:         authUC,
 		userUC:         userUC,
+		deviceRepo:     deviceRepo,
 		jwtSecret:      jwtSecret,
 		forceSecureSSO: forceSecureSSO,
 		ssoClients:     clients,
@@ -112,6 +115,17 @@ func (h *Handler) Mount(r chi.Router) {
 	r.Get("/sso/login", h.ssoLoginPage)
 	r.Post("/sso/login", h.ssoLoginSubmit)
 	r.Post("/sso/token", h.ssoToken)
+
+	r.Group(func(r chi.Router) {
+		r.Use(h.internalTokenMiddleware)
+		r.Get("/internal/push/client-tokens", h.internalClientPushTokens)
+		r.Get("/internal/push/employee-tokens", h.internalEmployeePushTokens)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(h.authMiddleware)
+		r.Post("/users/push/device", h.registerPushDevice)
+	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(h.authMiddleware, h.employeeOnly)
