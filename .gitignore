@@ -22,6 +22,7 @@ backend/postman/
 
 backend/.env
 backend/.env.local
+backend/firebase.json
 
 # MOBILE
 
