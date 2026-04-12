@@ -17,11 +17,21 @@ final class APIClient {
     private let baseURL: URL
     private let session: URLSession
     private let tokenHandler: TokenHandlerProtocol?
+    private let retryConfiguration: APIRetryConfiguration?
+    private let retryPolicy: APIRetryPolicy
 
-    init(baseURL: URL, session: URLSession = .shared, tokenHandler: TokenHandlerProtocol? = nil) {
+    init(
+        baseURL: URL,
+        session: URLSession = .shared,
+        tokenHandler: TokenHandlerProtocol? = nil,
+        retryConfiguration: APIRetryConfiguration? = .default,
+        retryPolicy: APIRetryPolicy = DefaultAPIRetryPolicy())
+    {
         self.baseURL = baseURL
         self.session = session
         self.tokenHandler = tokenHandler
+        self.retryConfiguration = retryConfiguration
+        self.retryPolicy = retryPolicy
     }
 
     func request<T: Decodable>(
@@ -50,56 +60,83 @@ final class APIClient {
         requiresAuth: Bool) async throws -> (Data, HTTPURLResponse)
     {
         let idempotencyKey = IdempotencyKey.generate()
-        var request = try makeRequest(
-            path: path,
-            method: method,
-            body: body,
-            requiresAuth: requiresAuth,
-            idempotencyKey: idempotencyKey)
+        let maxAttempts = max(1, retryConfiguration?.maxAttempts ?? 1)
+        var lastTransportError: Error?
+
+        attemptLoop: for attempt in 0 ..< maxAttempts {
+            if attempt > 0, let cfg = retryConfiguration {
+                let ns = retryPolicy.backoffNanoseconds(attemptIndex: attempt - 1, configuration: cfg)
+                try await Task.sleep(nanoseconds: ns)
+            }
+
+            var request = try makeRequest(
+                path: path,
+                method: method,
+                body: body,
+                requiresAuth: requiresAuth,
+                idempotencyKey: idempotencyKey)
+
+            let first: (Data, HTTPURLResponse)
+            do {
+                first = try await sendLoggedRequest(request)
+            } catch {
+                lastTransportError = error
+                if attempt < maxAttempts - 1, retryPolicy.shouldRetryTransportError(error) {
+                    continue attemptLoop
+                }
+                throw error
+            }
+
+            var (data, httpResponse) = first
+
+            if httpResponse.statusCode == 401, requiresAuth, tokenHandler != nil {
+                try await tokenHandler?.refreshTokens()
+                request = try makeRequest(
+                    path: path,
+                    method: method,
+                    body: body,
+                    requiresAuth: true,
+                    idempotencyKey: idempotencyKey)
+                do {
+                    (data, httpResponse) = try await sendLoggedRequest(request)
+                } catch {
+                    lastTransportError = error
+                    if attempt < maxAttempts - 1, retryPolicy.shouldRetryTransportError(error) {
+                        continue attemptLoop
+                    }
+                    throw error
+                }
+            }
+
+            if (200 ... 299).contains(httpResponse.statusCode) {
+                return (data, httpResponse)
+            }
+
+            if attempt < maxAttempts - 1, retryPolicy.shouldRetryHTTPStatus(httpResponse.statusCode) {
+                continue attemptLoop
+            }
+
+            throw parseError(data: data, statusCode: httpResponse.statusCode)
+        }
+
+        throw lastTransportError ?? APIError.invalidResponse
+    }
+
+    private func sendLoggedRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         #if DEBUG
         APILogger.logRequest(request)
         let t0 = CFAbsoluteTimeGetCurrent()
         #endif
         let (data, urlResponse) = try await session.data(for: request)
         #if DEBUG
-        let elapsed0 = CFAbsoluteTimeGetCurrent() - t0
+        let elapsed = CFAbsoluteTimeGetCurrent() - t0
         #endif
         guard let httpResponse = urlResponse as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
         #if DEBUG
-        APILogger.logResponse(request: request, response: httpResponse, data: data, duration: elapsed0)
+        APILogger.logResponse(request: request, response: httpResponse, data: data, duration: elapsed)
         #endif
-        if httpResponse.statusCode == 401, requiresAuth, tokenHandler != nil {
-            try await tokenHandler?.refreshTokens()
-            request = try makeRequest(
-                path: path,
-                method: method,
-                body: body,
-                requiresAuth: true,
-                idempotencyKey: idempotencyKey)
-            #if DEBUG
-            APILogger.logRequest(request)
-            let t1 = CFAbsoluteTimeGetCurrent()
-            #endif
-            let (retryData, retryResponse) = try await session.data(for: request)
-            #if DEBUG
-            let elapsed1 = CFAbsoluteTimeGetCurrent() - t1
-            #endif
-            guard let retryHttpResponse = retryResponse as? HTTPURLResponse else {
-                throw APIError.invalidResponse
-            }
-            #if DEBUG
-            APILogger.logResponse(request: request, response: retryHttpResponse, data: retryData, duration: elapsed1)
-            #endif
-            guard (200 ... 299).contains(retryHttpResponse.statusCode) else {
-                throw parseError(data: retryData, statusCode: retryHttpResponse.statusCode)
-            }
-            return (retryData, retryHttpResponse)
-        }
-        guard (200 ... 299).contains(httpResponse.statusCode) else {
-            throw parseError(data: data, statusCode: httpResponse.statusCode)
-        }
         return (data, httpResponse)
     }
 

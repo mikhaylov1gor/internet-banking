@@ -21,9 +21,14 @@ final class DependenciesAssembly {
         sessionState: sessionState,
         baseURL: gatewayURL)
 
+    private lazy var apiRetryPolicy: APIRetryPolicy = DefaultAPIRetryPolicy()
+
     private(set) lazy var apiClient = APIClient(
         baseURL: gatewayURL,
-        tokenHandler: tokenHandler)
+        session: URLSession.shared,
+        tokenHandler: tokenHandler,
+        retryConfiguration: .default,
+        retryPolicy: apiRetryPolicy)
 
     private init() {}
 }
