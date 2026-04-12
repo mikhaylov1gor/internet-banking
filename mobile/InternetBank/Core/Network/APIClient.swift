@@ -261,9 +261,27 @@ final class APIClient {
         #if DEBUG
         APILogger.logRequest(request)
         #endif
-        let (data, urlResponse) = try await session.data(for: request)
+        let data: Data
+        let urlResponse: URLResponse
+        do {
+            (data, urlResponse) = try await session.data(for: request)
+        } catch {
+            #if DEBUG
+            APILogger.logTransportFailure(
+                request: request,
+                error: error,
+                duration: CFAbsoluteTimeGetCurrent() - t0)
+            #endif
+            throw error
+        }
         let elapsed = CFAbsoluteTimeGetCurrent() - t0
         guard let httpResponse = urlResponse as? HTTPURLResponse else {
+            #if DEBUG
+            APILogger.logTransportFailure(
+                request: request,
+                error: APIError.invalidResponse,
+                duration: elapsed)
+            #endif
             throw APIError.invalidResponse
         }
         #if DEBUG
