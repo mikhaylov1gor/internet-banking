@@ -14,24 +14,39 @@ protocol TokenHandlerProtocol: AnyObject {
 }
 
 final class APIClient {
+    private enum AttemptOutcome {
+        case success(Data, HTTPURLResponse)
+        case retryTransport(Error)
+        case retryHTTP(Data, HTTPURLResponse)
+    }
+
+    private final class RetryFailureLedger {
+        var recordedWhileRetrying = false
+    }
+
+    private static let fallbackRetryLimitWithoutCircuitBreaker = 32
+
     private let baseURL: URL
     private let session: URLSession
     private let tokenHandler: TokenHandlerProtocol?
     private let retryConfiguration: APIRetryConfiguration?
     private let retryPolicy: APIRetryPolicy
+    private let circuitBreaker: (any APICircuitBreaker)?
 
     init(
         baseURL: URL,
         session: URLSession = .shared,
         tokenHandler: TokenHandlerProtocol? = nil,
         retryConfiguration: APIRetryConfiguration? = .default,
-        retryPolicy: APIRetryPolicy = DefaultAPIRetryPolicy())
+        retryPolicy: APIRetryPolicy = DefaultAPIRetryPolicy(),
+        circuitBreaker: (any APICircuitBreaker)? = nil)
     {
         self.baseURL = baseURL
         self.session = session
         self.tokenHandler = tokenHandler
         self.retryConfiguration = retryConfiguration
         self.retryPolicy = retryPolicy
+        self.circuitBreaker = circuitBreaker
     }
 
     func request<T: Decodable>(
@@ -59,67 +74,178 @@ final class APIClient {
         body: Encodable?,
         requiresAuth: Bool) async throws -> (Data, HTTPURLResponse)
     {
-        let idempotencyKey = IdempotencyKey.generate()
-        let maxAttempts = max(1, retryConfiguration?.maxAttempts ?? 1)
-        var lastTransportError: Error?
-
-        attemptLoop: for attempt in 0 ..< maxAttempts {
-            if attempt > 0, let cfg = retryConfiguration {
-                let ns = retryPolicy.backoffNanoseconds(attemptIndex: attempt - 1, configuration: cfg)
-                try await Task.sleep(nanoseconds: ns)
+        if let circuitBreaker {
+            try await circuitBreaker.beforeRequest()
+        }
+        let ledger = RetryFailureLedger()
+        do {
+            let result = try await executeWithRetries(
+                path: path,
+                method: method,
+                body: body,
+                requiresAuth: requiresAuth,
+                ledger: ledger)
+            await circuitBreaker?.recordSuccess()
+            return result
+        } catch {
+            if let circuitBreaker, Self.shouldTripCircuit(for: error), !ledger.recordedWhileRetrying {
+                await circuitBreaker.recordFailure()
             }
+            throw error
+        }
+    }
 
-            var request = try makeRequest(
+    private static func shouldTripCircuit(for error: Error) -> Bool {
+        if let api = error as? APIError {
+            switch api {
+            case .sessionExpired, .responseDecodingFailed, .circuitOpen:
+                return false
+            case .invalidResponse:
+                return true
+            case let .serverError(code, _):
+                if (400 ..< 500).contains(code), code != 408, code != 429 {
+                    return false
+                }
+                return code >= 408
+            }
+        }
+        if let urlError = error as? URLError {
+            return DefaultAPIRetryPolicy().shouldRetryTransportError(urlError)
+        }
+        return false
+    }
+
+    private func executeWithRetries(
+        path: String,
+        method: String,
+        body: Encodable?,
+        requiresAuth: Bool,
+        ledger: RetryFailureLedger) async throws -> (Data, HTTPURLResponse)
+    {
+        let idempotencyKey = IdempotencyKey.generate()
+
+        guard let backoffCfg = retryConfiguration else {
+            switch try await performAttempt(
                 path: path,
                 method: method,
                 body: body,
                 requiresAuth: requiresAuth,
                 idempotencyKey: idempotencyKey)
+            {
+            case let .success(data, response):
+                return (data, response)
+            case let .retryTransport(error):
+                throw error
+            case let .retryHTTP(data, response):
+                throw parseError(data: data, statusCode: response.statusCode)
+            }
+        }
 
-            let first: (Data, HTTPURLResponse)
-            do {
-                first = try await sendLoggedRequest(request)
-            } catch {
+        var attemptIndex = 0
+        var lastTransportError: Error?
+        var lastRetryHTTP: (data: Data, status: Int)?
+
+        while true {
+            if attemptIndex > 0 {
+                try await circuitBreaker?.beforeRequest()
+                let ns = retryPolicy.backoffNanoseconds(attemptIndex: attemptIndex - 1, configuration: backoffCfg)
+                try await Task.sleep(nanoseconds: ns)
+            }
+
+            if circuitBreaker == nil, attemptIndex >= Self.fallbackRetryLimitWithoutCircuitBreaker {
+                if let error = lastTransportError {
+                    throw error
+                }
+                if let last = lastRetryHTTP {
+                    throw parseError(data: last.data, statusCode: last.status)
+                }
+                throw APIError.invalidResponse
+            }
+
+            switch try await performAttempt(
+                path: path,
+                method: method,
+                body: body,
+                requiresAuth: requiresAuth,
+                idempotencyKey: idempotencyKey)
+            {
+            case let .success(data, response):
+                return (data, response)
+            case let .retryTransport(error):
                 lastTransportError = error
-                if attempt < maxAttempts - 1, retryPolicy.shouldRetryTransportError(error) {
-                    continue attemptLoop
+                if Self.shouldTripCircuit(for: error) {
+                    ledger.recordedWhileRetrying = true
+                    await circuitBreaker?.recordFailure()
+                }
+                attemptIndex += 1
+                continue
+            case let .retryHTTP(data, response):
+                lastRetryHTTP = (data, response.statusCode)
+                let trip = Self.shouldTripCircuit(
+                    for: APIError.serverError(statusCode: response.statusCode, message: nil))
+                if trip {
+                    ledger.recordedWhileRetrying = true
+                    await circuitBreaker?.recordFailure()
+                }
+                attemptIndex += 1
+                continue
+            }
+        }
+    }
+
+    private func performAttempt(
+        path: String,
+        method: String,
+        body: Encodable?,
+        requiresAuth: Bool,
+        idempotencyKey: String) async throws -> AttemptOutcome
+    {
+        var request = try makeRequest(
+            path: path,
+            method: method,
+            body: body,
+            requiresAuth: requiresAuth,
+            idempotencyKey: idempotencyKey)
+
+        let first: (Data, HTTPURLResponse)
+        do {
+            first = try await sendLoggedRequest(request)
+        } catch {
+            if retryPolicy.shouldRetryTransportError(error) {
+                return .retryTransport(error)
+            }
+            throw error
+        }
+
+        var (data, httpResponse) = first
+
+        if httpResponse.statusCode == 401, requiresAuth, tokenHandler != nil {
+            try await tokenHandler?.refreshTokens()
+            request = try makeRequest(
+                path: path,
+                method: method,
+                body: body,
+                requiresAuth: true,
+                idempotencyKey: idempotencyKey)
+            do {
+                (data, httpResponse) = try await sendLoggedRequest(request)
+            } catch {
+                if retryPolicy.shouldRetryTransportError(error) {
+                    return .retryTransport(error)
                 }
                 throw error
             }
-
-            var (data, httpResponse) = first
-
-            if httpResponse.statusCode == 401, requiresAuth, tokenHandler != nil {
-                try await tokenHandler?.refreshTokens()
-                request = try makeRequest(
-                    path: path,
-                    method: method,
-                    body: body,
-                    requiresAuth: true,
-                    idempotencyKey: idempotencyKey)
-                do {
-                    (data, httpResponse) = try await sendLoggedRequest(request)
-                } catch {
-                    lastTransportError = error
-                    if attempt < maxAttempts - 1, retryPolicy.shouldRetryTransportError(error) {
-                        continue attemptLoop
-                    }
-                    throw error
-                }
-            }
-
-            if (200 ... 299).contains(httpResponse.statusCode) {
-                return (data, httpResponse)
-            }
-
-            if attempt < maxAttempts - 1, retryPolicy.shouldRetryHTTPStatus(httpResponse.statusCode) {
-                continue attemptLoop
-            }
-
-            throw parseError(data: data, statusCode: httpResponse.statusCode)
         }
 
-        throw lastTransportError ?? APIError.invalidResponse
+        if (200 ... 299).contains(httpResponse.statusCode) {
+            return .success(data, httpResponse)
+        }
+
+        if retryPolicy.shouldRetryHTTPStatus(httpResponse.statusCode) {
+            return .retryHTTP(data, httpResponse)
+        }
+
+        throw parseError(data: data, statusCode: httpResponse.statusCode)
     }
 
     private func sendLoggedRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
@@ -217,6 +343,7 @@ enum APIError: LocalizedError {
     case serverError(statusCode: Int, message: String?)
     case sessionExpired
     case responseDecodingFailed(String)
+    case circuitOpen(retryAfter: TimeInterval?)
 
     var errorDescription: String? {
         switch self {
@@ -226,6 +353,12 @@ enum APIError: LocalizedError {
                 return "Сессия истекла"
             case let .responseDecodingFailed(detail):
                 return "Ответ API не распознан. \(detail)"
+            case let .circuitOpen(after):
+                if let s = after, s > 0 {
+                    let sec = max(1, Int(ceil(s)))
+                    return "Сервис временно недоступен. Повторите через \(sec) с."
+                }
+                return "Сервис временно недоступен. Попробуйте позже."
             case let .serverError(code, message):
                 if let msg = message, !msg.isEmpty {
                     return msg

@@ -23,12 +23,15 @@ final class DependenciesAssembly {
 
     private lazy var apiRetryPolicy: APIRetryPolicy = DefaultAPIRetryPolicy()
 
+    private lazy var apiCircuitBreaker: any APICircuitBreaker = DefaultAPICircuitBreaker()
+
     private(set) lazy var apiClient = APIClient(
         baseURL: gatewayURL,
         session: URLSession.shared,
         tokenHandler: tokenHandler,
         retryConfiguration: .default,
-        retryPolicy: apiRetryPolicy)
+        retryPolicy: apiRetryPolicy,
+        circuitBreaker: apiCircuitBreaker)
 
     private init() {}
 }

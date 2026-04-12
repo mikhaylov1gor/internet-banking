@@ -1,15 +1,13 @@
 import Foundation
 
 struct APIRetryConfiguration: Sendable {
-    var maxAttempts: Int
     var baseDelay: TimeInterval
     var maxDelay: TimeInterval
     var multiplier: Double
 
     static let `default` = APIRetryConfiguration(
-        maxAttempts: 3,
-        baseDelay: 0.35,
-        maxDelay: 8,
+        baseDelay: 1,
+        maxDelay: 32,
         multiplier: 2)
 }
 
@@ -48,12 +46,11 @@ struct DefaultAPIRetryPolicy: APIRetryPolicy {
     }
 
     func backoffNanoseconds(attemptIndex: Int, configuration: APIRetryConfiguration) -> UInt64 {
-        let exp = pow(configuration.multiplier, Double(attemptIndex))
-        let raw = configuration.baseDelay * exp
-        let capped = min(configuration.maxDelay, raw)
-        let jitter = Double.random(in: 0.85 ... 1.15)
-        let seconds = capped * jitter
-        let clamped = min(max(0, seconds), Double(UInt64.max) / 1_000_000_000)
+        let exponent = pow(configuration.multiplier, Double(attemptIndex))
+        let ceiling = min(configuration.maxDelay, configuration.baseDelay * exponent)
+        let upper = max(0, ceiling)
+        let seconds = upper == 0 ? 0 : Double.random(in: 0 ... upper)
+        let clamped = min(seconds, Double(UInt64.max) / 1_000_000_000)
         return UInt64(clamped * 1_000_000_000)
     }
 }
