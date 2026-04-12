@@ -15,7 +15,11 @@ const state: SlidingCircuitBreakerState = {
 
 export const isCircuitExcludedPath = (url: string): boolean => {
   if (!url) return false
-  return url.includes('/auth/refresh') || url.includes('/auth/login')
+  return (
+    url.includes('/auth/refresh') ||
+    url.includes('/auth/login') ||
+    url.includes('/monitoring/client-logs')
+  )
 }
 
 export const circuitBreakerIsOpen = (): boolean => Date.now() < state.openUntil

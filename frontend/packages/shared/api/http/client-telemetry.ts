@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { API_BASE_URL } from './api-base-url'
+import { getClientTelemetryServiceLabel } from './telemetry-service-id'
 
 const ClientLogEntrySchema = z.object({
   service: z.string(),
@@ -14,10 +15,9 @@ const ClientLogEntrySchema = z.object({
 
 export type ClientTelemetryEntry = z.infer<typeof ClientLogEntrySchema>
 
-const telemetryServiceName = (): string => {
-  if (typeof window === 'undefined') return 'web-client'
-  return window.location.port === '5173' ? 'employee-web' : 'web-client'
-}
+const TELEMETRY_RETRY_MAX = 3
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 export const buildTelemetryEntry = (input: {
   endpoint: string
@@ -27,7 +27,7 @@ export const buildTelemetryEntry = (input: {
   traceId?: string
   errorMsg?: string
 }): ClientTelemetryEntry => ({
-  service: telemetryServiceName(),
+  service: getClientTelemetryServiceLabel(),
   trace_id: input.traceId,
   endpoint: input.endpoint,
   method: input.method,
@@ -42,11 +42,33 @@ export const sendClientTelemetry = async (entries: ClientTelemetryEntry[]): Prom
   const parsed = z.array(ClientLogEntrySchema).safeParse(entries)
   if (!parsed.success) return
   const url = `${API_BASE_URL}/monitoring/client-logs`
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(parsed.data),
-  })
+  const traceId = crypto.randomUUID()
+  const idempotencyKey = crypto.randomUUID()
+
+  for (let attempt = 0; attempt < TELEMETRY_RETRY_MAX; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'trace-id': traceId,
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify(parsed.data),
+      })
+      if (res.ok) {
+        return
+      }
+      if (res.status >= 400 && res.status < 500) {
+        return
+      }
+    } catch {
+      /* retry */
+    }
+    if (attempt < TELEMETRY_RETRY_MAX - 1) {
+      await sleep(Math.min(8000, 400 * 2 ** attempt))
+    }
+  }
 }
 
 export const enqueueClientTelemetry = (entries: ClientTelemetryEntry[]): void => {

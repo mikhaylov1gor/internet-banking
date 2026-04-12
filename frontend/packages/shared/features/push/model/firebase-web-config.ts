@@ -8,4 +8,4 @@ export const FIREBASE_WEB_CONFIG = {
 } as const
 
 export const FIREBASE_VAPID_KEY =
-  'BPfO-xx5mrzHGPNc6sxzq5lEa45rRd8oYOgY4-wbLm4nvOCHjyZ9rODD7Ovb_xWskdmPxww63rU6VFfjjSxiZAI'
+  'BAJ7u-SywabUnoDBwLYYxjIwNQzh16rtrCns1T8zd0965LTBvxrEaKSn2-KA3b92IqfDp4UpwByCNK6NkkLxGzU'
