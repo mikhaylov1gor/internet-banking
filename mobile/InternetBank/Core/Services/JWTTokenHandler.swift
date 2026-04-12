@@ -45,7 +45,20 @@ final class JWTTokenHandler: JWTTokenHandlerProtocol {
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
         request.httpBody = try encoder.encode(body)
+        #if DEBUG
+        APILogger.logRequest(request)
+        let refreshLogStart = CFAbsoluteTimeGetCurrent()
+        #endif
         let (data, response) = try await session.data(for: request)
+        #if DEBUG
+        if let httpResponse = response as? HTTPURLResponse {
+            APILogger.logResponse(
+                request: request,
+                response: httpResponse,
+                data: data,
+                duration: CFAbsoluteTimeGetCurrent() - refreshLogStart)
+        }
+        #endif
         guard let httpResponse = response as? HTTPURLResponse else {
             invalidateSession()
             throw APIError.sessionExpired

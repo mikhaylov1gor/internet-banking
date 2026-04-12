@@ -56,10 +56,20 @@ final class APIClient {
             body: body,
             requiresAuth: requiresAuth,
             idempotencyKey: idempotencyKey)
+        #if DEBUG
+        APILogger.logRequest(request)
+        let t0 = CFAbsoluteTimeGetCurrent()
+        #endif
         let (data, urlResponse) = try await session.data(for: request)
+        #if DEBUG
+        let elapsed0 = CFAbsoluteTimeGetCurrent() - t0
+        #endif
         guard let httpResponse = urlResponse as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
+        #if DEBUG
+        APILogger.logResponse(request: request, response: httpResponse, data: data, duration: elapsed0)
+        #endif
         if httpResponse.statusCode == 401, requiresAuth, tokenHandler != nil {
             try await tokenHandler?.refreshTokens()
             request = try makeRequest(
@@ -68,10 +78,20 @@ final class APIClient {
                 body: body,
                 requiresAuth: true,
                 idempotencyKey: idempotencyKey)
+            #if DEBUG
+            APILogger.logRequest(request)
+            let t1 = CFAbsoluteTimeGetCurrent()
+            #endif
             let (retryData, retryResponse) = try await session.data(for: request)
+            #if DEBUG
+            let elapsed1 = CFAbsoluteTimeGetCurrent() - t1
+            #endif
             guard let retryHttpResponse = retryResponse as? HTTPURLResponse else {
                 throw APIError.invalidResponse
             }
+            #if DEBUG
+            APILogger.logResponse(request: request, response: retryHttpResponse, data: retryData, duration: elapsed1)
+            #endif
             guard (200 ... 299).contains(retryHttpResponse.statusCode) else {
                 throw parseError(data: retryData, statusCode: retryHttpResponse.statusCode)
             }
