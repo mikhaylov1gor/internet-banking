@@ -8,7 +8,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/rabbitmq/amqp091-go v1.10.0
-	github.com/streadway/amqp v1.1.0
 	golang.org/x/crypto v0.49.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.12

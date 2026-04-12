@@ -1,9 +1,11 @@
 package usecase
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"math/big"
 	"time"
@@ -46,10 +48,11 @@ type OperationProducer interface {
 }
 
 type AccountUseCase struct {
-	accRepo    AccountRepository
-	opRepo     OperationRepository
-	fxProvider client.FXRateProvider
-	producer   OperationProducer
+	accRepo     AccountRepository
+	opRepo      OperationRepository
+	fxProvider  client.FXRateProvider
+	producer    OperationProducer
+	opNotifier  OperationNotifier
 }
 
 type TransferQuote struct {
@@ -72,8 +75,8 @@ type CurrencyConvertQuote struct {
 	ResultAmount float64         `json:"result_amount"`
 }
 
-func NewAccountUseCase(accRepo AccountRepository, opRepo OperationRepository, fxProvider client.FXRateProvider, producer OperationProducer) *AccountUseCase {
-	return &AccountUseCase{accRepo: accRepo, opRepo: opRepo, fxProvider: fxProvider, producer: producer}
+func NewAccountUseCase(accRepo AccountRepository, opRepo OperationRepository, fxProvider client.FXRateProvider, producer OperationProducer, opNotifier OperationNotifier) *AccountUseCase {
+	return &AccountUseCase{accRepo: accRepo, opRepo: opRepo, fxProvider: fxProvider, producer: producer, opNotifier: opNotifier}
 }
 
 func (uc *AccountUseCase) OpenAccount(clientID uuid.UUID, currency entity.Currency) (*entity.Account, error) {
@@ -383,8 +386,27 @@ func (uc *AccountUseCase) ListOperations(accountID uuid.UUID, limit, offset int)
 func (uc *AccountUseCase) publishOperation(op *entity.Operation) error {
 	if uc.producer != nil {
 		if err := uc.producer.Publish(op); err == nil {
+			uc.notifyOperationIfNeeded(op)
 			return nil
 		}
 	}
-	return uc.opRepo.Create(op)
+	if err := uc.opRepo.Create(op); err != nil {
+		return err
+	}
+	uc.notifyOperationIfNeeded(op)
+	return nil
+}
+
+func (uc *AccountUseCase) notifyOperationIfNeeded(op *entity.Operation) {
+	if uc.opNotifier == nil {
+		return
+	}
+	acc, err := uc.accRepo.GetByID(op.AccountID)
+	if err != nil {
+		return
+	}
+	ctx := context.Background()
+	if err := uc.opNotifier.NotifyOperationCreated(ctx, acc.ClientID, op); err != nil {
+		log.Printf("push notification: %v", err)
+	}
 }

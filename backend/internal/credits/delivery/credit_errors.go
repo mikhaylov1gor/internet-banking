@@ -24,6 +24,9 @@ func writeCoreClientError(w http.ResponseWriter, err error) bool {
 	case errors.Is(err, client.ErrCoreUnavailable):
 		response.Err(w, http.StatusBadGateway, "сервис счетов временно недоступен")
 		return true
+	case errors.Is(err, client.ErrCoreCircuitOpen):
+		response.Err(w, http.StatusServiceUnavailable, client.ErrCoreCircuitOpen.Error())
+		return true
 	case errors.Is(err, client.ErrCoreBadRequest):
 		msg := strings.TrimPrefix(err.Error(), client.ErrCoreBadRequest.Error()+": ")
 		if msg == "" {

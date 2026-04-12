@@ -3,10 +3,14 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"time"
+
+	"internet-bank/pkg/resilience"
 
 	"github.com/google/uuid"
 )
@@ -37,13 +41,59 @@ type TransferQuote struct {
 	Rate          float64   `json:"rate"`
 }
 
+const coreHTTPRetries = 3
+
 type coreClient struct {
 	baseURL string
-	client  *http.Client
+	hc      *http.Client
+	cb      *resilience.CircuitBreaker
 }
 
 func NewCoreClient(baseURL string) CoreClient {
-	return &coreClient{baseURL: baseURL, client: &http.Client{}}
+	return &coreClient{
+		baseURL: strings.TrimRight(strings.TrimSpace(baseURL), "/"),
+		hc:      &http.Client{Timeout: 60 * time.Second},
+		cb:      resilience.NewCircuitBreaker(),
+	}
+}
+
+func (c *coreClient) doResilient(bearerToken string, build func() (*http.Request, error)) (*http.Response, error) {
+	resp, err := c.cb.Call(func() (*http.Response, error) {
+		initialBackoff := 100 * time.Millisecond
+		var lastResp *http.Response
+		var lastErr error
+		for attempt := 0; attempt < coreHTTPRetries; attempt++ {
+			if attempt > 0 {
+				time.Sleep(time.Duration(1<<uint(attempt-1)) * initialBackoff)
+			}
+			req, err := build()
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			setBearer(req, bearerToken)
+			req.Header.Set("Content-Type", "application/json")
+			resp, err := c.hc.Do(req)
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			if resp.StatusCode < http.StatusInternalServerError {
+				return resp, nil
+			}
+			_, _ = io.Copy(io.Discard, resp.Body)
+			_ = resp.Body.Close()
+			lastResp = resp
+		}
+		if lastResp != nil {
+			return lastResp, nil
+		}
+		return nil, lastErr
+	})
+	if err != nil && errors.Is(err, resilience.ErrCircuitOpen) {
+		return nil, fmt.Errorf("%w", ErrCoreCircuitOpen)
+	}
+	return resp, err
 }
 
 func parseJSONError(body []byte) string {
@@ -60,14 +110,10 @@ func parseJSONError(body []byte) string {
 }
 
 func (c *coreClient) GetAccount(accountID uuid.UUID, bearerToken string) (*AccountInfo, error) {
-	url := fmt.Sprintf("%s/accounts/%s", c.baseURL, accountID.String())
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	setBearer(req, bearerToken)
-	resp, err := c.client.Do(req)
+	resp, err := c.doResilient(bearerToken, func() (*http.Request, error) {
+		url := fmt.Sprintf("%s/accounts/%s", c.baseURL, accountID.String())
+		return http.NewRequest(http.MethodGet, url, nil)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrCoreUnavailable, err)
 	}
@@ -103,19 +149,15 @@ func (c *coreClient) Withdraw(accountID uuid.UUID, amount float64, bearerToken s
 }
 
 func (c *coreClient) Transfer(fromAccountID, toAccountID uuid.UUID, amount float64, bearerToken string) error {
-	body, _ := json.Marshal(map[string]any{
+	payload, _ := json.Marshal(map[string]any{
 		"from_account_id": fromAccountID.String(),
 		"to_account_id":   toAccountID.String(),
 		"amount":          amount,
 	})
 	url := fmt.Sprintf("%s/accounts/transfer", c.baseURL)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	setBearer(req, bearerToken)
-	resp, err := c.client.Do(req)
+	resp, err := c.doResilient(bearerToken, func() (*http.Request, error) {
+		return http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
+	})
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCoreUnavailable, err)
 	}
@@ -128,19 +170,15 @@ func (c *coreClient) Transfer(fromAccountID, toAccountID uuid.UUID, amount float
 }
 
 func (c *coreClient) PreviewTransfer(fromAccountID, toAccountID uuid.UUID, amount float64, bearerToken string) (*TransferQuote, error) {
-	body, _ := json.Marshal(map[string]any{
+	payload, _ := json.Marshal(map[string]any{
 		"from_account_id": fromAccountID.String(),
 		"to_account_id":   toAccountID.String(),
 		"amount":          amount,
 	})
 	url := fmt.Sprintf("%s/accounts/transfer/preview", c.baseURL)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	setBearer(req, bearerToken)
-	resp, err := c.client.Do(req)
+	resp, err := c.doResilient(bearerToken, func() (*http.Request, error) {
+		return http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
+	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrCoreUnavailable, err)
 	}
@@ -157,15 +195,11 @@ func (c *coreClient) PreviewTransfer(fromAccountID, toAccountID uuid.UUID, amoun
 }
 
 func (c *coreClient) changeBalance(accountID uuid.UUID, amount float64, op string, bearerToken string) error {
-	body, _ := json.Marshal(map[string]float64{"amount": amount})
+	payload, _ := json.Marshal(map[string]float64{"amount": amount})
 	url := fmt.Sprintf("%s/accounts/%s/%s", c.baseURL, accountID.String(), op)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	setBearer(req, bearerToken)
-	resp, err := c.client.Do(req)
+	resp, err := c.doResilient(bearerToken, func() (*http.Request, error) {
+		return http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
+	})
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCoreUnavailable, err)
 	}

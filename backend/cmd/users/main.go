@@ -9,6 +9,9 @@ import (
 	"internet-bank/internal/users/repository"
 	"internet-bank/internal/users/usecase"
 	"internet-bank/pkg/config"
+	"internet-bank/pkg/idempotency"
+	mw "internet-bank/pkg/middleware"
+	"internet-bank/pkg/tracing"
 
 	"github.com/go-chi/chi/v5"
 	"gorm.io/driver/postgres"
@@ -21,11 +24,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("db: %v", err)
 	}
-	if err := db.AutoMigrate(&entity.User{}); err != nil {
+	if err := db.AutoMigrate(&entity.User{}, &entity.DevicePushToken{}); err != nil {
 		log.Fatalf("migrate: %v", err)
 	}
 
 	userRepo := repository.NewUserRepository(db)
+	deviceRepo := repository.NewDeviceTokenRepository(db)
 	userUC := usecase.NewUserUseCase(userRepo)
 	if _, err := userUC.Create(entity.UserTypeEmployee, "admin@bank.local", "Admin", "", "admin"); err != nil {
 		if err != usecase.ErrEmailExists {
@@ -37,9 +41,17 @@ func main() {
 		AccessTTL:  authCfg.AccessTTL,
 		RefreshTTL: authCfg.RefreshTTL,
 	})
-	handler := delivery.NewHandler(authUC, userUC, authCfg.JWTSecret, authCfg.SSOClients, authCfg.ForceSecureSSO)
+	handler := delivery.NewHandler(authUC, userUC, deviceRepo, authCfg.JWTSecret, authCfg.SSOClients, authCfg.ForceSecureSSO)
+
+	lb := tracing.InitLogBuffer(authCfg.MonitoringURL)
+	defer lb.Close()
+	idem := idempotency.NewIdempotencyCache()
+	defer idem.Close()
 
 	r := chi.NewRouter()
+	r.Use(tracing.TracingMiddleware("users", lb))
+	r.Use(mw.ChaosMiddleware)
+	r.Use(idempotency.IdempotencyMiddleware(idem))
 	r.Route("/", handler.Mount)
 
 	log.Printf("Users service listening on :%s", cfg.Port)

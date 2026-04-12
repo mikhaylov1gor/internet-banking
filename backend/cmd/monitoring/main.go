@@ -29,7 +29,7 @@ func main() {
 
 	logsRepo := repository.NewLogsRepository(db)
 	metricsUC := usecase.NewMetricsUseCase(logsRepo)
-	ctx := delivery.NewHandlerContext(metricsUC)
+	ctx := delivery.NewHandlerContext(metricsUC, logsRepo)
 	handler := delivery.NewHandler(ctx)
 
 	r := chi.NewRouter()

@@ -42,9 +42,10 @@ func (fn *firebaseNotifier) SendMulticast(ctx context.Context, tokens []string, 
 }
 
 type NotificationPayload struct {
-	UserID string `json:"user_id"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
+	UserID          string `json:"user_id"`
+	Title           string `json:"title"`
+	Body            string `json:"body"`
+	NotifyEmployees bool   `json:"notify_employees"`
 }
 
 func UnmarshalNotificationPayload(data []byte) (*NotificationPayload, error) {

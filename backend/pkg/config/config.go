@@ -23,6 +23,7 @@ type CoreConfig struct {
 	MasterCurrency          string
 	FirebaseCredentialsPath string
 	MonitoringURL           string
+	UsersURL                string
 }
 
 func LoadCore() CoreConfig {
@@ -77,6 +78,10 @@ func LoadCore() CoreConfig {
 	if monitoringURL == "" {
 		monitoringURL = "http://monitoring:8005"
 	}
+	usersURL := os.Getenv("USERS_SERVICE_URL")
+	if usersURL == "" {
+		usersURL = "http://users:8002"
+	}
 	return CoreConfig{
 		Config: Config{
 			Port: port,
@@ -93,6 +98,7 @@ func LoadCore() CoreConfig {
 		MasterCurrency:          masterCurrency,
 		FirebaseCredentialsPath: firebaseCredentialsPath,
 		MonitoringURL:           monitoringURL,
+		UsersURL:                usersURL,
 	}
 }
 
@@ -157,7 +163,8 @@ type CreditsConfig struct {
 
 type AppSettingsConfig struct {
 	Config
-	JWTSecret string
+	JWTSecret     string
+	MonitoringURL string
 }
 
 func LoadCredits() CreditsConfig {
@@ -219,7 +226,15 @@ func LoadAppSettings() AppSettingsConfig {
 	if jwtSecret == "" {
 		jwtSecret = "supersecretjwtsecretforverysecuresecurity"
 	}
-	return AppSettingsConfig{Config: Config{Port: port, DSN: dsn}, JWTSecret: jwtSecret}
+	monitoringURL := os.Getenv("MONITORING_URL")
+	if monitoringURL == "" {
+		monitoringURL = "http://monitoring:8005"
+	}
+	return AppSettingsConfig{
+		Config:        Config{Port: port, DSN: dsn},
+		JWTSecret:     jwtSecret,
+		MonitoringURL: monitoringURL,
+	}
 }
 
 type UsersAuth struct {

@@ -68,6 +68,9 @@ func (lb *LogBuffer) flush() {
 }
 
 func (lb *LogBuffer) logToMonitoring(entries []*LogEntry) {
+	if lb.monitoringURL == "" {
+		return
+	}
 	payload, err := json.Marshal(entries)
 	if err != nil {
 		return

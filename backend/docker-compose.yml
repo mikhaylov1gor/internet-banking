@@ -41,6 +41,7 @@ services:
       RABBITMQ_URL: "${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}"
       RABBITMQ_QUEUE: "${RABBITMQ_QUEUE:-core.operations}"
       RABBITMQ_NOTIFICATION_QUEUE: "${RABBITMQ_NOTIFICATION_QUEUE:-operations.created}"
+      USERS_SERVICE_URL: "${USERS_SERVICE_URL:-http://users:8002}"
       MASTER_ACCOUNT_ID: "${MASTER_ACCOUNT_ID:-00000000-0000-0000-0000-000000000001}"
       BANK_SERVICE_USER_ID: "${BANK_SERVICE_USER_ID:-11111111-1111-1111-1111-111111111111}"
       MASTER_ACCOUNT_INITIAL_BALANCE: "${MASTER_ACCOUNT_INITIAL_BALANCE:-1000000000}"
@@ -101,6 +102,7 @@ services:
       APP_SETTINGS_PORT: "8004"
       APP_SETTINGS_DSN: "host=postgres user=postgres password=${POSTGRES_PASSWORD:-postgres} dbname=app_settings port=5432 sslmode=disable"
       JWT_SECRET: "${JWT_SECRET:-secret}"
+      MONITORING_URL: "${MONITORING_URL:-http://monitoring:8005}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -117,6 +119,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8005/dashboard >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   gateway:
     image: nginx:alpine
@@ -134,7 +142,7 @@ services:
       app-settings:
         condition: service_started
       monitoring:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   postgres_data: {}

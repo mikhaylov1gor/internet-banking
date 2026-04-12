@@ -12,6 +12,7 @@ var (
 	ErrAccountAccessDenied = errors.New("доступ запрещён")
 	ErrCoreBadRequest      = errors.New("ошибка запроса к сервису счетов")
 	ErrCoreUnavailable     = errors.New("сервис счетов временно недоступен")
+	ErrCoreCircuitOpen     = errors.New("сервис счетов временно отключён из-за ошибок, повторите позже")
 )
 
 func mapCoreHTTPError(statusCode int, bodyMsg string) error {

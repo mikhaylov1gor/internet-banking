@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -16,9 +17,10 @@ func ChaosMiddleware(next http.Handler) http.Handler {
 			errorRate = 70
 		}
 
-		// Simple hash-based decision
-		hashVal := hashRequest(r) % 100
-		if hashVal < errorRate {
+		// Случайное решение на каждый запрос. Раньше использовался hash(path+method) —
+		// для одного и того же маршрута (например POST /auth/login) значение всегда
+		// одинаковое; при hash%100 < 30 хаос срабатывал на 100% запросов в любую минуту.
+		if rand.Intn(100) < errorRate {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(`{"error":"chaos: simulated server error"}`))
@@ -27,15 +29,4 @@ func ChaosMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func hashRequest(r *http.Request) int {
-	hash := 0
-	for _, ch := range r.URL.Path + r.Method {
-		hash = (hash<<5 - hash) + int(ch)
-	}
-	if hash < 0 {
-		hash = -hash
-	}
-	return hash
 }
