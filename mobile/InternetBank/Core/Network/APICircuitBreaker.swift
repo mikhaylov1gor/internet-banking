@@ -1,11 +1,15 @@
 import Foundation
 
 struct APICircuitBreakerConfiguration: Sendable {
-    var failureThreshold: Int
+    var windowSize: Int
+    var minimumSampleCount: Int
+    var failureRateToOpen: Double
     var openDuration: TimeInterval
 
     static let `default` = APICircuitBreakerConfiguration(
-        failureThreshold: 5,
+        windowSize: 30,
+        minimumSampleCount: 10,
+        failureRateToOpen: 0.7,
         openDuration: 30)
 }
 
@@ -23,12 +27,16 @@ actor DefaultAPICircuitBreaker: APICircuitBreaker {
     }
 
     private var state: State = .closed
-    private var consecutiveTripFailures = 0
-    private let failureThreshold: Int
+    private var outcomes: [Bool] = []
+    private let windowSize: Int
+    private let minimumSampleCount: Int
+    private let failureRateToOpen: Double
     private let openDuration: TimeInterval
 
     init(configuration: APICircuitBreakerConfiguration = .default) {
-        failureThreshold = max(1, configuration.failureThreshold)
+        windowSize = max(2, configuration.windowSize)
+        minimumSampleCount = max(1, min(configuration.minimumSampleCount, windowSize))
+        failureRateToOpen = min(1, max(0, configuration.failureRateToOpen))
         openDuration = max(1, configuration.openDuration)
     }
 
@@ -42,29 +50,51 @@ actor DefaultAPICircuitBreaker: APICircuitBreaker {
                 throw APIError.circuitOpen(retryAfter: until.timeIntervalSince(now))
             }
             state = .halfOpen
-            consecutiveTripFailures = 0
         case .halfOpen:
             return
         }
     }
 
     func recordSuccess() async {
-        consecutiveTripFailures = 0
-        state = .closed
+        switch state {
+        case .halfOpen:
+            appendOutcome(true)
+            state = .closed
+        case .closed:
+            appendOutcome(true)
+            evaluateFailureRateAndOpenIfNeeded()
+        case .open:
+            break
+        }
     }
 
     func recordFailure() async {
-        consecutiveTripFailures += 1
         switch state {
-        case .closed:
-            if consecutiveTripFailures >= failureThreshold {
-                state = .open(until: Date().addingTimeInterval(openDuration))
-            }
         case .halfOpen:
+            appendOutcome(false)
             state = .open(until: Date().addingTimeInterval(openDuration))
-            consecutiveTripFailures = failureThreshold
+        case .closed:
+            appendOutcome(false)
+            evaluateFailureRateAndOpenIfNeeded()
         case .open:
             break
+        }
+    }
+
+    private func appendOutcome(_ success: Bool) {
+        outcomes.append(success)
+        if outcomes.count > windowSize {
+            outcomes.removeFirst(outcomes.count - windowSize)
+        }
+    }
+
+    private func evaluateFailureRateAndOpenIfNeeded() {
+        guard case .closed = state else { return }
+        guard outcomes.count >= minimumSampleCount else { return }
+        let failures = outcomes.filter { !$0 }.count
+        let rate = Double(failures) / Double(outcomes.count)
+        if rate >= failureRateToOpen {
+            state = .open(until: Date().addingTimeInterval(openDuration))
         }
     }
 }
