@@ -20,10 +20,6 @@ final class APIClient {
         case retryHTTP(Data, HTTPURLResponse)
     }
 
-    private final class RetryFailureLedger {
-        var recordedWhileRetrying = false
-    }
-
     private static let fallbackRetryLimitWithoutCircuitBreaker = 32
 
     private let baseURL: URL
@@ -78,43 +74,33 @@ final class APIClient {
             try await circuitBreaker.beforeRequest()
         }
         let traceID = APITracing.newTraceID()
-        let ledger = RetryFailureLedger()
         do {
             let result = try await executeWithRetries(
                 path: path,
                 method: method,
                 body: body,
                 requiresAuth: requiresAuth,
-                ledger: ledger,
                 traceID: traceID)
             await circuitBreaker?.recordSuccess()
             return result
         } catch {
-            if let circuitBreaker, Self.shouldTripCircuit(for: error), !ledger.recordedWhileRetrying {
+            if let circuitBreaker, Self.shouldCountFailureForCircuitRate(error) {
                 await circuitBreaker.recordFailure()
             }
             throw error
         }
     }
 
-    private static func shouldTripCircuit(for error: Error) -> Bool {
+    private static func shouldCountFailureForCircuitRate(_ error: Error) -> Bool {
         if let api = error as? APIError {
             switch api {
-            case .sessionExpired, .responseDecodingFailed, .circuitOpen:
+            case .circuitOpen, .sessionExpired:
                 return false
-            case .invalidResponse:
+            default:
                 return true
-            case let .serverError(code, _):
-                if (400 ..< 500).contains(code), code != 408, code != 429 {
-                    return false
-                }
-                return code >= 408
             }
         }
-        if let urlError = error as? URLError {
-            return DefaultAPIRetryPolicy().shouldRetryTransportError(urlError)
-        }
-        return false
+        return true
     }
 
     private func executeWithRetries(
@@ -122,7 +108,6 @@ final class APIClient {
         method: String,
         body: Encodable?,
         requiresAuth: Bool,
-        ledger: RetryFailureLedger,
         traceID: String) async throws -> (Data, HTTPURLResponse)
     {
         let idempotencyKey = IdempotencyKey.generate()
@@ -178,20 +163,10 @@ final class APIClient {
                 return (data, response)
             case let .retryTransport(error):
                 lastTransportError = error
-                if Self.shouldTripCircuit(for: error) {
-                    ledger.recordedWhileRetrying = true
-                    await circuitBreaker?.recordFailure()
-                }
                 attemptIndex += 1
                 continue
             case let .retryHTTP(data, response):
                 lastRetryHTTP = (data, response.statusCode)
-                let trip = Self.shouldTripCircuit(
-                    for: APIError.serverError(statusCode: response.statusCode, message: nil))
-                if trip {
-                    ledger.recordedWhileRetrying = true
-                    await circuitBreaker?.recordFailure()
-                }
                 attemptIndex += 1
                 continue
             }
